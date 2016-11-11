@@ -1,0 +1,2 @@
+clear
+udevadm info --attribute-walk -n /dev/ttyUSB0 | sed -n '/FTDI/,/serial/p'

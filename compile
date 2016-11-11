@@ -1,0 +1,1 @@
+avr-gcc -mmcu=atmega328p -c $1.c -o $1.exe
