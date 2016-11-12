@@ -70,11 +70,11 @@ int main(void)
             for(j = 0;j< 40;j++)
             {
                 GDispCharAt(i,j,k++);
-//                _delay_ms(1);
+                _delay_ms(1);
             }
             GDispCharAt(0,0,a+0x30);
         }
-//        _delay_ms(2);
+        _delay_ms(2);
     }
     }
     GDispClrTxt();

@@ -148,9 +148,8 @@ upload: hex
 # no need to reprogram eeprom or fuses for this application
 #	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a -U eeprom:w:$(PROJECT).eep:a -U lfuse:w:0x$(AVRDUDE_LFUSE):m -U hfuse:w:0x$(AVRDUDE_HFUSE):m -U efuse:w:0x$(AVRDUDE_EFUSE):m
 
-#	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a
+	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a
 
 #	if just checking the connection
 #	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -v
-	avrdude-test2 1 2 3 4
 

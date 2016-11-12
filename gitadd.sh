@@ -18,7 +18,8 @@ git add run_testports.sh
 git add sfr_helper.h
 git add t6963.c
 git add t6963.h
-git add test_ports1.cx
 git add uart.c
 git add uart.h
+git add test_ports.c
 git add using_tools.txt
+git add ProMiniPinout.txt

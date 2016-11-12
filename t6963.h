@@ -47,7 +47,7 @@
 //I/O port for data definition
 #ifndef T6963_H
 #define T6963_H
-
+#if 1
 //Control pin setting
 //RA 0->7 LCD Data Bus
 //RA 14 C/D
@@ -57,23 +57,6 @@
 //RC 3 RESET
 //RC 4 FS1 ?
 
-//PORTAbits.RA0        // Check command execution capability
-//PORTAbits.RA1        // Check data read/write capability
-//PORTAbits.RA2        // Check Auto mode data read capability
-//PORTAbits.RA3        // Check Auto mode data write capability
-//PORTAbits.RA4        // Check controller operation capability
-//PORTAbits.RA5        // Error flag. Used for screen peek and screen copy
-//PORTAbits.RA6        // Check the blink condition
-//PORTAbits.RA7        // Check the blink condition
-
-#if 0
-#define LCD_WR             LATCbits.LATC1        // LCD Write control line pin number
-#define LCD_CE             LATCbits.LATC2       // LCD Enable control line pin number
-#define LCD_RST            LATCbits.LATC3        // LCD RST_ line
-#define LCD_FS             LATCbits.LATC4        // LCD font select
-#define LCD_CD             LATAbits.LATA14       // LCD Control/data Select line
-#define LCD_RD             LATAbits.LATA15       // LCD Read control line  pin number
-#endif
 #define LCD_WR		PORTC0        // LCD Write control line pin number (A0)
 #define LCD_CE		PORTC1       // LCD Enable control line pin number (A1)
 #define LCD_RST		PORTC2        // LCD RST_ line (A2)
@@ -128,29 +111,32 @@
 *               CG_HOME_ADDR    starts 0x1400 ending 0x147F -> 128  bytes (custom characters) ?
 ***********************************************************************************************
 */
+#if 1
 #define TEXT_HOME_ADDR      0x0000
 #define GRH_HOME_ADDR       0x0200
 #define CG_HOME_ADDR        0x1400
 #define COLUMN              40      //Set column number to be e.g. 32 for 8x8 fonts, 2 pages 
-#define MAX_ROW_PIXEL       128      //MAX_ROW_PIXEL the physical matrix length (y direc-tion)                                    
+#define MAX_ROW_PIXEL       128      //MAX_ROW_PIXEL the physical matrix length (y direction)                                    
 #define MAX_COL_PIXEL       128     //MAX_COL_PIXEL the physical matrix width (x direction)
 #define ENABLE              1
 #define DISABLE             0
 #define BLACK               1
 #define WHITE               0
-
+#endif
 /*
+
 ***********************************************************************************************
 *                                       DISPLAY MODE
 ***********************************************************************************************
 */
+#if 1
 #define DISPLAY_OFF         0x90    //0b10010000, display off
 #define CURSOR_ON_BLINK_OFF 0x92    //0b1001xx10, cursor on without blinking
 #define CURSOR_BLINK_ON     0x93    //0b1001xx11, cursor on with blinking
 #define TEXT_ON             0x94    //0b100101xx, text on, graphics off
 #define GRAPHIC_ON          0x98    //0b100110xx, text off, graphics on
 #define TEXT_GRH_ON         0x9C    //0b100111xx, text on, graphics on
-
+#endif
 
 /*
 ***********************************************************************************************
@@ -168,21 +154,21 @@
 *       all 256 codes from 00h - FFh can be used to represent the users' own characters.
 ***********************************************************************************************
 */
-
+#if 1
 #define INT_CG_MODE         0x80    //0b10000xxx, Internal CG ROM mode
 #define EXT_CG_MODE         0x88    //0b10001xxx, External CG RAM mode
 #define OR_MODE             0x80    //0b1000x000, OR mode, internal CG ROM mODE
 #define XOR_MODE            0x81    //0b1000x001, XOR mode, internal CG ROM mode
 #define AND_MODE            0x83    //0b1000x011, AND mode, internal CG ROM mode
 #define TEXT_ATTR_MODE      0x84    //0b1000x100, text attribute mode, internal CG ROM mode
-
-
-
+#endif
 /*
+
 ***********************************************************************************************
 *                                       CURSOR MODE
 ***********************************************************************************************
 */
+#if 1
 #define LINE_8_CURSOR       0xA7    //8-line cursor mode
 #define LINE_7_CURSOR       0xA6    //7-line cursor mode
 #define LINE_6_CURSOR       0xA5    //6-line cursor mode
@@ -191,35 +177,38 @@
 #define LINE_3_CURSOR       0xA2    //3-Line cursor mode
 #define LINE_2_CURSOR       0xA1    //2-Line cursor mode
 #define LINE_1_CURSOR       0xA0    //1-Line cursor mode
-
+#endif
 /*
 ***********************************************************************************************
 *                                   TEXT ATTRIBUTE MODE
 ***********************************************************************************************
 */
+#if 1
 #define ATTR_NORMAL         0x00    //Normal Display
 #define ATTR_REVERSE        0x05    //Reverse Di../t6963.h:189:33: error: expected ';', ',' or ')' before 'mode'splay
 #define ATTR_INHIBIT        0x03    //Inhibit Display
 #define ATTR_BLINK          0x08    //Blinking of Normal Display
 #define ATTR_BLINK_REVERSE  0x0D    //Blinking of Reverse Display
 #define ATTR_BLINK_INHIBIT  0x0B    //Blinking of Inhibit Display
-
+#endif
 
 /*
 ***********************************************************************************************
 *                                     GLOBAL VARIABLES
 ***********************************************************************************************
 */
+#if 1
 extern UCHAR    DisplayMode;    /* Keeps state of the display mode (DISPLAY MODE)   */
 extern UCHAR    Mode;           /* Keeps state of the MODE                          */
 //extern UCHAR    FontSize;       /* 6 font or 8 font                                 */
 extern UCHAR    CGBuffer[8];    /* Buffer for custom pattern                        */
-
+#endif
 /*
 ***********************************************************************************************
 *                                   FUNCTION PROTOTYPES
 ***********************************************************************************************
 */
+#if 1
 void GDispInit(void);
 void GDispSetMode(UCHAR mode);
 void GDispClrTxt(void);
@@ -234,52 +223,17 @@ void GDispDatWr(void);
 //void GDispCmdRd(void);
 void GDispCmdWr(void);
 void GDispStringAt(uint16_t row, uint16_t col, char *c);
+#endif
 /*
 ***********************************************************************************************
 *                                   FUNCTION PROTOTYPES
 *                                    HARDWARE SPECIFIC
 ***********************************************************************************************
 */
-//#define GDispChipEn     LCD_CE = 0                  /* Low level Chip Enable macro          */
-//#define GDispChipDi     LCD_CE = 1                  /* Low level Chip Disable macro         */
+#if 1
 #define GDispChipEn     _CB(PORTC,LCD_CE)           /* Low level Chip Enable macro          */
 #define GDispChipDi     _SB(PORTC,LCD_CE)           /* Low level Chip Disable macro         */
-#if 0
-#define GDispCmdWr    CONFIG_RA0_AS_OUTPUT(); \
-                      CONFIG_RA1_AS_OUTPUT(); \
-                      CONFIG_RA2_AS_OUTPUT(); \
-                      CONFIG_RA3_AS_OUTPUT(); \
-                      CONFIG_RA4_AS_OUTPUT(); \
-                      CONFIG_RA5_AS_OUTPUT(); \
-                      CONFIG_RA6_AS_OUTPUT(); \
-                      CONFIG_RA7_AS_OUTPUT(); \
-                      LCD_RD = 1; LCD_CD = 1; \
-                      LCD_WR = 0
 
-#define GDispCmdRd    CONFIG_RA0_AS_INPUT(); \
-                      CONFIG_RA1_AS_INPUT(); \
-                      CONFIG_RA2_AS_INPUT(); \
-                      CONFIG_RA3_AS_INPUT(); \
-                      CONFIG_RA4_AS_INPUT(); \
-                      CONFIG_RA5_AS_INPUT(); \
-                      CONFIG_RA6_AS_INPUT(); \
-                      CONFIG_RA7_AS_INPUT(); \
-                      LCD_RD = 0; LCD_CD = 1; \
-                      LCD_WR = 1  
-
-#define GDispDatWr    CONFIG_RA0_AS_OUTPUT(); \
-                      CONFIG_RA1_AS_OUTPUT(); \
-                      CONFIG_RA2_AS_OUTPUT(); \
-                      CONFIG_RA3_AS_OUTPUT(); \
-                      CONFIG_RA4_AS_OUTPUT(); \
-                      CONFIG_RA5_AS_OUTPUT(); \
-                      CONFIG_RA6_AS_OUTPUT(); \
-                      CONFIG_RA7_AS_OUTPUT(); \
-                      LCD_RD = 1; LCD_CD = 0; \
-                      LCD_WR = 0  
-
-#define GDispDatRd    LCD_CD = 0; LCD_WR = 1; LCD_RD = 0
-#endif
 #define GDispCmdWr()	SET_DATA_DIR_OUT();		\
 						SET_RD(); 	\
 						SET_CD(); 	\
@@ -299,7 +253,7 @@ void GDispStringAt(uint16_t row, uint16_t col, char *c);
 						CLR_CD();	\
 						SET_WR();	\
 						CLR_RD();
-					
+#endif					
 void GDispInitPort(void);
 void GDispBusyChk(void);
 void GDispAutoWrChk(void);
@@ -311,3 +265,4 @@ void DisplayDisclaimer(void);
 void DisplayTieDown(void);
 void DisplayFuelMillion(void);
 void DisplayShutDown(void);
+#endif

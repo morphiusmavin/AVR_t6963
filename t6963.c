@@ -72,13 +72,13 @@
 #define DATA_WR             0xC4    // Data write - no addr change
 #define DATA_RD             0xC5    // Data read  - no addr change
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                   LOCAL FUNCTION PROTOTYPES
  *********************************************************************************************************
  */
 static void GDispCmdAddrSend (uint16_t Addr, UCHAR cmd);
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                       SEND ADDRESS COMMAND
  *
  * Description : This function sends screen address with a command to the LCD screen
@@ -101,7 +101,7 @@ static void GDispCmdAddrSend (uint16_t Addr, UCHAR cmd)
 	GDispCmdSend (cmd);
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                       DISPLAY DRIVER INITIALIZATION
  *
  * Description : This function initializes the display driver
@@ -127,7 +127,7 @@ void GDispInit (void)
 	GDispCmdAddrSend (0x0002, OFFSET_REG_SET);
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                               SET MODE FOR DISPLAY/MODE/CURSOR/TEXT_ATTRIBUTE
  *
  * Description : This function sets mode
@@ -141,7 +141,7 @@ void GDispSetMode (UCHAR mode)
 	GDispCmdSend (mode);
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                           CLEAR TEXT SCREEN
  *
  * Description : This function clears the text clear in font mode
@@ -172,7 +172,7 @@ void GDispClrTxt (void)
 	GDispCmdSend (AUTO_WR_OFF);
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                       CLEAR THE GRAPHIC AREA
  *
  * Description : This function clears the graphic area pixel by pixel
@@ -200,7 +200,7 @@ void GDispClrGrh (void)
 	GDispCmdSend (AUTO_WR_OFF); //Set Auto Write OFF
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                       GOTO A POSITION (row, col)
  *
  * Description : This function sets the screen address pointer to a position row, col
@@ -218,7 +218,7 @@ void GDispGoto (uint16_t row, uint16_t col)
 	GDispCmdAddrSend (addr, ADDR_PTR_SET); //Set address pointer
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                     DISPLAY A CHARACTER AT THE CURRENT SCREEN ADDRESS POINTER
  *
  * Description : This function is used to display a single character on the display device at row, col
@@ -240,7 +240,7 @@ void GDispChar (UCHAR c)
 	GDispCmdSend (DATA_WR_INC); //Address pointer increment ON
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                             DISPLAY A CHARACTER AT A POSITION (row, col)
  *
  * Description : This function is used to display a single character on the display device, address
@@ -274,7 +274,7 @@ void GDispStringAt(uint16_t row, uint16_t col, char *c)
 	}
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                       SET CURSOR AT A POSITION
  *
  * Description : This function sets cursor at a position (row, col), of certain mode & type
@@ -302,7 +302,7 @@ void GDispSetCursor (UCHAR mode, uint16_t row, uint16_t col, UCHAR type)
 	GDispCmdSend (type); //cursor mode
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                       SET PIXEL AT X, Y POSITION
  *
  * Description : This function sets a pixel with color = BLACK / WHITE (defined in t6963.h)
@@ -334,7 +334,7 @@ void GDispSetPixel (uint16_t X, uint16_t Y, UCHAR color)
 	GDispCmdSend (cmd);
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                        I/O PORT INITIALIZATION
  *
  * Description : This initializes the I/O ports used by the display driver
@@ -345,66 +345,6 @@ void GDispSetPixel (uint16_t X, uint16_t Y, UCHAR color)
  */
 void GDispInitPort (void)
 {
-
-#if 0
-  DISABLE_RA0_ANALOG ();
-  DISABLE_RA1_ANALOG ();
-  DISABLE_RA2_ANALOG ();
-  DISABLE_RA3_ANALOG ();
-  DISABLE_RA4_ANALOG ();
-  DISABLE_RA5_ANALOG ();
-  DISABLE_RA6_ANALOG ();
-  DISABLE_RA7_ANALOG ();
-
-  DISABLE_RA0_OPENDRAIN ();
-  DISABLE_RA1_OPENDRAIN ();
-  DISABLE_RA2_OPENDRAIN ();
-  DISABLE_RA3_OPENDRAIN ();
-  DISABLE_RA4_OPENDRAIN ();
-  DISABLE_RA5_OPENDRAIN ();
-  DISABLE_RA6_OPENDRAIN ();
-  DISABLE_RA7_OPENDRAIN ();
-
-  DISABLE_RA0_PULLUP ();
-  DISABLE_RA1_PULLUP ();
-  DISABLE_RA2_PULLUP ();
-  DISABLE_RA3_PULLUP ();
-  DISABLE_RA4_PULLUP ();
-  DISABLE_RA5_PULLUP ();
-  DISABLE_RA6_PULLUP ();
-  DISABLE_RA7_PULLUP ();
-
-  DISABLE_RA0_PULLDOWN ();
-  DISABLE_RA1_PULLDOWN ();
-  DISABLE_RA2_PULLDOWN ();
-  DISABLE_RA3_PULLDOWN ();
-  DISABLE_RA4_PULLDOWN ();
-  DISABLE_RA5_PULLDOWN ();
-  DISABLE_RA6_PULLDOWN ();
-  DISABLE_RA7_PULLDOWN ();
-
-  //Set all control line as output
-  CONFIG_RC2_AS_DIG_OUTPUT (); // CE
-  CONFIG_RA15_AS_DIG_OUTPUT (); // RD
-  CONFIG_RC1_AS_DIG_OUTPUT (); // WR
-  CONFIG_RA14_AS_DIG_OUTPUT (); // CD
-  CONFIG_RC3_AS_DIG_OUTPUT (); // RESET
-
-  CONFIG_RA0_AS_DIG_OUTPUT ();
-  CONFIG_RA1_AS_DIG_OUTPUT ();
-  CONFIG_RA2_AS_DIG_OUTPUT ();
-  CONFIG_RA3_AS_DIG_OUTPUT ();
-  CONFIG_RA4_AS_DIG_OUTPUT ();
-  CONFIG_RA5_AS_DIG_OUTPUT ();
-  CONFIG_RA6_AS_DIG_OUTPUT ();
-  CONFIG_RA7_AS_DIG_OUTPUT ();
-
-  LCD_RST = 0;
-  LCD_CD = 1;
-  LCD_CE = 1;
-  LCD_RD = 1;
-  LCD_WR = 1;
-#endif  
 	DDRC |= 0x0F;	// set all used bits as outputs
 	DDRB |= 0x07;
 	DDRD |= 0xFC;
@@ -430,7 +370,7 @@ void GDispInitPort (void)
 	SET_RST();
 }
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                             BUSY CHECK
  *
  * Description : This function checks command execution capability, & data read/write capability
@@ -460,7 +400,7 @@ void GDispBusyChk (void)
 }
 
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                       AUTO MODE DATA WRITE CHECK
  *
  * Description : This function checks auto mode data write capability
@@ -469,8 +409,7 @@ void GDispBusyChk (void)
  * Notes       : 
  *********************************************************************************************************
  */
-void
-GDispAutoWrChk (void)
+void GDispAutoWrChk (void)
 {
 	int i;
 	GDispCmdRd ();
@@ -490,7 +429,7 @@ GDispAutoWrChk (void)
 }
 
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                           WRITE DATA TO LCD MODULE
  *
  * Description : This function sends a single data byte to the display device
@@ -499,8 +438,7 @@ GDispAutoWrChk (void)
  * Notes       : 
  *********************************************************************************************************
  */
-void
-GDispDataWr (UCHAR data)
+void GDispDataWr (UCHAR data)
 {
 	  int i;
 	  GDispBusyChk (); // Wait for LCD to be ready
@@ -524,7 +462,7 @@ GDispDataWr (UCHAR data)
 }
 
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                        WRITE DATA TO LCD MODULE, SCREEN ADRESS AUTO-INCREMENTED
  *
  * Description : Send a single data byte to the screen with screen address auto'ly incremented 
@@ -533,8 +471,7 @@ GDispDataWr (UCHAR data)
  * Notes       : 
  *********************************************************************************************************
  */
-void
-GDispAutoDataWr (UCHAR data)
+void GDispAutoDataWr (UCHAR data)
 {
 	int i;
 	GDispAutoWrChk (); // Auto write mode check
@@ -559,7 +496,7 @@ GDispAutoDataWr (UCHAR data)
 }
 
 /*
- *********************************************************************************************************
+*********************************************************************************************************
  *                                       WRITE COMMAND TO LCD MODULE
  *
  * Description : This function sends a single byte as command to the display device
@@ -568,8 +505,7 @@ GDispAutoDataWr (UCHAR data)
  * Notes       : 
  *********************************************************************************************************
  */
-void
-GDispCmdSend (UCHAR cmd)
+void GDispCmdSend (UCHAR cmd)
 {
 	int i;
 	GDispBusyChk (); // Wait for LCD to be ready
@@ -587,69 +523,27 @@ GDispCmdSend (UCHAR cmd)
 }
 
 /*
+ *                                       WRITE DATA TO LCD MODULE
+ *
+ * Description : This function sends a single byte as data to the display device
+ * Arguments   : 'data' is the COMMAND BYTE to send to the display device
+ * Returns     : 
+ * Notes       : since we can't use PORTD 0 & 1 (those are used by the serial port)
+ *             : we have to shift the data over to the left 2 bits and put on PORTD
+ *             : then get the 2 high bits of data and put them on the 2 low bits of PORTB
+ *  DATA0		PORTD2		// D2
+ *  DATA1		PORTD3		// D3
+ *  DATA2		PORTD4		// D4
+ *  DATA3		PORTD5		// D5
+ *  DATA4		PORTD6		// D6
+ *  DATA5		PORTD7		// D7
+ *  DATA6		PORTB0		// D8
+ *  DATA7		PORTB1		// D9
  *********************************************************************************************************
  */
-void
-Data_Out (UCHAR data)
+void Data_Out (UCHAR data)
 {
-/*
-  LATA &= 0xff00;
-  LATA |= 0x00ff & data;
-*/  
+	PORTD = 0xFC & (data << 2);
+	PORTB = 0x03 & (data >> 6);
 }
 
-#if 0
-void GDispCmdWr (void)
-{
-  CONFIG_RA0_AS_DIG_OUTPUT ();
-  CONFIG_RA1_AS_DIG_OUTPUT ();
-  CONFIG_RA2_AS_DIG_OUTPUT ();
-  CONFIG_RA3_AS_DIG_OUTPUT ();
-  CONFIG_RA4_AS_DIG_OUTPUT ();
-  CONFIG_RA5_AS_DIG_OUTPUT ();
-  CONFIG_RA6_AS_DIG_OUTPUT ();
-  CONFIG_RA7_AS_DIG_OUTPUT ();
-  LCD_RD = 1;
-  LCD_CD = 1;
-  LCD_WR = 0;
-}
-
-void GDispCmdRd (void)
-{
-  CONFIG_RA0_AS_DIG_INPUT ();
-  CONFIG_RA1_AS_DIG_INPUT ();
-  CONFIG_RA2_AS_DIG_INPUT ();
-  CONFIG_RA3_AS_DIG_INPUT ();
-  CONFIG_RA4_AS_DIG_INPUT ();
-  CONFIG_RA5_AS_DIG_INPUT ();
-  CONFIG_RA6_AS_DIG_INPUT ();
-  CONFIG_RA7_AS_DIG_INPUT ();
-  LCD_RD = 0;
-  LCD_CD = 1;
-  LCD_WR = 1;
-}
-
-void
-GDispDatWr (void)
-{
-  CONFIG_RA0_AS_DIG_OUTPUT ();
-  CONFIG_RA1_AS_DIG_OUTPUT ();
-  CONFIG_RA2_AS_DIG_OUTPUT ();
-  CONFIG_RA3_AS_DIG_OUTPUT ();
-  CONFIG_RA4_AS_DIG_OUTPUT ();
-  CONFIG_RA5_AS_DIG_OUTPUT ();
-  CONFIG_RA6_AS_DIG_OUTPUT ();
-  CONFIG_RA7_AS_DIG_OUTPUT ();
-  LCD_RD = 1;
-  LCD_CD = 0;
-  LCD_WR = 0;
-}
-
-void
-GDispDatRd (void)
-{
-  LCD_CD = 0;
-  LCD_WR = 1;
-  LCD_RD = 0;
-}
-#endif
