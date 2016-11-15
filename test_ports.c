@@ -4,7 +4,7 @@
 #include <avr/eeprom.h>
 #include "USART.h"
 #include "t6963.h"
-#define TIME_DELAY1 1000
+#define TIME_DELAY1 1
 
 // available pins:
 // PORTD 2->7	(D2->D7)	- PD0 & PD1 are RxD & TxD
@@ -83,13 +83,13 @@ int main(void)
 #endif
     initUSART();
     _delay_ms(100);
-//    printString("\n\rTesting...\n\r");
+    printString("\n\rTesting...\n\r");
+    _delay_ms(3000);
 	test1 = 0x70;
     i = 0;
     transmitByte(test1);    // start the ball rolling (testAVR.c waits for a char
                             // before sending it back
     _delay_ms(TIME_DELAY1);
-    transmitByte(0x23);
     while(1)
     {
 		if(++mychar > 0x7e)
@@ -125,9 +125,8 @@ int main(void)
 		_CB(PORTB,DATA7);
 #else
         test1 = receiveByte();  // just echo back what was sent
-        _delay_ms(TIME_DELAY1);
+        _delay_us(10);
         transmitByte(test1);
-        transmitByte(test2);
 /*
         _SB(PORTD,DATA0);
         _delay_ms(2);
