@@ -13,4 +13,9 @@ test.c
 test1.c
 test_ports.hex1
 test_ports_stats.txt
-
+avrdude_exe
+lib/USART.o
+lib/t6963.o
+main_LCD.cx
+test.cx
+test1.cx
