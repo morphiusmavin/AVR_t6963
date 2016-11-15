@@ -1,10 +1,14 @@
 avrdude
+avrdude-test3
+avrdude-test4
 font5x7.h
 lcd.hex1
 lcd_stats.txt
 main.cx
+main_LCD.c
 stats.txt
 t6963.cx
+temp/
 test.c
 test1.c
 test_ports.hex1

@@ -16,10 +16,16 @@ git add run-avrdude
 git add run_lcd.sh
 git add run_testports.sh
 git add sfr_helper.h
-git add t6963.c
-git add t6963.h
-git add uart.c
-git add uart.h
+git add lib/t6963.c
+git add lib/t6963.h
 git add test_ports.c
 git add using_tools.txt
+git add lib/USART.c
+git add lib/USART.h
+git add lib/portpins.h
+git add lib/pinDefines.h
+git add lib/macros.h
+git add lib/binaryMacro.h
 git add ProMiniPinout.txt
+clear
+git status

@@ -1,7 +1,8 @@
 #include <avr/io.h>
 #include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
 #include "sfr_helper.h"
-#include "uart.h"
+#include <avr/eeprom.h>
+#include "USART.h"
 #include "t6963.h"
 #define TIME_DELAY1 1
 
@@ -35,35 +36,63 @@
 // PORTB,4 (MISO)
 // PORTB,5 (SCK)
 
-char version[] = "version 0.3\0";
+char version[] = "version 1.2\0";
+#define STRING_LEN   80
 
+// Define EEMEM variables
+#if 0
+uint8_t eepromCounter EEMEM = 0;
+char eepromString[STRING_LEN] EEMEM = "Welcome to the EEMEM Demo.\r\n";
+uint16_t eepromWord EEMEM = 12345;
+#endif
 int main(void)
 {
-	uint8_t mychar, test1;
-    uartInit(BAUD_PS(9600));
+	uint8_t mychar, test1, test2;
+    int i;
+//	initUSART();
+#if 0    
+	char ramString[STRING_LEN];
+	uint8_t counter;
 
-    uartEnableTx();
-    uartEnableRx();
+	printString("\r\n------------------\r\n");
+	eeprom_read_block(ramString, eepromString, STRING_LEN);
+	printString(ramString);
 
-    uartwString("Tesing ports...\0");
+	printString("\r\nThe counter reads: ");
+	counter = eeprom_read_byte(&eepromCounter);
+	printByte(counter);
+
+	printString("\r\nMy uint16_t value is: ");
+	printWord(eeprom_read_word(&eepromWord));
+
+	printString("\r\n   Enter a new introduction string below:\r\n");
+	readString(ramString, STRING_LEN);
+	eeprom_update_block(ramString, eepromString, STRING_LEN);
+	counter++;
+	eeprom_update_byte(&eepromCounter, counter);
+#endif
 	mychar = 0x21;
 #ifndef T6963_H
+#warning "t6963 not defined"
 	DDRC |= 0x0F;	// set all used bits as outputs
 	DDRB |= 0x07;
 	DDRD |= 0xFC;
 #else
+#warning "t6963 defined"
 	GDispInitPort();
 #endif
+    initUSART();
+    _delay_ms(100);
+    transmitByte(0);
+    printString("\n\rTesting...\n\r");
+    _delay_ms(5000);
 	test1 = 0;
+    i = 0;
     while(1)
     {
-//        uartwString(uartrString());
-//        uartwChar('\r');
-//        uartwChar('\n');
-		uartwChar(mychar);
 		if(++mychar > 0x7e)
 			mychar = 0x21;
-		_delay_ms(TIME_DELAY1);
+		_delay_us(5);
 #ifndef T6963_H
 		_SB(PORTC,LCD_WR);
 		_SB(PORTC,LCD_CE);
@@ -78,7 +107,7 @@ int main(void)
 		_SB(PORTD,DATA5);
 		_SB(PORTB,DATA6);
 		_SB(PORTB,DATA7);
-		_delay_ms(TIME_DELAY1);
+		_delay_us(TIME_DELAY1);
 		_CB(PORTC,LCD_WR);
 		_CB(PORTC,LCD_CE);
 		_CB(PORTC,LCD_RST);
@@ -93,27 +122,35 @@ int main(void)
 		_CB(PORTB,DATA6);
 		_CB(PORTB,DATA7);
 #else
-		Data_Out(test1++);
-		_delay_ms(TIME_DELAY1);
+        transmitByte(mychar);
+/*
+        _SB(PORTD,DATA0);
+        _delay_ms(2);
+        _CB(PORTD,DATA0);
+*/
+		Data_Out(test2++);
+
+		_delay_us(TIME_DELAY1);
 		SET_WR();
-		_delay_ms(TIME_DELAY1);
+		_delay_us(TIME_DELAY1);
 		SET_CE();
-		_delay_ms(TIME_DELAY1);
+		_delay_us(TIME_DELAY1);
 		SET_RST();
-		_delay_ms(TIME_DELAY1);
+		_delay_us(TIME_DELAY1);
 		SET_CD();
-		_delay_ms(TIME_DELAY1);
+		_delay_us(TIME_DELAY1);
 		SET_RD();
-		_delay_ms(TIME_DELAY1);
+		_delay_us(TIME_DELAY1);
 		CLR_WR();
-		_delay_ms(TIME_DELAY1);
+		_delay_us(TIME_DELAY1);
 		CLR_CE();
-		_delay_ms(TIME_DELAY1);
+		_delay_us(TIME_DELAY1);
 		CLR_RST();
-		_delay_ms(TIME_DELAY1);
+		_delay_us(TIME_DELAY1);
 		CLR_CD();
-		_delay_ms(TIME_DELAY1);
+		_delay_us(TIME_DELAY1);
 		CLR_RD();
+
 #endif
     }
     return 0;
