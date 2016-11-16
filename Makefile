@@ -1,202 +1,157 @@
+CC=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+AVRDUDE=avrdude
+REMOVE=rm -f
 
-##########------------------------------------------------------##########
-##########              Project-specific Details                ##########
-##########    Check these every time you start a new project    ##########
-##########------------------------------------------------------##########
+MCU=atmega328p
 
-MCU   = atmega328p
-F_CPU = 16000000UL  
-BAUD  = 19200UL
-## Also try BAUD = 19200 or 38400 if you're feeling lucky.
+HEXFORMAT=ihex
 
-## A directory for common include files and the simple USART library.
-## If you move either the current folder or the Library folder, you'll 
-##  need to change this path to match.
-LIBDIR = lib
+AVRDUDE_MCU=m328p
+AVRDUDE_PROGRAMMERID=buspirate
+AVRDUDE_PORT=usb
 
-##########------------------------------------------------------##########
-##########                 Programmer Defaults                  ##########
-##########          Set up once, then forget about it           ##########
-##########        (Can override.  See bottom of file.)          ##########
-##########------------------------------------------------------##########
 
-PROGRAMMER_TYPE = buspirate
-# extra arguments to avrdude: baud rate, chip type, -F flag, etc.
-PROGRAMMER_ARGS = -P /dev/ttyUSB0 -v
-# -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a -U eeprom:w:$(PROJECT).eep:a -U lfuse:w:0x$(AVRDUDE_LFUSE):m -U hfuse:w:0x$(AVRDUDE_HFUSE):m -U efuse:w:0x$(AVRDUDE_EFUSE):m
+AVRDUDE_LFUSE=E2
+AVRDUDE_HFUSE=D9
+AVRDUDE_EFUSE=FF
 
-##########------------------------------------------------------##########
-##########                  Program Locations                   ##########
-##########     Won't need to change if they're in your PATH     ##########
-##########------------------------------------------------------##########
+PROJECT=main
+F_CPU=8200000UL
+#F_CPU=16400000UL
 
-CC = avr-gcc
-OBJCOPY = avr-objcopy
-OBJDUMP = avr-objdump
-AVRSIZE = avr-size
-#AVRDUDE = ./avrdude-test4
-AVRDUDE = avrdude
+OPTLEVEL=s
 
-##########------------------------------------------------------##########
-##########                   Makefile Magic!                    ##########
-##########         Summary:                                     ##########
-##########             We want a .hex file                      ##########
-##########        Compile source files into .elf                ##########
-##########        Convert .elf file into .hex                   ##########
-##########        You shouldn't need to edit below.             ##########
-##########------------------------------------------------------##########
+DEFINES=-DF_CPU=$(F_CPU)
+#INC=../avr8-gnu-toolchain-linux_x86/avr/include/util
+INC=
+LIBS=
 
-## The name of your project (without the .c)
-TARGET = test_ports
-## Or name it automatically after the enclosing directory
-#TARGET = $(lastword $(subst /, ,$(CURDIR)))
+CFLAGS=-I. $(INC) $(DEFINES) -g -mmcu=$(MCU) -O$(OPTLEVEL) \
+	-fpack-struct -fshort-enums             \
+	-funsigned-bitfields -funsigned-char    \
+	-Wall -Wstrict-prototypes               \
+	-Wa,-ahlms=$(firstword                  \
+	$(filter %.lst, $(<:.c=.lst)))
 
-# Object files: will find all .c/.h files in current directory
-#  and in LIBDIR.  If you have any other (sub-)directories with code,
-#  you can add them in to SOURCES below in the wildcard statement.
-SOURCES=$(wildcard *.c $(LIBDIR)/*.c)
-OBJECTS=$(SOURCES:.c=.o)
-HEADERS=$(SOURCES:.c=.h)
+CPPFLAGS=-fno-exceptions \
+	-Wa,-ahlms=$(firstword         \
+	$(filter %.lst, $(<:.cpp=.lst))\
+	$(filter %.lst, $(<:.cc=.lst)) \
+	$(filter %.lst, $(<:.C=.lst)))
 
-## Compilation options, type man avr-gcc if you're curious.
-CPPFLAGS = -DF_CPU=$(F_CPU) -DBAUD=$(BAUD) -I. -I$(LIBDIR)
-CFLAGS = -Os -g -std=gnu99 -Wall
-## Use short (8-bit) data types 
-CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums 
-## Splits up object files per function
-CFLAGS += -ffunction-sections -fdata-sections 
-LDFLAGS = -Wl,-Map,$(TARGET).map 
-## Optional, but often ends up with smaller code
-LDFLAGS += -Wl,--gc-sections 
-## Relax shrinks code even more, but makes disassembly messy
-## LDFLAGS += -Wl,--relax
-## LDFLAGS += -Wl,-u,vfprintf -lprintf_flt -lm  ## for floating-point printf
-## LDFLAGS += -Wl,-u,vfprintf -lprintf_min      ## for smaller printf
-TARGET_ARCH = -mmcu=$(MCU)
+ASMFLAGS =-I. $(INC) -mmcu=$(MCU)        \
+	-x assembler-with-cpp            \
+	-Wa,-gstabs,-ahlms=$(firstword   \
+	$(<:.S=.lst) $(<.s=.lst))
 
-## Explicit pattern rules:
-##  To make .o files from .c files 
-%.o: %.c $(HEADERS) Makefile
-	 $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c -o $@ $<;
+LDFLAGS=-Wl,-Map,$(TARGET).map -mmcu=$(MCU) \
+	-lm $(LIBS)
 
-$(TARGET).elf: $(OBJECTS)
-	$(CC) $(LDFLAGS) $(TARGET_ARCH) $^ $(LDLIBS) -o $@
 
-%.hex: %.elf
-	 $(OBJCOPY) -j .text -j .data -O ihex $< $@
+SOURCES=$(wildcard *.c)
+OBJECTS=$(patsubst %.c, %, $(SOURCES))
+BUILT_OBJECTS=$(wildcard *.o)
 
-%.eeprom: %.elf
-	$(OBJCOPY) -j .eeprom --change-section-lma .eeprom=0 -O ihex $< $@ 
+TARGET=$(PROJECT).out
+DUMPTARGET=$(PROJECT).s
 
-%.lst: %.elf
-	$(OBJDUMP) -S $< > $@
+HEXROM=$(PROJECT).hex
+HEXTARGET=$(HEXROM) $(PROJECT).eep
 
-## These targets don't have files named after them
-.PHONY: all disassemble disasm eeprom size clean squeaky_clean flash fuses
+CPPFILES=$(wildcard *.cpp)
+CCFILES=$(wildcard *.cc)
+CFILES=$(wildcard *.c)
+ASMFILES=$(wildcard *.S)
 
-all: $(TARGET).hex 
+OBJDEPS=$(ASMFILES:.S=.o)	\
+	$(CFILES:.c=.o)			\
+	$(CCFILES:.cc=.o)		\
+	$(CPPFILES:.cpp=.o)
 
-debug:
-	@echo
-	@echo "Source files:"   $(SOURCES)
-	@echo "MCU, F_CPU, BAUD:"  $(MCU), $(F_CPU), $(BAUD)
-	@echo	
+LST=$(filter %.lst, $(OBJDEPS:.o=.lst))
 
-# Optionally create listing file from .elf
-# This creates approximate assembly-language equivalent of your code.
-# Useful for debugging time-sensitive bits, 
-# or making sure the compiler does what you want.
-disassemble: $(TARGET).lst
+.SUFFIXES : .c .cc .cpp .C .o .out .s .S \
+	.hex .eep .h .hh .hpp
 
-disasm: disassemble
+.PHONY: upload clean stats
 
-# Optionally show how big the resulting program is 
-size:  $(TARGET).elf
-	$(AVRSIZE) -C --mcu=$(MCU) $(TARGET).elf
+all: $(TARGET)
+
+disasm: $(DUMPTRG) stats
+
+stats: $(TARGET)
+	$(OBJDUMP) -h $(TARGET) > stats.txt
+	$(SIZE) -C -d --mcu=$(MCU) $(TARGET) >> stats.txt
+
+hex: $(HEXTARGET)
+
+$(DUMPTRG): $(TARGET)
+	$(OBJDUMP) -S  $< > $@
+
+$(TARGET): $(OBJDEPS)
+	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJDEPS)
+
+#### Generating assembly ####
+# asm from C
+%.s: %.c
+	$(CC) -S $(CFLAGS) $< -o $@
+
+# asm from (hand coded) asm
+%.s: %.S
+	$(CC) -S $(ASMFLAGS) $< > $@
+
+
+# asm from C++
+.cpp.s .cc.s .C.s :
+	$(CC) -S $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+#### Generating object files ####
+# object from C
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
+
+# object from C++ (.cc, .cpp, .C files)
+.cc.o .cpp.o .C.o :
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+# object from asm
+.S.o :
+	$(CC) $(ASMFLAGS) -c $< -o $@
+
+.out.hex:
+	$(OBJCOPY) -j .text                    \
+		-j .data                       \
+		-O $(HEXFORMAT) $< $@
+
+.out.eep:
+	$(OBJCOPY) -j .eeprom                  \
+		--change-section-lma .eeprom=0 \
+		-O $(HEXFORMAT) $< $@
 
 clean:
-	rm -f $(TARGET).elf $(TARGET).hex $(TARGET).obj \
-	$(TARGET).o $(TARGET).d $(TARGET).eep $(TARGET).lst \
-	$(TARGET).lss $(TARGET).sym $(TARGET).map $(TARGET)~ \
-	$(TARGET).eeprom
+	$(REMOVE) *.o *.elf *.hex *.eep *.lst *.s *.map *.out
 
-squeaky_clean:
-	rm -f *.elf *.hex *.obj *.o *.d *.eep *.lst *.lss *.sym *.map *~ *.eeprom
+linter:
+	@echo "{" > .gcc-flags.json
+	@echo "	\"execPath\": \"$(CC)\"," >> .gcc-flags.json
+	@echo "	\"gccDefaultCFlags\": \"$(CFLAGS)\"," >> .gcc-flags.json
+	@echo " \"gccDefaultCppFlags\": \"$(CPPFLAGS)\"," >> .gcc-flags.json
+	@echo "	\"gccErrorLimit\": 15," >> .gcc-flags.json
+	@echo " \"gccIncludePaths\": \".\"," >> .gcc-flags.json
+	@echo "	\"gccSuppressWarnings\": false" >> .gcc-flags.json
+	@echo "}" >> .gcc-flags.json
 
-##########------------------------------------------------------##########
-##########              Programmer-specific details             ##########
-##########           Flashing code to AVR using avrdude         ##########
-##########------------------------------------------------------##########
+upload: hex
+# no need to reprogram eeprom or fuses for this application
+#	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a -U eeprom:w:$(PROJECT).eep:a -U lfuse:w:0x$(AVRDUDE_LFUSE):m -U hfuse:w:0x$(AVRDUDE_HFUSE):m -U efuse:w:0x$(AVRDUDE_EFUSE):m
+#	./avrdude-test2 -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a -U eeprom:w:$(PROJECT).eep:a -U lfuse:w:0x$(AVRDUDE_LFUSE):m -U hfuse:w:0x$(AVRDUDE_HFUSE):m -U efuse:w:0x$(AVRDUDE_EFUSE):m
 
-flash: $(TARGET).hex 
-	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS) -U flash:w:$<
-#	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS)
+	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a
 
-## An alias
-program: flash
+#	if just checking the connection
+#	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -v
 
-flash_eeprom: $(TARGET).eeprom
-	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS) -U eeprom:w:$<
-
-avrdude_terminal:
-	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS) -nt
-
-## If you've got multiple programmers that you use, 
-## you can define them here so that it's easy to switch.
-## To invoke, use something like `make flash_arduinoISP`
-flash_usbtiny: PROGRAMMER_TYPE = usbtiny
-flash_usbtiny: PROGRAMMER_ARGS =  # USBTiny works with no further arguments
-flash_usbtiny: flash
-
-flash_usbasp: PROGRAMMER_TYPE = usbasp
-flash_usbasp: PROGRAMMER_ARGS =  # USBasp works with no further arguments
-flash_usbasp: flash
-
-flash_arduinoISP: PROGRAMMER_TYPE = avrisp
-flash_arduinoISP: PROGRAMMER_ARGS = -b 19200 -P /dev/ttyACM0 
-## (for windows) flash_arduinoISP: PROGRAMMER_ARGS = -b 19200 -P com5
-flash_arduinoISP: flash
-
-flash_109: PROGRAMMER_TYPE = avr109
-flash_109: PROGRAMMER_ARGS = -b 9600 -P /dev/ttyUSB0
-flash_109: flash
-
-flash_buspirate: PROGRAMMER_TYPE = buspirate
-flash_buspirate: PROGRAMMER_ARGS = -P /dev/ttyUSB0 -v
-
-##########------------------------------------------------------##########
-##########       Fuse settings and suitable defaults            ##########
-##########------------------------------------------------------##########
-
-## Mega 48, 88, 168, 328 default values
-LFUSE = 0xE2
-HFUSE = 0xD9
-EFUSE = 0xFF
-
-## Generic 
-FUSE_STRING = -U lfuse:w:$(LFUSE):m -U hfuse:w:$(HFUSE):m -U efuse:w:$(EFUSE):m 
-
-fuses: 
-	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) \
-	           $(PROGRAMMER_ARGS) $(FUSE_STRING)
-show_fuses:
-	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS) -nv	
-
-## Called with no extra definitions, sets to defaults
-set_default_fuses:  FUSE_STRING = -U lfuse:w:$(LFUSE):m -U hfuse:w:$(HFUSE):m -U efuse:w:$(EFUSE):m 
-set_default_fuses:  fuses
-
-## Set the fuse byte for full-speed mode
-## Note: can also be set in firmware for modern chips
-set_fast_fuse: LFUSE = 0xE2
-set_fast_fuse: FUSE_STRING = -U lfuse:w:$(LFUSE):m 
-set_fast_fuse: fuses
-
-## Set the EESAVE fuse byte to preserve EEPROM across flashes
-set_eeprom_save_fuse: HFUSE = 0xD7
-set_eeprom_save_fuse: FUSE_STRING = -U hfuse:w:$(HFUSE):m
-set_eeprom_save_fuse: fuses
-
-## Clear the EESAVE fuse byte
-clear_eeprom_save_fuse: FUSE_STRING = -U hfuse:w:$(HFUSE):m
-clear_eeprom_save_fuse: fuses

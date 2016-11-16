@@ -49,18 +49,10 @@
 #define T6963_H
 #if 1
 //Control pin setting
-//RA 0->7 LCD Data Bus
-//RA 14 C/D
-//RA 15 RD
-//RC 1 WR
-//RC 2 CE
-//RC 3 RESET
-//RC 4 FS1 ?
-
 #define LCD_WR		PORTC0        // LCD Write control line pin number (A0)
 #define LCD_CE		PORTC1       // LCD Enable control line pin number (A1)
 #define LCD_RST		PORTC2        // LCD RST_ line (A2)
-//#define LCD_FS		PORTC,3        // LCD font select (A3)
+//#define LCD_FS		PORTC,3        // LCD font select (this one just tied low)
 #define LCD_CD		PORTC3       // LCD Control/data Select line (A3)
 #define LCD_RD		PORTB2       // LCD Read control line  pin number (D10)
 #define DATA0		PORTD2		// D2
