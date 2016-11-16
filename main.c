@@ -51,6 +51,7 @@ int main(void)
 	uint8_t test1;
     int i,j,x,y,a;
     UCHAR k;
+    UCHAR flag;
 
 //	initUSART();
 #if 0    
@@ -75,133 +76,208 @@ int main(void)
 	eeprom_update_byte(&eepromCounter, counter);
 #endif
 //	mychar = 0x21;
-	GDispInit();
-    printString("\n\rpast init\n\r");
-    GDispSetMode(XOR_MODE);
-    printString("past XOR_MODE\n\r");
-    GDispSetMode(TEXT_ON);
-    printString("past TEXT_ON\n\r");
-    GDispClrTxt();    
-    printString("past ClrTxt()\n\r");
+//	GDispInit();
+//    _delay_us(10);
     initUSART();
+#if 0
+    _delay_us(10);
+    GDispSetMode(XOR_MODE);
+    _delay_us(10);
+    GDispSetMode(TEXT_ON);
+    _delay_us(10);
+    GDispClrTxt();    
+    _delay_us(10);
     _delay_ms(100);
-
+    printString("LCD is on\r\n");
+#endif
+    printString("reset - Enter '0' to turn LCD on.\r\n");
+    flag = 0;
     while(1)
     {
         test1 = receiveByte();  // just echo back what was sent
 		_delay_us(5);
-        transmitByte(test1);
+//        transmitByte(test1);
+        if(flag == 0 && test1 != '0')
+        {
+            printString("LCD is off. Enter '0' to turn back on\r\n");
+            test1 = 0;
+        }
         switch(test1)
         {
             case '1':
-                for(a = 0;a < 30;a++)
+                printString("pattern 1\r\n");
+                GDispClrTxt();
+                k = 0x20;
+                for(i = 0;i < 20;i++)
                 {
-                    transmitByte(0x30 + a);
-                    transmitByte(0x20);
-                    k = 0x20;
                     _delay_ms(20);
-                    for(i = 0;i < 20;i++)
-                    {
-                       for(j = 0;j < 40;j++)
-                       {
-                          GDispCharAt(i,j,k);
-                          if(++k > 0x7e)
-                             k = 0x20;
-                       }
-                    }
+                   for(j = 0;j < 30;j++)
+                   {
+                      GDispCharAt(i,j,k);
+                      if(++k > 0x7e)
+                         k = 0x20;
+                   }
                 }
                 break;
             case '2':
                 k = 0x20;
+                printString("pattern 2\r\n");
+                GDispClrTxt();
                 for(i = 19;i >= 0;i--)
                 {
-                   for(j = 39;j >= 0;j--)
+                    _delay_ms(20);
+                   for(j = 29;j >= 0;j--)
                    {
                       GDispCharAt(i,j,k);
+//                    _delay_us(20);
                       if(++k > 0x7e)
                          k = 0x20;
                    }
                 }
                 break;
             case '3':
-                k = 0;
-                for(i = 0;i < 20;i++)
+                k = 0x20;
+                printString("pattern 3\r\n");
+                GDispClrTxt();
+                for(i = 0;i < 10;i++)
                 {
-                   for(j = 0;j < 40;j++)
+                    _delay_ms(20);
+                   for(j = 0;j < 15;j++)
                    {
                       GDispCharAt(i,j,k);
+                    _delay_us(1);
                       if(++k > 0x7e)
                          k = 0x20;
                    }
                 }
                 break;
             case 'A':
+                printString("pattern 4\r\n");
+                GDispClrTxt();
                 for(y = 0;y < 16;y++)
                 {
+                    _delay_ms(20);
                     k = 0x20;
                     for(x = 0;x < 4+y;x++)
                     {
                         k = x+0x20;
                         i = y;
-                        for(j = 0;j< 40;j++)
+//                        for(j = 0;j< 40;j++)
+//                        for(j = 0;j< 20;j++)
+                        for(j = 0;j< 10;j++)
                         {
                             GDispCharAt(i,j,k++);
-                            _delay_ms(1);
+                            _delay_us(20);
                         }
                         GDispCharAt(0,0,a+0x30);
                     }
-                     _delay_ms(1);
+//                     _delay_us(20);
                 }
                 break;
             case '4':
                 GDispClrTxt();
+                GDispStringAt(0,1,"Entered 4");
+                transmitByte(test1);
+                transmitByte(0x20);
                 break;
             case '5':
                 GDispClrTxt();
+                GDispStringAt(1,1,"Entered 5");
+                transmitByte(test1);
+                transmitByte(0x20);
                 break;
             case '6':
                 GDispClrTxt();
+                GDispStringAt(2,1,"Entered 6");
+                transmitByte(test1);
+                transmitByte(0x20);
                 break;
             case 'B':
                 GDispClrTxt();
+                GDispStringAt(3,1,"Entered B");
+                transmitByte(test1);
+                transmitByte(0x20);
                 break;
             case '7':
                 GDispClrTxt();
+                GDispStringAt(4,1,"Entered 7");
+                transmitByte(test1);
+                transmitByte(0x20);
                 break;
             case '8':
                 GDispClrTxt();
+                GDispStringAt(5,1,"Entered 8");
+                transmitByte(test1);
+                transmitByte(0x20);
                 break;
             case '9':
                 GDispClrTxt();
+                GDispStringAt(6,1,"Entered 9");
+                transmitByte(test1);
+                transmitByte(0x20);
                 break;
             case 'C':
                 GDispClrTxt();
+                GDispStringAt(7,1,"Entered C");
+                transmitByte(test1);
+                transmitByte(0x20);
                 break;
             case '*':
                 GDispClrTxt();
+                GDispStringAt(8,1,"Ouch! You just");
+                GDispStringAt(9,1,"hit the ampersand!");
+                transmitByte(test1);
+                transmitByte(0x20);
                 break;
             case '0':
-                GDispClrTxt();
+                if(flag == 0)
+                {
+                    printString("turning back on..\r\n");
+	                GDispInit();
+                    _delay_us(10);
+                    initUSART();
+                    _delay_us(10);
+                    GDispSetMode(XOR_MODE);
+                    _delay_us(10);
+                    GDispSetMode(TEXT_ON);
+                    _delay_us(10);
+                    GDispClrTxt();    
+                    GDispStringAt(1,1,"LCD on!");
+                    printString("LCD is on.\r\n");
+                    flag = 1;
+                }
+                else
+                    printString("LCD already on!\r\n");
                 break;
             case '#':
                 GDispClrTxt();
                 DisplayDisclaimer();
                 break;
+                transmitByte(test1);
+                printByte(' ');
             case 'D':
+                if(flag == 1)
+                {
                 GDispClrTxt();
-                printString("Exiting...\n");
-                GDispStringAt(8,6,"Exiting...");
-                _delay_ms(2000);
+                printString("turning off LCD. Enter '0' to turn back on\r\n");
+                GDispStringAt(1,1,"Exiting...");
+                _delay_ms(500);
                 GDispSetMode(DISPLAY_OFF);
+                flag = 0;
+                }
                 break;
-            default:GDispClrTxt();break;
+            default:
+                if(flag == 1)
+                    GDispClrTxt();break;
+                transmitByte(test1);
+                printByte(' ');
         }
     }
     return 0;
 }
 void DisplayDisclaimer(void)
 {
-    printString("disclaimer\n");
+    printString("displaying disclaimer\r\n");
     GDispStringAt(1,15,"CAUTION\0");
     GDispStringAt(3,2,"Use of this system does not replace\0");
     GDispStringAt(4,2,"basic safety precautions and pro-\0");
@@ -213,3 +289,5 @@ void DisplayDisclaimer(void)
     GDispStringAt(10,2,"Maintenance Manual of the machine\0");
     GDispStringAt(11,2,"for additional information.\0");
 }
+
+
