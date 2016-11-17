@@ -107,7 +107,7 @@
 #define TEXT_HOME_ADDR      0x0000
 #define GRH_HOME_ADDR       0x0200
 #define CG_HOME_ADDR        0x1400
-#define COLUMN              40      //Set column number to be e.g. 32 for 8x8 fonts, 2 pages 
+#define COLUMN              30      //Set column number to be e.g. 32 for 8x8 fonts, 2 pages 
 #define MAX_ROW_PIXEL       128      //MAX_ROW_PIXEL the physical matrix length (y direction)                                    
 #define MAX_COL_PIXEL       128     //MAX_COL_PIXEL the physical matrix width (x direction)
 #define ENABLE              1
@@ -200,22 +200,6 @@ extern UCHAR    CGBuffer[8];    /* Buffer for custom pattern                    
 *                                   FUNCTION PROTOTYPES
 ***********************************************************************************************
 */
-#if 1
-void GDispInit(void);
-void GDispSetMode(UCHAR mode);
-void GDispClrTxt(void);
-void GDispGoto(uint16_t row, uint16_t col);
-void GDispChar(UCHAR c);
-void GDispCharAt(uint16_t row, uint16_t col, UCHAR c);
-void GDispSetCursor(UCHAR mode, uint16_t row, uint16_t col, UCHAR type);
-void GDispSetAttrb(uint16_t row, uint16_t col, UCHAR mode);
-void GDispCGCharAt(uint16_t row, uint16_t col, UCHAR id);
-void GDispDatRd(void);
-void GDispDatWr(void);
-//void GDispCmdRd(void);
-void GDispCmdWr(void);
-void GDispStringAt(uint16_t row, uint16_t col, char *c);
-#endif
 /*
 ***********************************************************************************************
 *                                   FUNCTION PROTOTYPES
@@ -246,15 +230,27 @@ void GDispStringAt(uint16_t row, uint16_t col, char *c);
 						SET_WR();	\
 						CLR_RD();
 #endif					
+void GDispInit(void);
+void GDispSetMode(UCHAR mode);
+void GDispClrTxt(void);
+void GDispGoto(uint16_t row, uint16_t col);
+void GDispChar(UCHAR c);
+void GDispCharAt(uint16_t row, uint16_t col, UCHAR c);
+void GDispSetCursor(UCHAR mode, uint16_t row, uint16_t col, UCHAR type);
+void GDispSetAttrb(uint16_t row, uint16_t col, UCHAR mode);
+void GDispCGCharAt(uint16_t row, uint16_t col, UCHAR id);
+//void GDispDatRd(void);
+//void GDispDatWr(void);
+//void GDispCmdWr(void);
+void GDispStringAt(uint16_t row, uint16_t col, char *c);
 void GDispInitPort(void);
 void GDispBusyChk(void);
 void GDispAutoWrChk(void);
 void GDispDataWr(UCHAR data);
+void GDispDataWr(UCHAR data);
 void GDispAutoDataWr(UCHAR data);
 void GDispCmdSend(UCHAR cmd);
 void Data_Out(UCHAR data);
-void DisplayDisclaimer(void);
-void DisplayTieDown(void);
-void DisplayFuelMillion(void);
-void DisplayShutDown(void);
+void DisplayDisclaimer(int arr_len, int *ctr_arr);
+void DisplayDisclaimer2(void);
 #endif
