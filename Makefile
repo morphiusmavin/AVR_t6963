@@ -16,6 +16,7 @@ AVRDUDE_PORT=usb
 
 AVRDUDE_LFUSE=E2
 AVRDUDE_HFUSE=D9
+#AVRDUDE_HFUSE=D91	#use this when preserving EEPROM
 AVRDUDE_EFUSE=FF
 
 PROJECT=main
@@ -150,7 +151,7 @@ upload: hex
 #	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a -U eeprom:w:$(PROJECT).eep:a -U lfuse:w:0x$(AVRDUDE_LFUSE):m -U hfuse:w:0x$(AVRDUDE_HFUSE):m -U efuse:w:0x$(AVRDUDE_EFUSE):m
 #	./avrdude-test2 -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a -U eeprom:w:$(PROJECT).eep:a -U lfuse:w:0x$(AVRDUDE_LFUSE):m -U hfuse:w:0x$(AVRDUDE_HFUSE):m -U efuse:w:0x$(AVRDUDE_EFUSE):m
 
-	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a
+	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a -U hfuse:w:0x$(AVRDUDE_HFUSE):m
 
 #	if just checking the connection
 #	avrdude -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -v

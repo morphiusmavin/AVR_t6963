@@ -8,7 +8,8 @@
 #include <string.h>
 #define TIME_DELAY1 1
 #define DISCLAIMER 0xAA
-#define MENU 0x55
+#define MENU1 0x55
+#define MENU2 0x56
 #define STRING_LEN   255
 #define ROWS 16
 #define dispCharAt(_row,_col,_char) GDispCharAt((uint16_t)_row,(uint16_t)_col,(UCHAR)_char)
@@ -19,6 +20,7 @@
 // Define EEMEM variables
 
 void update_prompt_struct(uint8_t pnum, UCHAR row, UCHAR col, uint16_t offset, int len, uint8_t type);
+void printMenu(void);
 typedef struct prompts
 {
 	uint8_t pnum;
@@ -29,11 +31,14 @@ typedef struct prompts
     uint8_t type;
 } PROMPT_STRUCT;
 
+// since the above struct is exactly 8 bytes long, the eeprom will start at offset 0x0010
+// so we can write the no_prompts at the 0x0000 location
 char eepromString[STRING_LEN] EEMEM;
-const void *eepromBuffer[sizeof(PROMPT_STRUCT)] EEMEM;
+//const void *eepromBuffer[sizeof(PROMPT_STRUCT)] EEMEM;
 
-PROMPT_STRUCT prompts[20];
-uint16_t prompt_info_offset;
+PROMPT_STRUCT prompts[30];
+uint8_t no_prompts = 0;
+uint16_t prompt_info_offset = 0;
 
 //uint8_t eepromCounter EEMEM = 0;
 //uint16_t eepromWord EEMEM = 12345;
@@ -48,15 +53,15 @@ int main(void)
 	int i,j;
     int row,col;
     UCHAR k;
+	uint8_t temp;
+	uint16_t temp2;
 
-    uint8_t no_prompts = 0;
     uint8_t promptString[sizeof(PROMPT_STRUCT)];
     size_t str_size = sizeof(PROMPT_STRUCT);
     int total_strlen;
 
     initUSART();
 
-	printString("turning back on..\r\n");
 	GDispInit();
 	_delay_us(10);
 	GDispSetMode(XOR_MODE);
@@ -64,8 +69,9 @@ int main(void)
 	GDispSetMode(TEXT_ON);
 	_delay_us(10);
 	GDispClrTxt();    
-	GDispStringAt(1,1,"LCD on!");
-	printString("LCD is on.\r\n");
+	GDispStringAt(1,1,"LCD is on!");
+	printString("LCD is on!.\r\n");
+
 	printString("tesing LCD\r\n");
 	k = 0x20;
 	for(row = 0;row < ROWS;row++)
@@ -77,37 +83,41 @@ int main(void)
 				k = 0x20;
 		}
 	}
+    no_prompts = eeprom_read_byte((uint8_t*)0x03f0);
+
+	if(no_prompts != 0xff)
+	{
+		printString("reading prompt data into prompt structs\r\n");
+		no_prompts = eeprom_read_byte((uint8_t*)0x03f0);
+		prompt_info_offset = (uint16_t)eeprom_read_byte((uint8_t*)0x03f2);
+		temp = eeprom_read_byte((uint8_t*)0x03f3);
+		temp2 = (uint16_t)temp;
+		printHexByte((uint8_t)temp2);
+		printHexByte((uint8_t)temp2>>8);
+		prompt_info_offset |= (temp2 << 8);
+		transmitByte(0x20);
+		printHexByte((uint8_t)prompt_info_offset);
+		printHexByte((uint8_t)(prompt_info_offset>>8));
+		for(i = 0;i < no_prompts;i++)
+		{
+//			eeprom_read_block(promptString,(eepromString+(i*str_size)+prompt_info_offset), str_size);
+			eeprom_read_block((void*)(&(prompts[i])),(eepromString+(i*str_size)+prompt_info_offset), str_size);
+		}
+	}
+	else
+	{
+		printString("prompts not set - hit 'a' to program eeprom\r\n");
+	}
+
 
     while (1) 
     {
+		printMenu();
         test1 = receiveByte();
         switch(test1)
         {
-/*
             case 'a':
-
-                printString("\r\n------------------\r\n");
-                eeprom_read_block(ramString, eepromString, STRING_LEN);
-                printString(ramString);
-
-                printString("\r\nThe counter reads: ");
-                counter = eeprom_read_byte(&eepromCounter);
-                printByte(counter);
-
-                printString("\r\nMy uint16_t value is: ");
-                printWord(eeprom_read_word(&eepromWord));
-
-                printString("\r\n   Enter a new introduction string below:\r\n");
-                readString(ramString, STRING_LEN);
-                eeprom_update_block(ramString, eepromString, STRING_LEN);
-                counter++;
-                eeprom_update_byte(&eepromCounter, counter);
-                printString("done writing test data to eeprom\r\n");
-*/
-				
-                break;
-            case 'a':
-                printString("writing to eeprom...\r\n");
+                printString("\r\nwriting to eeprom...\r\n");
                 total_strlen = 0;
                 i = 0;
                 strcpy(ramString,"CAUTION\0");
@@ -175,96 +185,87 @@ int main(void)
 	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
                 total_strlen += strlen(ramString)+1;
 
-                strcpy(ramString,"information.    \0");
+                strcpy(ramString,"information.\0");
 				i++;
 				update_prompt_struct(i,i,0,total_strlen,strlen(ramString),DISCLAIMER);
 	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
                 total_strlen += strlen(ramString)+1;
 
-                strcpy(ramString,"TEST1\0");
+                strcpy(ramString,"MENU1a\0");
 				i++;
-				update_prompt_struct(i,15,0,total_strlen,strlen(ramString),MENU);
+				update_prompt_struct(i,15,0,total_strlen,strlen(ramString),MENU1);
 	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
                 total_strlen += strlen(ramString)+1;
 
-                strcpy(ramString,"TEST2\0");
+                strcpy(ramString,"MENU2a\0");
 				i++;
-				update_prompt_struct(i,15,8,total_strlen,strlen(ramString),MENU);
+				update_prompt_struct(i,15,8,total_strlen,strlen(ramString),MENU1);
 	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
                 total_strlen += strlen(ramString)+1;
 
-                strcpy(ramString,"TEST3\0");
+                strcpy(ramString,"MENU3a\0");
 				i++;
-				update_prompt_struct(i,15,16,total_strlen,strlen(ramString),MENU);
+				update_prompt_struct(i,15,16,total_strlen,strlen(ramString),MENU1);
 	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
                 total_strlen += strlen(ramString)+1;
 
-                strcpy(ramString,"TEST4\0");
+                strcpy(ramString,"MENU4a\0");
 				i++;
-				update_prompt_struct(i,15,24,total_strlen,strlen(ramString),MENU);
+				update_prompt_struct(i,15,24,total_strlen,strlen(ramString),MENU1);
+	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
+                total_strlen += strlen(ramString)+1;
+
+                strcpy(ramString,"MENU1b\0");
+				i++;
+				update_prompt_struct(i,15,0,total_strlen,strlen(ramString),MENU2);
+	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
+                total_strlen += strlen(ramString)+1;
+
+                strcpy(ramString,"MENU2b\0");
+				i++;
+				update_prompt_struct(i,15,8,total_strlen,strlen(ramString),MENU2);
+	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
+                total_strlen += strlen(ramString)+1;
+
+                strcpy(ramString,"MENU2b\0");
+				i++;
+				update_prompt_struct(i,15,16,total_strlen,strlen(ramString),MENU2);
+	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
+                total_strlen += strlen(ramString)+1;
+                strcpy(ramString,"MENU2f\0");
+
+				i++;
+				update_prompt_struct(i,15,24,total_strlen,strlen(ramString),MENU2);
 	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
                 total_strlen += strlen(ramString)+1;
 
                 no_prompts = i+1;
                 prompt_info_offset = total_strlen;
-
-				transmitByte(0x20);
-				transmitByte(0x20);
+				printString("\r\n");
 				printHexByte((uint8_t)prompt_info_offset>>8);
+				transmitByte(0x20);
 				printHexByte((uint8_t)prompt_info_offset);
 				transmitByte(0x20);
-				transmitByte(0x20);
 				printHexByte((uint8_t)no_prompts);
-				eeprom_update_byte((uint8_t *)0x0200,no_prompts);
-				eeprom_update_word((uint16_t *)0x0210,prompt_info_offset);
-
+				eeprom_update_byte((uint8_t *)0x03f0,no_prompts);
+				eeprom_update_word((uint16_t *)0x03f2,prompt_info_offset);
 
 				printString("\r\ndone writing prompts to eeprom\r\n");
 
                 for(i = 0;i < no_prompts;i++)
                 {
-// memcpy(dest,src,size)
+					// memcpy(dest,src,size)
                     memcpy((void*)(promptString),(void *)(&(prompts[i])),str_size);
-// eeprom_block_update(src,dest,size)
-//                    eeprom_update_block(promptString,(eepromBuffer+(i*(uint8_t)str_size)+total_strlen), str_size);
+					// eeprom_block_update(src,dest,size)
                     eeprom_update_block(promptString,(eepromString+((i*(uint8_t)str_size))+prompt_info_offset), str_size);
                 }
 				printString("done writing prompts structs to eeprom\r\n");
                 break;
             case 'b':
-                printString("reading eeprom\r\n");
-                for(i = 0;i < no_prompts;i++)
-                {
-	                eeprom_read_block(ramString,eepromString+prompts[i].offset, prompts[i].len);
-//                    for(j=0;j<prompts[i].len;j++)
-//                       transmitByte(ramString[j]);
-                    ramString[prompts[i].len] = 0;    
-//                    printByte(ramString[j]+1);
-	                printString(ramString);
-                    printString("\r\n");
-                }
-                printString("done\r\n");
-                break;
-            case 'c':
-                printString("reading prompt data into prompt structs\r\n");
-                no_prompts = eeprom_read_byte((uint8_t*)0x0200);
-				prompt_info_offset = eeprom_read_word((uint16_t*)0x0210);
-				printHexByte((uint8_t)prompt_info_offset>>8);
-				printHexByte((uint8_t)prompt_info_offset);
-				transmitByte(0x20);
-				printHexByte((uint8_t)no_prompts);
-                for(i = 0;i < no_prompts;i++)
-                {
-                    eeprom_read_block(promptString,(eepromString+(i*(uint8_t)str_size)+0x0162), str_size);
-//                    eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
-                }
-				printString("done\r\n");
-                break;
-            case 'd':
                 printString("displaying disclaimer\r\n");
                 GDispClrTxt();
 //                for(i = 0;i < no_prompts;i++)
-                for(i = 0;i < 16;i++)
+                for(i = 0;i < no_prompts;i++)
                 {
                     if(prompts[i].type == DISCLAIMER)
                     {
@@ -276,13 +277,13 @@ int main(void)
                 }
                printString("\r\ndone displaying disclaimer\r\n");
                 break;
-            case 'e':
-                printString("displaying menus\r\n");
+            case 'c':
+                printString(" displaying menu 1\r\n");
                 GDispClrTxt();
 //                for(i = 0;i < no_prompts;i++)
-                for(i = 0;i < 16;i++)
+                for(i = 0;i < no_prompts;i++)
                 {
-                    if(prompts[i].type == MENU)
+                    if(prompts[i].type == MENU1)
                     {
                         eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
                         GDispStringAt(prompts[i].row,prompts[i].col,ramString);
@@ -291,24 +292,38 @@ int main(void)
                     }
                 }
 				break;
-			case 'f':
-				printString("tesing LCD\r\n");
+            case 'd':
+                printString(" displaying menu 2\r\n");
+                GDispClrTxt();
+//                for(i = 0;i < no_prompts;i++)
+                for(i = 0;i < no_prompts;i++)
+                {
+                    if(prompts[i].type == MENU2)
+                    {
+                        eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
+                        GDispStringAt(prompts[i].row,prompts[i].col,ramString);
+                        printString(ramString);
+                        printString("\r\n");
+                    }
+                }
+				break;
+			case 'e':
+				printString("tesing LCD!\r\n");
 				GDispClrTxt();
 				k = 0x20;
 				for(row = 0;row < ROWS;row++)
 				{
-					_delay_ms(200);
 					for(col = 0;col < COLUMN;col++)
 					{
 						dispCharAt(row,col,k);
-						_delay_us(500);
+						_delay_ms(10);
 						transmitByte(k);
 						if(++k > 0x7e)
 							k = 0x20;
 					}
 				}
 				break;
-			case 'g':
+			case 'f':
 				GDispClrTxt();
 				printString("turning off LCD. Enter '0' to turn back on\r\n");
 				GDispStringAt(1,1,"Exiting...");
@@ -316,7 +331,7 @@ int main(void)
 				GDispSetMode(DISPLAY_OFF);
 				return (0);
 				break;
-			case 'h':
+			case 'g':
                 for(i = 0;i < no_prompts;i++)
                 {
 					printHexByte((uint8_t)prompts[i].pnum);
@@ -330,18 +345,26 @@ int main(void)
 					printHexByte((uint8_t)prompts[i].len);
 					transmitByte(0x20);
 					printHexByte((uint8_t)prompts[i].type);
-					transmitByte(0x20);
-					transmitByte(0x20);
+                    printString("\r\n");
 				}
 				transmitByte(0x20);
-				break;
-			case 'i':
 				break;
 			default:
 				break;
         }
     }
     return (0);
+}
+
+void printMenu()
+{
+	printString("\r\na - burn eeprom\r\n");
+	printString("b - display disclaimer\r\n");
+	printString("c - display menu 1\r\n");
+	printString("d - display menu 2\r\n");
+	printString("e - test LCD\r\n");
+	printString("f - turn off LCD\r\n");
+	printString("g - print prompt info\r\n");
 }
 
 void update_prompt_struct(uint8_t pnum, UCHAR row, UCHAR col, uint16_t offset, int len, uint8_t type)
@@ -352,6 +375,7 @@ void update_prompt_struct(uint8_t pnum, UCHAR row, UCHAR col, uint16_t offset, i
     prompts[pnum].offset = offset;
 	prompts[pnum].col = col;
     prompts[pnum].type = type;
+/*
     printHexByte(pnum);
     transmitByte(0x20);
     printHexByte(row);
@@ -367,5 +391,6 @@ void update_prompt_struct(uint8_t pnum, UCHAR row, UCHAR col, uint16_t offset, i
     printHexByte(type);
     transmitByte(0x20);
     transmitByte(0x20);
+*/
 }
 

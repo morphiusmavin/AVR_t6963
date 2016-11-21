@@ -181,6 +181,7 @@ void GDispClrTxt (void)
  * Notes       : 
  *********************************************************************************************************
  */
+/*
 void GDispClrGrh (void)
 {
 	uint16_t row;
@@ -199,6 +200,7 @@ void GDispClrGrh (void)
 	}
 	GDispCmdSend (AUTO_WR_OFF); //Set Auto Write OFF
 }
+*/
 /*
 *********************************************************************************************************
  *                                       GOTO A POSITION (row, col)
@@ -313,6 +315,7 @@ void GDispSetCursor (UCHAR mode, uint16_t row, uint16_t col, UCHAR type)
  * Notes       : 
  *********************************************************************************************************
  */
+/*
 void GDispSetPixel (uint16_t X, uint16_t Y, UCHAR color)
 {
 	uint16_t addr;
@@ -333,6 +336,7 @@ void GDispSetPixel (uint16_t X, uint16_t Y, UCHAR color)
 
 	GDispCmdSend (cmd);
 }
+*/
 /*
 *********************************************************************************************************
  *                                        I/O PORT INITIALIZATION
