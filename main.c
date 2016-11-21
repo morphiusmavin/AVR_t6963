@@ -7,104 +7,297 @@
 #include "macros.h"
 #include <string.h>
 #define TIME_DELAY1 1
-
+#define DISCLAIMER 0xAA
+#define MENU1 0x55
+#define MENU2 0x56
+#define MENU3 0x57
+#define STRING_LEN   255
+#define ROWS 16
 #define dispCharAt(_row,_col,_char) GDispCharAt((uint16_t)_row,(uint16_t)_col,(UCHAR)_char)
 #define dispSetCursor(_mode,_row,_col,_type) GDispSetCursor ((UCHAR)_mode, (uint16_t)_row, (uint16_t)_col, (UCHAR)_type)
+
+
+
+/* #include <stdio.h> */
+/* #include <stdlib.h> */
+
+// Define EEMEM variables
+
+void update_prompt_struct(uint8_t pnum, UCHAR row, UCHAR col, uint16_t *offset, uint8_t type,char *ramstr);
+
 void dispRC(int row, int col);
 void CheckRC(int *row, int *col, UCHAR *k);
 
-// available pins:
-// PORTD 2->7	(D2->D7)	- PD0 & PD1 are RxD & TxD
-// PORTC 0->3	(A0->A3)
-// PORTB 0->2	(D8->D10)
-
-// these are used by the programmer
-// PORTB,2 (D10) is SS
-// PORTB,3 (MOSI)
-// PORTB,4 (MISO)
-// PORTB,5 (SCK)
-
-char version[] = "version 1.5\0";
-#define STRING_LEN   100
-#define ROWS 16
-// Define EEMEM variables
-
-uint8_t eepromCounter EEMEM = 0;
-char eepromString[STRING_LEN] EEMEM = "Welcome to the EEMEM Demo.\r\n";
-uint16_t eepromWord EEMEM = 12345;
-
-int main(void)
+void printMenu(void);
+typedef struct prompts
 {
-	uint8_t test1;
+	uint8_t pnum;
+	UCHAR row;
+	UCHAR col;
+    uint16_t offset;
+	int len;
+    uint8_t type;
+} PROMPT_STRUCT;
+
+char eepromString[STRING_LEN] EEMEM;
+
+PROMPT_STRUCT prompts[30];
+uint8_t no_prompts = 0;
+uint16_t prompt_info_offset = 0;
+
+void update_prompt_struct(uint8_t pnum, UCHAR row, UCHAR col, uint16_t *offset, uint8_t type,char* ramstr);
+
+int main(void) 
+{
+    uint8_t test1;
+    char ramString[STRING_LEN];
+	int i;
     int row,col;
     UCHAR k;
-    UCHAR flag;
-    int total_strlen;
-    int ctr_arr[12];
-    int i,j;
+	uint8_t temp;
+	uint16_t temp2;
 
-	char ramString[STRING_LEN];
-	uint8_t counter;
+    uint8_t promptString[sizeof(PROMPT_STRUCT)];
+    size_t str_size = sizeof(PROMPT_STRUCT);
+    uint16_t total_strlen;
 
     initUSART();
-    printString("reset - Enter '0' to turn LCD on.\r\n");
-    flag = 0;
-    k = 0x41;
-    row = 0;
-    col = 0;
-    while(1)
-    {
-        test1 = receiveByte();  // just echo back what was sent
-        if(flag == 0 && test1 != '0')
-        {
-            printString("LCD is off. Enter '0' to turn back on\r\n");
-            test1 = 0;
-        }
 
+	GDispInit();
+	_delay_us(10);
+	GDispSetMode(XOR_MODE);
+	_delay_us(10);
+	GDispSetMode(TEXT_ON);
+	_delay_us(10);
+	GDispClrTxt();    
+	GDispStringAt(1,1,"LCD is on!");
+	printString("LCD is on!.\r\n");
+
+	printString("tesing LCD\r\n");
+	k = 0x20;
+	for(row = 0;row < ROWS;row++)
+	{
+		for(col = 0;col < COLUMN;col++)
+		{
+			dispCharAt(row,col,k);
+			if(++k > 0x7e)
+				k = 0x20;
+		}
+	}
+    no_prompts = eeprom_read_byte((uint8_t*)0x03f0);
+
+	if(no_prompts != 0xff)
+	{
+		printString("reading prompt data into prompt structs\r\n");
+		no_prompts = eeprom_read_byte((uint8_t*)0x03f0);
+		prompt_info_offset = (uint16_t)eeprom_read_byte((uint8_t*)0x03f2);
+		temp = eeprom_read_byte((uint8_t*)0x03f3);
+		temp2 = (uint16_t)temp;
+		printHexByte((uint8_t)temp2);
+		printHexByte((uint8_t)temp2>>8);
+		prompt_info_offset |= (temp2 << 8);
+		transmitByte(0x20);
+		printHexByte((uint8_t)prompt_info_offset);
+		printHexByte((uint8_t)(prompt_info_offset>>8));
+		for(i = 0;i < no_prompts;i++)
+		{
+			eeprom_read_block((void*)(&(prompts[i])),(eepromString+(i*str_size)+prompt_info_offset), str_size);
+		}
+	}
+	else
+	{
+		printString("prompts not set - hit 'a' to program eeprom\r\n");
+	}
+
+
+    while (1) 
+    {
+		printMenu();
+        test1 = receiveByte();
         switch(test1)
         {
-            case 'B':
+            case 'a':
+                printString("\r\nwriting to eeprom...\r\n");
+                total_strlen = 0;
+                i = 0;
+				update_prompt_struct(i,i,10,&total_strlen,DISCLAIMER,"CAUTION\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"Use of this system does not\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"replace basic safety precautions\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"and procedures for operating the\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"machine. Do not operate the\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"machine while system communi-\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"cation are being established\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"or diagnostic codes are\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"present. Refer to the Operation\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"and Maintenance Manual of the\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"machine for additional\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"information.\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU1,"MENU1a\0");
+
+				i++;
+				update_prompt_struct(i,15,8,&total_strlen,MENU1,"MENU2a\0");
+
+				i++;
+				update_prompt_struct(i,15,16,&total_strlen,MENU1,"MENU3a\0");
+
+				i++;
+				update_prompt_struct(i,15,24,&total_strlen,MENU1,"MENU4a\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU2,"MENU1b\0");
+
+				i++;
+				update_prompt_struct(i,15,8,&total_strlen,MENU2,"MENU2b\0");
+
+				i++;
+				update_prompt_struct(i,15,16,&total_strlen,MENU2,"MENU3b\0");
+
+				i++;
+				update_prompt_struct(i,15,24,&total_strlen,MENU2,"MENU4b\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU3,"MENU1c\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU3,"MENU2c\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU3,"MENU3c\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU3,"MENU4c\0");
+
+                no_prompts = i+1;
+                prompt_info_offset = total_strlen;
+				printString("\r\n");
+				printHexByte((uint8_t)prompt_info_offset>>8);
+				transmitByte(0x20);
+				printHexByte((uint8_t)prompt_info_offset);
+				transmitByte(0x20);
+				printHexByte((uint8_t)no_prompts);
+				eeprom_update_byte((uint8_t *)0x03f0,no_prompts);
+				eeprom_update_word((uint16_t *)0x03f2,prompt_info_offset);
+
+				printString("\r\ndone writing prompts to eeprom\r\n");
+
+                for(i = 0;i < no_prompts;i++)
+                {
+					// memcpy(dest,src,size)
+                    memcpy((void*)(promptString),(void *)(&(prompts[i])),str_size);
+					// eeprom_block_update(src,dest,size)
+                    eeprom_update_block(promptString,(eepromString+((i*(uint8_t)str_size))+prompt_info_offset), str_size);
+                }
+				printString("done writing prompts structs to eeprom\r\n");
+                break;
+            case 'b':
+                printString("displaying disclaimer\r\n");
                 GDispClrTxt();
-                k = 0x41;
-                row = 0;
-                col = 0;
-                dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,row,col,LINE_8_CURSOR);
-                dispCharAt(row,col,k);
-                dispRC(row,col);
-                printString("init cursor position\r\n");
+                for(i = 0;i < no_prompts;i++)
+                {
+                    if(prompts[i].type == DISCLAIMER)
+                    {
+                        eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
+                        GDispStringAt(prompts[i].row,prompts[i].col,ramString);
+                        printString(ramString);
+                        printString("\r\n");
+                    }
+                }
+               printString("\r\ndone displaying disclaimer\r\n");
                 break;
-            case '7':
-                col++;
-                k++;
-                CheckRC(&row,&col,&k);
-                dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,row,col,LINE_8_CURSOR);
-                dispCharAt(row,col,k);
-                dispRC(row,col);
-                break;
-            case '8':
-                row++;
-                k++;
-                CheckRC(&row,&col,&k);
-                dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,row,col,LINE_8_CURSOR);
-                dispCharAt(row,col,k);
-                dispRC(row,col);
-                break;
-            case '9':
-                row--;
-                k++;
-                CheckRC(&row,&col,&k);
-                dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,row,col,LINE_8_CURSOR);
-                dispCharAt(row,col,k);
-                dispRC(row,col);
-                break;
-            case 'C':
-                col--;
-                k++;
-                CheckRC(&row,&col,&k);
-                dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,row,col,LINE_8_CURSOR);
-                dispCharAt(row,col,k);
-                dispRC(row,col);
-                break;
+            case 'c':
+                printString(" displaying menu 1\r\n");
+                GDispClrTxt();
+                for(i = 0;i < no_prompts;i++)
+                {
+                    if(prompts[i].type == MENU1)
+                    {
+                        eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
+                        GDispStringAt(prompts[i].row,prompts[i].col,ramString);
+                        printString(ramString);
+                        printString("\r\n");
+                    }
+                }
+				break;
+            case 'd':
+                printString(" displaying menu 2\r\n");
+                GDispClrTxt();
+                for(i = 0;i < no_prompts;i++)
+                {
+                    if(prompts[i].type == MENU2)
+                    {
+                        eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
+                        GDispStringAt(prompts[i].row,prompts[i].col,ramString);
+                        printString(ramString);
+                        printString("\r\n");
+                    }
+                }
+				break;
+			case 'e':
+				printString("tesing LCD!\r\n");
+				GDispClrTxt();
+				k = 0x20;
+				for(row = 0;row < ROWS;row++)
+				{
+					for(col = 0;col < COLUMN;col++)
+					{
+						dispCharAt(row,col,k);
+						_delay_ms(10);
+						transmitByte(k);
+						if(++k > 0x7e)
+							k = 0x20;
+					}
+				}
+				break;
+			case 'f':
+				GDispClrTxt();
+				printString("turning off LCD. Enter '0' to turn back on\r\n");
+				GDispStringAt(1,1,"Exiting...");
+				_delay_ms(500);
+				GDispSetMode(DISPLAY_OFF);
+				return (0);
+				break;
+			case 'g':
+                for(i = 0;i < no_prompts;i++)
+                {
+					printHexByte((uint8_t)prompts[i].pnum);
+					transmitByte(0x20);
+					printHexByte((uint8_t)prompts[i].row);
+					transmitByte(0x20);
+					printHexByte((uint8_t)prompts[i].col);
+					transmitByte(0x20);
+					printHexByte((uint8_t)prompts[i].offset);
+					transmitByte(0x20);
+					printHexByte((uint8_t)prompts[i].len);
+					transmitByte(0x20);
+					printHexByte((uint8_t)prompts[i].type);
+                    printString("\r\n");
+				}
+				transmitByte(0x20);
+				break;
             case '*':
                 col++;
                 row++;
@@ -113,182 +306,21 @@ int main(void)
                 dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,row,col,LINE_8_CURSOR);
                 dispCharAt(row,col,k);
                 dispRC(row,col);
-                break;
-            case '1':
-                printString("writing to eeprom...\r\n");
-                total_strlen = 0;
-                i = 0;
-                ctr_arr[i++] = total_strlen;
-                strcpy(ramString,"CAUTION\0");
-	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
-                total_strlen += strlen(ramString)+1;
-                ctr_arr[i++] = total_strlen;
-                strcpy(ramString,"Use of this system does not replace\0");
-	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
-                total_strlen += strlen(ramString)+1;
-                ctr_arr[i++] = total_strlen;
-                strcpy(ramString,"basic safety precautions and pro-\0");
-	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
-                total_strlen += strlen(ramString)+1;
-                ctr_arr[i++] = total_strlen;
-                strcpy(ramString,"cedures for operating the machine.\0");
-	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
-                total_strlen += strlen(ramString)+1;
-                ctr_arr[i++] = total_strlen;
-                strcpy(ramString,"Do not operate the machine while\0");
-	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
-                total_strlen += strlen(ramString)+1;
-                ctr_arr[i++] = total_strlen;
-                strcpy(ramString,"system communication are being\0");
-	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
-                total_strlen += strlen(ramString)+1;
-                ctr_arr[i++] = total_strlen;
-                strcpy(ramString,"established or diagnostic codes are\0");
-	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
-                total_strlen += strlen(ramString)+1;
-                ctr_arr[i++] = total_strlen;
-                strcpy(ramString,"present. Refer to the Operation and\0");
-	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
-                total_strlen += strlen(ramString)+1;
-                ctr_arr[i++] = total_strlen;
-                strcpy(ramString,"Maintenance Manual of the machine\0");
-	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
-                total_strlen += strlen(ramString)+1;
-                ctr_arr[i++] = total_strlen;
-                strcpy(ramString,"for additional information.\0");
-	            eeprom_update_block(ramString, eepromString+total_strlen, strlen(ramString)+1);
-                total_strlen += strlen(ramString)+1;
-                ctr_arr[i++] = total_strlen;
-                j = i;
-/*
-                for(i=0;i < j;i++)
-                {
-                    printByte((uint8_t)ctr_arr[i]);
-                    printString("\r\n");
-                }
-*/
-                printString("done\r\n");
-                break;
-            case '2':
-                printString("reading eeprom\r\n");
-                for(i = 0;i < j-1;i++)
-                {
-	                eeprom_read_block(ramString, eepromString+ctr_arr[i], STRING_LEN);
-	                printString(ramString);
-                    printString("\r\n");
-                }
-                break;
-            case '3':
-                k = 0x20;
-                printString("pattern 3\r\n");
-                GDispClrTxt();
-                for(row = 0;row < ROWS;row++)
-                {
-                    _delay_ms(20);
-                   for(col = 0;col < COLUMN;col++)
-                   {
-                      dispCharAt(row,col,k);
-                    _delay_us(20);
-                      if(++k > 0x7e)
-                         k = 0x20;
-                   }
-                }
-                break;
-            case 'A':
-                printString("\r\n");
-                break;
-            case '4':
-                printString("pattern 1 fast\r\n");
-                GDispClrTxt();
-                k = 0x20;
-                for(row = 0;row < ROWS;row++)
-                {
-                   for(col = 0;col < COLUMN;col++)
-                   {
-                      dispCharAt(row,col,k);
-                      if(++k > 0x7e)
-                         k = 0x20;
-                   }
-                }
-                break;
-            case '5':
-                k = 0x20;
-                printString("pattern 2 fast\r\n");
-                GDispClrTxt();
-                for(row = ROWS;row >= 0;row--)
-                {
-                   for(col = COLUMN;col >= 0;col--)
-                   {
-                      dispCharAt(row,col,k);
-                      if(++k > 0x7e)
-                         k = 0x20;
-                   }
-                }
-                break;
-            case '6':
-                GDispClrTxt();
-                DisplayDisclaimer2();
-                break;
-/*
-                k = 0x20;
-                printString("pattern 3 fast\r\n");
-                GDispClrTxt();
-                for(row = 0;row < ROWS;row++)
-                {
-                   for(col = 0;col < COLUMN;col++)
-                   {
-                      dispCharAt(row,col,k);
-                      if(++k > 0x7e)
-                         k = 0x20;
-                   }
-                }
-                break;
-*/
-            case '0':
-                if(flag == 0)
-                {
-                    printString("turning back on..\r\n");
-	                GDispInit();
-                    _delay_us(10);
-                    initUSART();
-                    _delay_us(10);
-                    GDispSetMode(XOR_MODE);
-//                    GDispSetMode(OR_MODE);
-                    _delay_us(10);
-                    GDispSetMode(TEXT_ON);
-//                    GDispSetMode(TEXT_GRH_ON);
-                    _delay_us(10);
-                    GDispClrTxt();    
-                    GDispStringAt(1,1,"LCD on!");
-                    printString("LCD is on.\r\n");
-                    flag = 1;
-                }
-                else
-                    printString("LCD already on!\r\n");
-                break;
-            case '#':
-                GDispClrTxt();
-                DisplayDisclaimer(j,ctr_arr);
-                break;
+				break;
             case 'D':
-                if(flag == 1)
-                {
-                GDispClrTxt();
-                printString("turning off LCD. Enter '0' to turn back on\r\n");
-                GDispStringAt(1,1,"Exiting...");
-                _delay_ms(500);
-                GDispSetMode(DISPLAY_OFF);
-                flag = 0;
-                }
-                break;
-            default:
-                if(flag == 1)
-                    GDispClrTxt();break;
-                transmitByte(test1);
-                printByte(' ');
+                col++;
+                row++;
+                k++;
+                CheckRC(&row,&col,&k);
+                dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,row,col,LINE_8_CURSOR);
+                dispCharAt(row,col,k);
+                dispRC(row,col);
+				break;
+			default:
+				break;
         }
     }
-    return 0;
+    return (0);
 }
 
 void dispRC(int row, int col)
@@ -320,33 +352,48 @@ void CheckRC(int *row, int *col, UCHAR *k)
         *k = 0x41;
 }
 
-void DisplayDisclaimer(int arr_len, int *ctr_arr)
+
+void printMenu()
 {
-    int i;
-	char ramString[STRING_LEN];
-    printString("displaying disclaimer\r\n");
-    GDispClrTxt();
-    for(i = 0;i < arr_len-1;i++)
-    {
-        eeprom_read_block(ramString, eepromString+ctr_arr[i], STRING_LEN+1);
-        GDispStringAt(i,0,ramString);
-        printString(ramString);
-        printString("\r\n");
-    }
+	printString("\r\na - burn eeprom\r\n");
+	printString("b - display disclaimer\r\n");
+	printString("c - display menu 1\r\n");
+	printString("d - display menu 2\r\n");
+	printString("e - test LCD\r\n");
+	printString("f - turn off LCD\r\n");
+	printString("g - print prompt info\r\n");
+}
+void update_prompt_struct(uint8_t pnum, UCHAR row, UCHAR col, uint16_t *offset, uint8_t type,char *ramstr)
+{
+	int len;	
+	printString(ramstr);
+	len = strlen(ramstr) + 1;
+	prompts[pnum].len = len;
+	prompts[pnum].pnum = pnum;
+	prompts[pnum].row = row;
+    prompts[pnum].offset = *offset;
+	prompts[pnum].col = col;
+    prompts[pnum].type = type;
+    eeprom_update_block(ramstr, eepromString+*offset, len);
+    *offset += len+1;
 }
 
-void DisplayDisclaimer2(void)
-{
-    GDispClrTxt();
-    GDispStringAt(1,15,"CAUTION\0");
-    GDispStringAt(3,2,"Use of this system does not replace\0");
-    GDispStringAt(4,2,"basic safety precautions and pro-\0");
-    GDispStringAt(5,2,"cedures for operating the machine.\0");
-    GDispStringAt(6,2,"Do not operate the machine while\0");
-    GDispStringAt(7,2,"system communication are being\0");
-    GDispStringAt(8,2,"established or diagnostic codes are\0");
-    GDispStringAt(9,2,"present. Refer to the Operation and\0");
-    GDispStringAt(10,2,"Maintenance Manual of the machine\0");
-    GDispStringAt(11,2,"for additional information.\0");
-}
+/*
+    printHexByte(pnum);
+    transmitByte(0x20);
+    printHexByte(row);
+    transmitByte(0x20);
+    printHexByte(col);
+    transmitByte(0x20);
+    printHexByte((uint8_t)(offset>>8));
+    printHexByte((uint8_t)offset);
+    transmitByte(0x20);
+    printHexByte((uint8_t)(len>>8));
+    printHexByte((uint8_t)len);
+    transmitByte(0x20);
+    printHexByte(type);
+    transmitByte(0x20);
+    transmitByte(0x20);
+*/
+
 
