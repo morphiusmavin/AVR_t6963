@@ -104,7 +104,7 @@ int main(void)
 	}
 	else
 	{
-		printString("prompts not set - run eeprom_burn.c to burn eeprom\r\n");
+		printString("prompts not set - hit 'a' to program eeprom\r\n");
 	}
 
 
@@ -115,6 +115,103 @@ int main(void)
         switch(test1)
         {
             case 'a':
+                printString("\r\nwriting to eeprom...\r\n");
+                total_strlen = 0;
+                i = 0;
+				update_prompt_struct(i,i,10,&total_strlen,DISCLAIMER,"CAUTION\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"Use of this system does not\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"replace basic safety precautions\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"and procedures for operating the\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"machine. Do not operate the\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"machine while system communi-\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"cation are being established\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"or diagnostic codes are\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"present. Refer to the Operation\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"and Maintenance Manual of the\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"machine for additional\0");
+
+				i++;
+				update_prompt_struct(i,i,0,&total_strlen,DISCLAIMER,"information.\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU1,"MENU1a\0");
+
+				i++;
+				update_prompt_struct(i,15,8,&total_strlen,MENU1,"MENU2a\0");
+
+				i++;
+				update_prompt_struct(i,15,16,&total_strlen,MENU1,"MENU3a\0");
+
+				i++;
+				update_prompt_struct(i,15,24,&total_strlen,MENU1,"MENU4a\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU2,"MENU1b\0");
+
+				i++;
+				update_prompt_struct(i,15,8,&total_strlen,MENU2,"MENU2b\0");
+
+				i++;
+				update_prompt_struct(i,15,16,&total_strlen,MENU2,"MENU3b\0");
+
+				i++;
+				update_prompt_struct(i,15,24,&total_strlen,MENU2,"MENU4b\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU3,"MENU1c\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU3,"MENU2c\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU3,"MENU3c\0");
+
+				i++;
+				update_prompt_struct(i,15,0,&total_strlen,MENU3,"MENU4c\0");
+
+                no_prompts = i+1;
+                prompt_info_offset = total_strlen;
+				printString("\r\n");
+				printHexByte((uint8_t)prompt_info_offset>>8);
+				transmitByte(0x20);
+				printHexByte((uint8_t)prompt_info_offset);
+				transmitByte(0x20);
+				printHexByte((uint8_t)no_prompts);
+				eeprom_update_byte((uint8_t *)0x03f0,no_prompts);
+				eeprom_update_word((uint16_t *)0x03f2,prompt_info_offset);
+
+				printString("\r\ndone writing prompts to eeprom\r\n");
+
+                for(i = 0;i < no_prompts;i++)
+                {
+					// memcpy(dest,src,size)
+                    memcpy((void*)(promptString),(void *)(&(prompts[i])),str_size);
+					// eeprom_block_update(src,dest,size)
+                    eeprom_update_block(promptString,(eepromString+((i*(uint8_t)str_size))+prompt_info_offset), str_size);
+                }
+				printString("done writing prompts structs to eeprom\r\n");
+                break;
+            case 'b':
                 printString("displaying disclaimer\r\n");
                 GDispClrTxt();
                 for(i = 0;i < no_prompts;i++)
@@ -129,7 +226,7 @@ int main(void)
                 }
                printString("\r\ndone displaying disclaimer\r\n");
                 break;
-            case 'b':
+            case 'c':
                 printString(" displaying menu 1\r\n");
                 GDispClrTxt();
                 for(i = 0;i < no_prompts;i++)
@@ -143,26 +240,12 @@ int main(void)
                     }
                 }
 				break;
-            case 'c':
+            case 'd':
                 printString(" displaying menu 2\r\n");
                 GDispClrTxt();
                 for(i = 0;i < no_prompts;i++)
                 {
                     if(prompts[i].type == MENU2)
-                    {
-                        eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
-                        GDispStringAt(prompts[i].row,prompts[i].col,ramString);
-                        printString(ramString);
-                        printString("\r\n");
-                    }
-                }
-				break;
-            case 'd':
-                printString(" displaying menu 3\r\n");
-                GDispClrTxt();
-                for(i = 0;i < no_prompts;i++)
-                {
-                    if(prompts[i].type == MENU3)
                     {
                         eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
                         GDispStringAt(prompts[i].row,prompts[i].col,ramString);
@@ -270,10 +353,10 @@ void CheckRC(int *row, int *col, UCHAR *k)
 
 void printMenu()
 {
-	printString("a - display disclaimer\r\n");
-	printString("b - display menu 1\r\n");
+	printString("\r\na - burn eeprom\r\n");
+	printString("b - display disclaimer\r\n");
+	printString("c - display menu 1\r\n");
 	printString("d - display menu 2\r\n");
-	printString("c - display menu 3\r\n");
 	printString("e - test LCD\r\n");
 	printString("f - turn off LCD\r\n");
 	printString("g - print prompt info\r\n");

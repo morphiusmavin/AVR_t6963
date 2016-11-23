@@ -1,0 +1,43 @@
+t6963_notes.txt
+
+keypad layout:
+
+1 2 3 A
+4 5 6 B
+7 8 9 C
+* 0 # D
+
+If the bottom left key '*' is pressed a menu will appear at the bottom for 5 seconds.
+If any other key is not pressed within 5 seconds, the menu will go away. To do this,
+send a code like '0xFF' with a param to the PIC24. The PIC24 will do a delay depending
+on the param: 5 - five seconds, 4 - four seconds... When the delay is up, the PIC24
+will send back an 0xFF to signal that the delay is expired. 
+
+The menu at the bottom can be any number of rows. '*' will cancel the menu at anytime.
+When the key that corrisponds to the menu is pressed, another menu or dialog will appear.
+The most common dialog is one that lets the user enter a number. The menus will be 
+handled by the main switch statement. Any dialogs will be handled by the special
+functions. 
+
+When any dialog is active, the function will return a special code '0x0FE' followed by
+a param. The number dialog will return a its code followed by a number and the offset in
+the number array. Two of the menu choices when the number dialog is current will be
+'enter' and 'cancel'. Enter will set the number and cancel will set it back to what is
+was before. 'Enter' will also return a param which specifies which pameter is set.
+
+Other dialogs can be ones that give the user a choice of on or off or a list of mutually-
+exculsive options, like a group of checkboxes. There can also be a dialog that sets a
+scale represented by a row of '*' or other characters. One key can move the scale to
+the right (increase the value) or to the left (decrease). There will also be a dialog
+to set the current time or the time value for something else.
+
+The normal display will show the real-time values like engine rpm, mph, engine temp and
+oil pressure. Later on, there can be different displays that show more or less real-time
+parameters that can be changed by the menus. When the menu is active, any RT params on
+the screen will continue to be displayed in real-time. They just won't over-write any-
+thing on the menu area. So the menu or dialog will consume as little as possible area
+at the bottom of the display. When 'Enter' or 'Cancel' is pressed the menu or dialog
+will cause the previous menu to appear and the user can either hit the '*' key to make
+the menu clear or the 'back' key to go back to the previous menu. 
+
+
