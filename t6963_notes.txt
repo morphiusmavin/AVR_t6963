@@ -27,12 +27,11 @@ dec		hex		char
 
 If the bottom left key '*' is pressed a menu will appear at the bottom for 5 seconds.
 If any other key is not pressed within 5 seconds, the menu will go away. To do this,
-send a code like '0xFF' with a param to the PIC24. The PIC24 will do a delay depending
-on the param: 5 - five seconds, 4 - four seconds... When the delay is up, the PIC24
-will send back an 0xFF to signal that the delay is expired. Depending on the keypress,
-we can send a special code to tell the PIC24's keypad routine to delay for so long
-after a keypress. Like when moving the cursor, the delay between keypresses can be
-shorter so the cursor can move faster.
+use one of the AVR timers.
+
+Depending on the keypress, we can send a special code to tell the PIC24's keypad 
+routine to delay for so long after a keypress. Like when moving the cursor, the
+delay between keypresses can be shorter so the cursor can move faster.
 
 The menu at the bottom can be any number of rows. '*' will cancel the menu at anytime.
 When the key that corrisponds to the menu is pressed, another menu or dialog will appear.
@@ -59,14 +58,14 @@ will cause the previous menu to appear or the user can either hit the '*' key to
 the menu clear or the 'back' key to go back to the previous menu. 
 
 Special character codes sent by the PIC24:
-0xFF - PIC24 is sending a signal that the time is up to display menu when auto hide is enabled
-0xFE - PIC24 is sending a sequence of predetermined bytes that are shifted, scaled or 
+
+0xFF->0xF0 - PIC24 is sending a sequence of predetermined bytes that are shifted, scaled or 
 			bytes combined to make words and displayed at a list of predetermined 
 			row,col locations
 
 Special characters sent by AVR to the PIC24:
 0xFF - tells PIC24 to start sending a new predetermined sequence of values followed by param
-0xFE - tells PIC24 to update a certain param followed by param # and value (1 or 2 bytes)
+0xFE -> 0xF0 - tells PIC24 to update a certain param followed by param # and value (1 or 2 bytes)
 			the PIC24 can send that param to the TS-5500 if it applies.
 
 bytes sent to represent keypresses
@@ -101,7 +100,7 @@ and/or the cursor is moved, the main loop will have to restore the current row,c
 by the RT display.
 
 When the PIC24 sends a keypress it will reset the ESOS delay used by the task that is currently
-sending data using the 0xFE command so that there won't be any overlaping of data. It can
+sending data using the 0xFE command so that there won't be any overlapping of data. It can
 also use semaphores to wait till the current sequence is finished before sending a keypress.
 
 So the number enter dialog will use the '#' and the 'D' keys to move the cursor left or
@@ -144,8 +143,36 @@ ram space with all the RT_MAIN layouts and then all the RT_LAYOUT_STRUCT's. Then
 will record it all to eeprom with the no_layouts next to no_prompts and prompt_info_offset at
 0x03f4 in eeprom. (no_prompts is at 0x03f0 (byte) and prompt_info_offset is at 0x03f2 (word).
 
-
 Special chars sent by PIC24 starting with 0xFE: 
+
+0xFF - RT_RPM	- should be a uint16_t	(2 or 3x a second)
+0xFE - RT_MPH	- can be a uint8_t		(1x per second)
+0xFD - RT_ENGT	- ENGINE TEMP uint8_t			"
+0xFC - RT_OILP  - OIL PRESS uint8_t				"
+0xFB - RT_OILT	- OIL TEMP uint8_t				"
+0xFA - RT_MAP	- MAP, O2, AIR TEMP uint8_t		"
+0xF9 - RT_TRIP	- TRIP uint16_t
+0xF8 - RT_HIGH0 - set msb of byte (UCHAR sent)
+0xF7 - RT_HIGH1	- set msb of low byte set (UINT sent)
+0xF6 - RT_HIGH2 - set msb of low byte set (UINT sent)
+0xF5 -> 0xF0	- (reserved for future)
+
+The problem is what to do if a keypad code is sent in the middle of a RT sequence:
+
+The routine that parses the sequence data will increment a global counter. If the counter
+is not finished when a keypad char is sent, the counter is reset and the sequence data is
+ignored and then the keypad function will process the keypress.
+
+The beginning of the sequence is always one of the special characters. The function that
+parses the sequence will increment a global counter to keep track of how many bytes of data
+has been sent. If the byte sent just after the special char is RT_HIGH0/1/2 then set the high
+bits for either the byte or word sent. 
+
+1st_byte <<= 1;
+2nd_byte <<= 1;
+
+
+				
 
 
 

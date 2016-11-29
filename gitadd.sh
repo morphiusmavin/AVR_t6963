@@ -26,5 +26,8 @@ git add t6963.c
 git add flash_write.sh
 git add run_test.sh
 git add temp/avrdude_U_params.txt
+git add eeprom_burn.c
+git add t6963_notes.txt
+git add main.h
 clear
 git status

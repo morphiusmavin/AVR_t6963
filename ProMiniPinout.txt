@@ -1,6 +1,14 @@
 AtMega328p pinout (Pro Mini Board)
 11/24/16
 
+bottom view of chip:
+(connections for buspirate on left)
+(pins for RX/TX on right)
+
+RD	*	*	*	WR	CE	RST	CD	*	*	GND	+5V
+
+DATA7--------------------DATA0	*	*	*	*
+
 2	data 0
 3	data 1
 4	data 2
