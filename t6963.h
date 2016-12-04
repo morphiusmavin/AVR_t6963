@@ -77,7 +77,7 @@
 
 #define SET_DATA_DIR_OUT()	DDRB |= 0x03;	\
 							DDRD |= 0xFC;
-							
+
 #define SET_DATA_DIR_IN()	DDRB &= 0xFC;	\
 							DDRD &= 0x03;
 
@@ -107,8 +107,9 @@
 #define TEXT_HOME_ADDR      0x0000
 #define GRH_HOME_ADDR       0x0200
 #define CG_HOME_ADDR        0x1400
-#define COLUMN              30      //Set column number to be e.g. 32 for 8x8 fonts, 2 pages 
-#define MAX_ROW_PIXEL       128      //MAX_ROW_PIXEL the physical matrix length (y direction)                                    
+#define COLUMN              30      //Set column number to be e.g. 32 for 8x8 fonts, 2 pages
+#define ROWS                16
+#define MAX_ROW_PIXEL       128      //MAX_ROW_PIXEL the physical matrix length (y direction)
 #define MAX_COL_PIXEL       128     //MAX_COL_PIXEL the physical matrix width (x direction)
 #define ENABLE              1
 #define DISABLE             0
@@ -214,12 +215,12 @@ extern UCHAR    CGBuffer[8];    /* Buffer for custom pattern                    
 						SET_RD(); 	\
 						SET_CD(); 	\
 						CLR_WR();
-					
+
 #define GDispCmdRd()	SET_DATA_DIR_IN();  \
 						CLR_RD(); \
 						SET_CD(); \
 						SET_WR();
-					
+
 #define GDispDatWr()	SET_DATA_DIR_OUT(); \
 						SET_RD(); \
 						CLR_CD(); \
@@ -229,7 +230,7 @@ extern UCHAR    CGBuffer[8];    /* Buffer for custom pattern                    
 						CLR_CD();	\
 						SET_WR();	\
 						CLR_RD();
-#endif					
+#endif
 void GDispInit(void);
 void GDispSetMode(UCHAR mode);
 void GDispClrTxt(void);
@@ -251,6 +252,4 @@ void GDispDataWr(UCHAR data);
 void GDispAutoDataWr(UCHAR data);
 void GDispCmdSend(UCHAR cmd);
 void Data_Out(UCHAR data);
-void DisplayDisclaimer(int arr_len, int *ctr_arr);
-void DisplayDisclaimer2(void);
 #endif

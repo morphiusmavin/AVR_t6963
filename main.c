@@ -8,9 +8,8 @@
 #include "macros.h"
 #include <string.h>
 #include "main.h"
-
-/* #include <stdio.h> */
-/* #include <stdlib.h> */
+#include <stdio.h>
+#include <stdlib.h>
 
 int main(void) 
 {
@@ -21,14 +20,14 @@ int main(void)
     UCHAR k;
 	uint8_t temp;
 	uint16_t temp2;
-	int current_fptr = 0;
+	int last_fptr;
 	uint16_t limit16;
 	uint8_t limit8;
 	UCHAR ret_char;
 	uint16_t prompt_info_offset = 0;
-	uint16_t layout_offset = 0;
+	uint16_t layout_offset;
 
-    size_t str_size = sizeof(PROMPT_STRUCT);
+//    size_t str_size = sizeof(PROMPT_STRUCT);
 	
 	UCHAR (*fptr[NUM_FPTS])(UCHAR, uint8_t, uint16_t, UCHAR, UCHAR) = { default_func,\
 		 main_menu_func,\
@@ -50,6 +49,7 @@ int main(void)
 	printString("LCD is on!.\r\n");
 
 	printString("tesing LCD\r\n");
+/*
 	k = 0x20;
 	for(row = 0;row < ROWS;row++)
 	{
@@ -60,39 +60,69 @@ int main(void)
 				k = 0x20;
 		}
 	}
-    no_prompts = eeprom_read_byte((uint8_t*)0x03f0);
+*/
+    no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
 
 	if(no_prompts != 0xff)
 	{
 		printString("reading prompt data into prompt structs\r\n");
 		no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
+		printString("no_prompts: ");
+		printHexByte(no_prompts);
+		printString("\r\n");
 		no_layouts = eeprom_read_byte((uint8_t*)NO_LAYOUTS_EEPROM_LOCATION);
-		prompt_info_offset = (uint16_t)eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB);	// read lsb
-		temp = eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_MSB);		// read msb
+		printString("no_layouts: ");
+		printHexByte(no_layouts);
+		printString("\r\n");
+		prompt_info_offset = (uint16_t)eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB);
+		temp = eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_MSB);
 		temp2 = (uint16_t)temp;
 		prompt_info_offset |= (temp2 << 8);		// shift msb over and bit-or with lsb
-		prompt_ptr = malloc((size_t)prompt_info_offset);
 		printString("prompt_info_offset: ");
 		printHexByte((uint8_t)prompt_info_offset);
 		printHexByte((uint8_t)(prompt_info_offset>>8));
+		layout_offset = (uint16_t)eeprom_read_byte((uint8_t*)LAYOUT_OFFSET_EEPROM_LOCATION_LSB);
+		temp = eeprom_read_byte((uint8_t*)LAYOUT_OFFSET_EEPROM_LOCATION_MSB);
+		temp2 = (uint16_t)temp;
+		layout_offset |= (temp2 <<= 8);
+		prompt_ptr = malloc((size_t)(layout_offset - prompt_info_offset));
+		if(prompt_ptr == NULL)
+		{
+			printString("malloc returned NULL for prompt_ptr\r\n");
+			return 1;
+		}
+		printString("\r\nlayout_offset: ");
+		printHexByte((uint8_t)layout_offset);
+		printHexByte((uint8_t)layout_offset<<8);
+		labels = (char*)malloc((size_t)prompt_info_offset);
+		if(labels == NULL)
+		{
+			printString("malloc for labels returned NULL\r\n");
+		}	
+		eeprom_read_block(labels, eepromString,prompt_info_offset);
+//		for(i = 0;i < prompt_info_offset;i++)
+//			transmitByte((uint8_t)(labels[i]));
 		printString("\r\n");
-/*		
+
+		eeprom_read_block(prompt_ptr, eepromString+prompt_info_offset, sizeof(PROMPT_STRUCT)*no_prompts);
+
 		for(i = 0;i < no_prompts;i++)
 		{
-			eeprom_read_block((void*)(&(prompts[i])),(eepromString+(i*str_size)+prompt_info_offset), str_size);
+			printHexByte((uint8_t)prompt_ptr[i].pnum);
+			transmitByte(0x20);
+			printHexByte((uint8_t)prompt_ptr[i].row);
+			transmitByte(0x20);
+			printHexByte((uint8_t)prompt_ptr[i].col);
+			transmitByte(0x20);
+			printHexByte((uint8_t)(prompt_ptr[i].offset>>8));
+			printHexByte((uint8_t)(prompt_ptr[i].offset));
+			transmitByte(0x20);
+			printHexByte((uint8_t)prompt_ptr[i].len);
+			transmitByte(0x20);
+			printHexByte((uint8_t)prompt_ptr[i].type);
+			printString("\r\n");
 		}
-*/		
-		eeprom_read_block(prompt_ptr, eepromString, prompt_info_offset);
-#if 0		
-		for(i = 0;i < no_prompts;i++)
-		{
-			memcpy((void*)ramString,(prompt_ptr+prompts[i].offset),prompts[i].len+1);
-//			printHexByte(ramString+prompts[i].len);
-//			printHexByte(ramString+prompts[i].len+1);
-//			printString(ramString);
-//			printString("\r\n");
-		}
-#endif		
+
 		// now read into the heap all the real-time display format data
 		rt_main = (RT_MAIN*)malloc(sizeof(RT_MAIN)*no_layouts);
 		if(rt_main == NULL)
@@ -141,6 +171,7 @@ int main(void)
 				transmitByte(0x20);
 				printHexByte(rt_main[i].ptr_rt_layout[j].label_list);
 				printString("\r\n");
+
 			}	
 
 		}
@@ -154,17 +185,18 @@ int main(void)
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
+	curr_rt_layout = 0;
+	GDispClrTxt();
+	display_labels();
+	set_defaults();
     while (1) 
     {
         test1 = receiveByte();
-		if(test1 
 		ret_char = (*fptr[current_fptr])(test1, limit8, limit16, cur_row, cur_col);
-		else if(ret_char <= RT_RPM && ret_char >= RT_TRIP)
-		{
-			parse_PIC24(ret_char);
-			display_screen();
-		}
-
+		if(current_fptr != last_fptr)
+			display_labels();
+		last_fptr = current_fptr;
+		parse_PIC24(ret_char);
 	}
     return (0);		// this should never happen
 }
@@ -175,9 +207,15 @@ int main(void)
 void parse_PIC24(UCHAR ch)
 {
 	int i,j;
+	uint8_t rowx,colx;
 	uint8_t xbyte;
 	uint16_t xword;
 	char param_string[10];
+	UCHAR temp;
+
+	dispCharAt(15,19,test);
+	if(++test > 0x7e)
+		test = 0x21;
 	
 	if(ch <= RT_RPM && ch >= RT_TRIP)
 	{
@@ -186,19 +224,29 @@ void parse_PIC24(UCHAR ch)
 		return;
 	}
 		
-	if(ch <= RT_HIGH0 && ch >= RT_HIGH2)
+//	if(ch <= RT_HIGH0 && ch >= RT_HIGH2)
+	if(ch == RT_HIGH0 && sequence_counter == 1)
 	{	
 		if(sequence_counter != 1)
 		{	
 			set_defaults();
+			dispCharAt(15,15,0x43);
 			return;
 		}
+		sequence_counter = 2;
 		current_highbit = ch;
+//		dispCharAt(15,15,0x44);
 		return;
 	}
-
-	if((ch | 0x80) == 0)
+	else
 	{
+		current_highbit = 0;
+//		dispCharAt(15,15,0x45);
+	}
+
+	if((ch & 0x80) == 0)
+	{
+/*
 		if(current_param == RT_RPM)
 		{
 			if(sequence_counter == 1)
@@ -217,63 +265,58 @@ void parse_PIC24(UCHAR ch)
 				}
 				xword = (uint16_t)ch;
 				xword = (uint16_t)((xword << 8) | ch);
-				sprintf(param_string,"%d",xword);
+				sprintf(param_string,"%3d",xword);
 			}	
 		}
 		else
+*/
+
+		if(sequence_counter == 2)
 		{
-			if(current_highbit == RT_HIGH0)
-			{
-				ch |= 0x80;
-			}	
-			xbyte = ch;
-			sprintf(param_string,"%d",xbyte);
-		}
+			ch |= 0x80;
+			dispCharAt(15,15,0x41);
+		}	
+		else
+			dispCharAt(15,15,0x42);
+
+		dispCharAt(15,17,sequence_counter+0x30);
+
+//		dispCharAt(15,15,0x35);
+		sequence_counter = 0;
+		xbyte = ch;
+		sprintf(param_string,"%3d",xbyte);
 		j = 0;
+//		printHexByte(ch);
+
+		xbyte = ch;
+		sprintf(param_string,"%3d",xbyte);
+		temp = ~current_param;
 		for(i = 0;i < no_prompts;i++)
 		{
-			if(prompt_ptr[i].type == RT_LABEL && i == RTMAINC.ptr_rt_layout[j].label_list && j < RTMAINC.num_params)
+			if(prompt_ptr[i].type == RT_LABEL)
 			{
-//				memcpy((void*)param_string,(prompt_ptr+prompts[i].offset),prompts[i].len+1);
-				GDispStringAt(prompt_ptr[i].row,prompt_ptr[i].col+prompt_ptr[i].len+1,param_string);
-				j++;
+				for(j = 0;j < RTMAINC.num_params;j++)
+				{
+					if(temp == RTMAINC.ptr_rt_layout[j].label_list)
+					{
+						rowx = RTMAINC.ptr_rt_layout[j].row;
+						colx = RTMAINC.ptr_rt_layout[j].col;
+//						GDispStringAt(RTMAINC.ptr_rt_layout[j].row,RTMAINC.ptr_rt_layout[j].col+prompt_ptr[i].len+5,param_string);
+						GDispStringAt(rowx,colx+prompt_ptr[i].len+5,param_string);
+						i = no_prompts;
+					}
+				}
 			}
 		}
-		
-		sequence_counter++;
 	}
 }
-//******************************************************************************************//
-//**************************************** display_screen **********************************//
-//******************************************************************************************//
-// displays either the RT screen or any of the menus
-void display_screen(void)
-{
-	int i,j;
-	char temp[10];
-/*	
-	printf("%s %d\n",layout->name,layout->num_params);
-	for(j= 0;j < 10;j++)
-	{
-		printf("row:%d col:%d label_list:%d offset:%d\n",\
-			layout->rt_layout[j].row,\
-			layout->rt_layout[j].col,\
-			layout->rt_layout[j].label_list,\
-			layout->rt_layout[j].offset);
-	}
-*/	
-	for(j= 0;j < RTMAINC.num_params;j++)
-	{
-		for(i = 0;i < no_prompts;i++)
-		{
-			if(prompt_ptr[i].pnum == (RTMAINC.ptr_rt_layout[j].label_list))
-			{
-				memcpy((void*)temp,(prompt_ptr+prompt_ptr[i].offset),prompt_ptr[i].len+1);
-				dispCharAt(RTMAINC.ptr_rt_layout[j].row, RTMAINC.ptr_rt_layout[j].col,temp);
-			}	
-		}
-	}	
-}
+/* temp when looking in mirror
+5	0
+6	1
+7	2
+8	3
+9	4
+*/
 //******************************************************************************************//
 //**************************************** display_labels **********************************//
 //******************************************************************************************//
@@ -283,14 +326,22 @@ void display_labels(void)
 	int i,j;
 	char temp[20];
 	j = 0;
-	GDispStringAt(0,0,RTMAINC.name);
+	GDispStringAt(15,0,RTMAINC.name);
+//	printString("displaying labels\r\n");
+
 	for(i = 0;i < no_prompts;i++)
 	{
-		if(prompt_ptr[i].type == RT_LABEL && i == RTMAINC.ptr_rt_layout[j].label_list && j < RTMAINC.num_params)
+		for(j = 0;j < RTMAINC.num_params;j++)
 		{
-			memcpy((void*)temp,(prompt_ptr+prompt_ptr[i].offset),prompt_ptr[i].len+1);
-			GDispStringAt(prompt_ptr[i].row,prompt_ptr[i].col,temp);
-			j++;
+			if(prompt_ptr[i].type == RT_LABEL && i == (RTMAINC.ptr_rt_layout[j].label_list))
+			{
+				memcpy((void*)temp,(labels+prompt_ptr[i].offset),prompt_ptr[i].len+1);
+				
+//				GDispStringAt(prompt_ptr[i].row,prompt_ptr[i].col,temp);
+//				printString(temp);
+//				printString("\r\n");
+				GDispStringAt(RTMAINC.ptr_rt_layout[j].row,RTMAINC.ptr_rt_layout[j].col,temp);
+			}
 		}
 	}
 }
@@ -302,13 +353,16 @@ UCHAR default_func(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR 
 {
 	UCHAR row1,col1,k;
 	UCHAR ret_char;
-
+//	printHexByte(ch);	
 	switch (ch)
 	{
-		case 0xE1:	// '*'
-//			ret_char = '*';
+		case KP_1:
+			display_labels();
 			break;
-		case 0xE2:	// '0'
+		case KP_AST:	// '*'
+			GDispClrTxt();
+			break;
+		case KP_0:	// '0'
 			GDispClrTxt();
 			k = 0x61;
 			for(row1 = 0;row1 < ROWS;row1++)
@@ -316,14 +370,13 @@ UCHAR default_func(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR 
 				for(col1 = 0;col1 < COLUMN;col1++)
 				{
 					dispCharAt(row1,col1,k);
-					_delay_ms(10);
 					if(++k > 0x7a)
 						k = 0x61;
 				}
 			}
 
 			break;
-		case 0xE0:	// '#'
+		case KP_POUND:	// '#'
 			GDispClrTxt();
 			k = 0x21;
 			for(row1 = 0;row1 < ROWS;row1++)
@@ -331,13 +384,12 @@ UCHAR default_func(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR 
 				for(col1 = 0;col1 < COLUMN;col1++)
 				{
 					dispCharAt(row1,col1,k);
-					_delay_ms(10);
 					if(++k > 0x7e)
 						k = 0x21;
 				}
 			}
 			break;
-		case 0xEF:	// 'D'
+		case KP_D:	// 'D'
 			GDispClrTxt();
 			k = 0x41;
 			for(row1 = 0;row1 < ROWS;row1++)
@@ -345,7 +397,6 @@ UCHAR default_func(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR 
 				for(col1 = 0;col1 < COLUMN;col1++)
 				{
 					dispCharAt(row1,col1,k);
-					_delay_ms(10);
 					if(++k > 0x5a)
 						k = 0x41;
 				}
@@ -368,13 +419,13 @@ UCHAR main_menu_func(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHA
 	UCHAR ret_char;
 	switch (ch)
 	{
-		case 0xE0:
+		case KP_POUND:
 			ret_char = '#';
 			break;
-		case 0xE1:
+		case KP_AST:
 			ret_char = '*';
 			break;
-		case 0xE2:
+		case KP_0:
 			ret_char = '0';
 			break;
 		default:
@@ -392,13 +443,13 @@ UCHAR menu1a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 	UCHAR ret_char;
 	switch (ch)
 	{
-		case 0xE0:
+		case KP_POUND:
 			ret_char = '#';
 			break;
-		case 0xE1:
+		case KP_AST:
 			ret_char = '*';
 			break;
-		case 0xE2:
+		case KP_0:
 			ret_char = '0';
 			break;
 		default:
@@ -416,13 +467,13 @@ UCHAR menu1b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 	UCHAR ret_char;
 	switch (ch)
 	{
-		case 0xE0:
+		case KP_POUND:
 			ret_char = '#';
 			break;
-		case 0xE1:
+		case KP_AST:
 			ret_char = '*';
 			break;
-		case 0xE2:
+		case KP_0:
 			ret_char = '0';
 			break;
 		default:
@@ -440,13 +491,13 @@ UCHAR menu1c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 	UCHAR ret_char;
 	switch (ch)
 	{
-		case 0xE0:
+		case KP_POUND:
 			ret_char = '#';
 			break;
-		case 0xE1:
+		case KP_AST:
 			ret_char = '*';
 			break;
-		case 0xE2:
+		case KP_0:
 			ret_char = '0';
 			break;
 		default:
@@ -464,13 +515,13 @@ UCHAR menu1d(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 	UCHAR ret_char;
 	switch (ch)
 	{
-		case 0xE0:
+		case KP_POUND:
 			ret_char = '#';
 			break;
-		case 0xE1:
+		case KP_AST:
 			ret_char = '*';
 			break;
-		case 0xE2:
+		case KP_0:
 			ret_char = '0';
 			break;
 		default:
@@ -488,13 +539,13 @@ UCHAR menu2a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 	UCHAR ret_char;
 	switch (ch)
 	{
-		case 0xE0:
+		case KP_POUND:
 			ret_char = '#';
 			break;
-		case 0xE1:
+		case KP_AST:
 			ret_char = '*';
 			break;
-		case 0xE2:
+		case KP_0:
 			ret_char = '0';
 			break;
 		default:
@@ -512,13 +563,13 @@ UCHAR menu2b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 	UCHAR ret_char;
 	switch (ch)
 	{
-		case 0xE0:
+		case KP_POUND:
 			ret_char = '#';
 			break;
-		case 0xE1:
+		case KP_AST:
 			ret_char = '*';
 			break;
-		case 0xE2:
+		case KP_0:
 			ret_char = '0';
 			break;
 		default:
@@ -536,13 +587,13 @@ UCHAR menu2c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 	UCHAR ret_char;
 	switch (ch)
 	{
-		case 0xE0:
+		case KP_POUND:
 			ret_char = '#';
 			break;
-		case 0xE1:
+		case KP_AST:
 			ret_char = '*';
 			break;
-		case 0xE2:
+		case KP_0:
 			ret_char = '0';
 			break;
 		default:
@@ -560,13 +611,13 @@ UCHAR menu2d(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 	UCHAR ret_char;
 	switch (ch)
 	{
-		case 0xE0:
+		case KP_POUND:
 			ret_char = '#';
 			break;
-		case 0xE1:
+		case KP_AST:
 			ret_char = '*';
 			break;
-		case 0xE2:
+		case KP_0:
 			ret_char = '0';
 			break;
 		default:

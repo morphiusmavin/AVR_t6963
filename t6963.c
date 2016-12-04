@@ -121,7 +121,7 @@ void GDispInit (void)
 	//Set Text Area to COLUMN column mode
 	GDispCmdAddrSend (COLUMN, TEXT_AREA_SET);
 	//Set Graph Area to COLUMN column mode
-	GDispCmdAddrSend (COLUMN, GRAPH_AREA_SET);
+//	GDispCmdAddrSend (COLUMN, GRAPH_AREA_SET);
 	//Set Offset register to 0x0002, CG Ram start address = $1400 (CG_HOME_ADDR)
 	//first character code $80 for CG Ram
 	GDispCmdAddrSend (0x0002, OFFSET_REG_SET);
@@ -366,11 +366,7 @@ void GDispInitPort (void)
 	_CB(PORTD,DATA5);
 	_CB(PORTB,DATA6);
 	_CB(PORTB,DATA7);
-	
-  //Turn on LCD module after reset
-  //    #asm
-  //        nop
-  //    #endasm
+
 	SET_RST();
 }
 /*
@@ -380,7 +376,7 @@ void GDispInitPort (void)
  * Description : This function checks command execution capability, & data read/write capability
  * Arguments   : none
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 void GDispBusyChk (void)
@@ -388,16 +384,10 @@ void GDispBusyChk (void)
   int i;
   GDispCmdRd ();
   GDispChipEn;
-  //    #asm
-  //       nop
-  //   #endasm
-//  outUint8NoLeader((UCHAR)(PORTA & 0x00ff));
   for (i = 0; i < 2; i++)
 	_delay_us(TIME_DELAY);
-	//  while (!PORTAbits.RA0) // Busy Check here
 	while(!_BV(DATA0))
 	;
-	//  while (!PORTAbits.RA1)
 	while(!_BV(DATA1))
 	;
 	GDispChipDi; //Chip disable to finish
@@ -410,7 +400,7 @@ void GDispBusyChk (void)
  * Description : This function checks auto mode data write capability
  * Arguments   : none
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 void GDispAutoWrChk (void)
@@ -418,17 +408,9 @@ void GDispAutoWrChk (void)
 	int i;
 	GDispCmdRd ();
 	GDispChipEn;
-	//    #asm
-	//        nop
-	//    #endasm
 	for (i = 0; i < 2; i++)
 	_delay_us(TIME_DELAY);
-	//  while (!PORTAbits.RA3);
 	while(!_BV(DATA3));
-	//  {
-	//    outUint8NoLeader((UCHAR)(PORTA & 0x00ff));
-	//    outChar(++i);
-	//  }
 	GDispChipDi;
 }
 
@@ -446,19 +428,11 @@ void GDispDataWr (UCHAR data)
 {
 	  int i;
 	  GDispBusyChk (); // Wait for LCD to be ready
-
-	  //  LCD_DATA = data;                // Data write
 	  Data_Out (data);
-	  //  #asm
-	  //    nop
-	  //  #endasm
 	  for (i = 0; i < 2; i++)
 		_delay_us(TIME_DELAY);
 	  GDispDatWr ();
 	  GDispChipEn;
-	  //  #asm                  
-	  //    nop                         //delay one cycle for port stablize
-	  //  #endasm
 	  for (i = 0; i < 2; i++)
 		_delay_us(TIME_DELAY);
 
@@ -479,20 +453,12 @@ void GDispAutoDataWr (UCHAR data)
 {
 	int i;
 	GDispAutoWrChk (); // Auto write mode check
-
-	//  LCD_DATA = data;                // Data write
 	Data_Out (data);
-	//  #asm
-	//    nop
-	//  #endasm
 	for (i = 0; i < 2; i++)
 		_delay_us (TIME_DELAY);
 
 	GDispDatWr ();
 	GDispChipEn;
-	//  #asm                  
-	//    nop                         //delay one cycle for port stablize
-	//  #endasm
 	for (i = 0; i < 2; i++)
 		_delay_us (TIME_DELAY);
 
@@ -513,13 +479,9 @@ void GDispCmdSend (UCHAR cmd)
 {
 	int i;
 	GDispBusyChk (); // Wait for LCD to be ready
-	//      LCD_DATA = cmd;
 	Data_Out (cmd);
 	GDispCmdWr ();
 	GDispChipEn;
-	//    #asm
-	//        nop
-	//    #endasm    
 	for (i = 0; i < 2; i++)
 		_delay_us(TIME_DELAY);
 
