@@ -19,7 +19,7 @@
 #define RT_TIME 0xF7
 #define RT_TRIP 0xF6
 #define RT_HIGH0 0xF5
-#define RT_HIGH1 0xF5
+#define RT_HIGH1 0xF4
 #define RT_HIGH2 0xF3
 
 #define KP_POUND 0xE0 // '#'
@@ -43,6 +43,12 @@
 #define MSG_1 0xD1
 #define MSG_2 0xD2
 #define MSG_3 0xD3
+
+#define IDLE 0
+#define CHECK_HIGHBIT 1
+#define SEND_UCHAR 2
+#define SEND_UINT1 3
+#define SEND_UINT2 4
 
 #define RTMAINC rt_main[curr_rt_layout]
 
@@ -99,20 +105,19 @@ void parse_PIC24(UCHAR);
 void set_defaults(void);
 
 UCHAR current_param;
-UCHAR current_highbit;
+uint16_t temp_UINT;
 UCHAR last_char;
-
-char eepromString[STRING_LEN] EEMEM;
+UCHAR parse_state;
 
 //PROMPT_STRUCT prompts[30];
-uint16_t prompt_info_offset = 0;
-uint8_t hide_menu = 0;
-uint8_t no_layouts = 0;
-uint8_t no_prompts = 0;
-int curr_rt_layout = 0;
-int sequence_counter = 0;
-int current_fptr = 0;
-uint8_t test = 0x21;
+uint16_t prompt_info_offset;
+uint8_t hide_menu;
+uint8_t no_layouts;
+uint8_t no_prompts;
+int curr_rt_layout;
+int sequence_counter;
+int current_fptr;
+uint8_t test;
 
 char cur_global_number[10];
 char new_global_number[10];

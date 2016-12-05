@@ -68,6 +68,8 @@ int main(void)
                 printString("\r\nwriting to eeprom...\r\n");
                 total_strlen = 0;
                 i = 0;
+                // the row,col elements don't really apply for the RT params
+                // because the are displayed according to the row,col elements of the rt_layout
 				update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"RPM\0");
 
 				i++;
@@ -98,6 +100,8 @@ int main(void)
 				update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"TRIP\0");
 
 				i++;
+				// the row, col elements specify where at the bottom of the screen 
+				// menu choices will be
 				update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU1,"MENU1a\0");
 
 				i++;

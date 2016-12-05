@@ -1,3 +1,5 @@
+// main.c - main program that drives the t6963 LCD (32 col x 15 row) display - text only
+// see t6963_notes.txt for more details
 #include <avr/io.h>
 #include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
 #include "sfr_helper.h"
@@ -11,18 +13,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+char eepromString[STRING_LEN] EEMEM;
+
 int main(void) 
 {
     uint8_t test1;
     char ramString[STRING_LEN];
 	int i,j;
-    int row,col;
-    UCHAR k;
+//    int row,col;
+//    UCHAR k;
 	uint8_t temp;
 	uint16_t temp2;
-	int last_fptr;
-	uint16_t limit16;
-	uint8_t limit8;
+	int last_fptr = 0;
+	uint16_t limit16 = 0;
+	uint8_t limit8 = 0;
 	UCHAR ret_char;
 	uint16_t prompt_info_offset = 0;
 	uint16_t layout_offset;
@@ -49,18 +53,10 @@ int main(void)
 	printString("LCD is on!.\r\n");
 
 	printString("tesing LCD\r\n");
-/*
-	k = 0x20;
-	for(row = 0;row < ROWS;row++)
-	{
-		for(col = 0;col < COLUMN;col++)
-		{
-			dispCharAt(row,col,k);
-			if(++k > 0x7e)
-				k = 0x20;
-		}
-	}
-*/
+
+//******************************************************************************************//
+//******************* read all the data from eeprom into memory  ***************************//
+//******************************************************************************************//
     no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
 
 	if(no_prompts != 0xff)
@@ -100,8 +96,6 @@ int main(void)
 			printString("malloc for labels returned NULL\r\n");
 		}	
 		eeprom_read_block(labels, eepromString,prompt_info_offset);
-//		for(i = 0;i < prompt_info_offset;i++)
-//			transmitByte((uint8_t)(labels[i]));
 		printString("\r\n");
 
 		eeprom_read_block(prompt_ptr, eepromString+prompt_info_offset, sizeof(PROMPT_STRUCT)*no_prompts);
@@ -210,86 +204,82 @@ void parse_PIC24(UCHAR ch)
 	uint8_t rowx,colx;
 	uint8_t xbyte;
 	uint16_t xword;
+	uint8_t done = 0;
 	char param_string[10];
 	UCHAR temp;
 
 	dispCharAt(15,19,test);
 	if(++test > 0x7e)
 		test = 0x21;
+
+	dispCharAt(15,0,parse_state+0x30);
 	
-	if(ch <= RT_RPM && ch >= RT_TRIP)
+	switch(parse_state)
 	{
-		current_param = ch;
-		sequence_counter = 1;
-		return;
-	}
-		
-//	if(ch <= RT_HIGH0 && ch >= RT_HIGH2)
-	if(ch == RT_HIGH0 && sequence_counter == 1)
-	{	
-		if(sequence_counter != 1)
-		{	
-			set_defaults();
-			dispCharAt(15,15,0x43);
-			return;
-		}
-		sequence_counter = 2;
-		current_highbit = ch;
-//		dispCharAt(15,15,0x44);
-		return;
-	}
-	else
-	{
-		current_highbit = 0;
-//		dispCharAt(15,15,0x45);
-	}
-
-	if((ch & 0x80) == 0)
-	{
-/*
-		if(current_param == RT_RPM)
-		{
-			if(sequence_counter == 1)
+		case IDLE:
+			if(ch <= RT_RPM && ch >= RT_TRIP)
 			{
-				if(current_highbit == RT_HIGH1)
-				{
-					ch |= 0x80;
-				}
-				last_char = ch;
-			}	
-			else if(sequence_counter == 2)
+				current_param = ch;
+				parse_state = CHECK_HIGHBIT;
+				dispCharAt(15,2,parse_state+0x30);
+			}
+			break;
+		case CHECK_HIGHBIT:
+			switch(ch)
 			{
-				if(current_highbit == RT_HIGH2)
-				{
-					ch |= 0x80;
-				}
-				xword = (uint16_t)ch;
-				xword = (uint16_t)((xword << 8) | ch);
-				sprintf(param_string,"%3d",xword);
-			}	
-		}
-		else
-*/
-
-		if(sequence_counter == 2)
-		{
-			ch |= 0x80;
-			dispCharAt(15,15,0x41);
-		}	
-		else
-			dispCharAt(15,15,0x42);
-
-		dispCharAt(15,17,sequence_counter+0x30);
-
-//		dispCharAt(15,15,0x35);
-		sequence_counter = 0;
-		xbyte = ch;
-		sprintf(param_string,"%3d",xbyte);
-		j = 0;
-//		printHexByte(ch);
-
-		xbyte = ch;
-		sprintf(param_string,"%3d",xbyte);
+				case RT_HIGH0:
+					parse_state = SEND_UCHAR;
+					dispCharAt(15,4,parse_state+0x30);
+					break;
+				case RT_HIGH1:
+					temp_UINT = ch;
+					parse_state = SEND_UINT1;
+					dispCharAt(15,6,parse_state+0x30);
+					break;
+				case RT_HIGH2:
+					temp_UINT = ch;
+					dispCharAt(15,8,parse_state+0x30);
+					parse_state = SEND_UINT2;
+					break;
+				default:
+					xbyte = ch;
+					dispCharAt(15,10,parse_state+0x30);
+					sprintf(param_string,"%3d",xbyte);
+					done = 1;
+					break;	
+			}
+			break;
+		case SEND_UCHAR:
+			xbyte = ch | 0x80;
+			dispCharAt(15,12,parse_state+0x30);
+			sprintf(param_string,"%3d",xbyte);
+			done = 1;
+			break;
+		case SEND_UINT1:
+			xword = temp_UINT;
+			temp_UINT = (uint16_t)ch;
+			temp_UINT <<= 8;
+			xword |= temp_UINT;
+			xword |= 0x0080;
+			dispCharAt(15,14,parse_state+0x30);
+			sprintf(param_string,"%4u",xword);
+			done = 1;
+			break;
+		case SEND_UINT2:
+			xword = temp_UINT;
+			temp_UINT = (uint16_t)ch;
+			temp_UINT <<= 8;
+			xword |= temp_UINT;
+			xword |= 0x8000;
+			dispCharAt(15,16,parse_state+0x30);
+			sprintf(param_string,"%4u",xword);
+			done = 1;
+			break;
+		default:
+			break;
+	}
+	if(done)
+	{
 		temp = ~current_param;
 		for(i = 0;i < no_prompts;i++)
 		{
@@ -302,21 +292,15 @@ void parse_PIC24(UCHAR ch)
 						rowx = RTMAINC.ptr_rt_layout[j].row;
 						colx = RTMAINC.ptr_rt_layout[j].col;
 //						GDispStringAt(RTMAINC.ptr_rt_layout[j].row,RTMAINC.ptr_rt_layout[j].col+prompt_ptr[i].len+5,param_string);
-						GDispStringAt(rowx,colx+prompt_ptr[i].len+5,param_string);
+						GDispStringAt(rowx,colx+prompt_ptr[i].len+6,param_string);
 						i = no_prompts;
 					}
 				}
 			}
 		}
+		set_defaults();
 	}
 }
-/* temp when looking in mirror
-5	0
-6	1
-7	2
-8	3
-9	4
-*/
 //******************************************************************************************//
 //**************************************** display_labels **********************************//
 //******************************************************************************************//
@@ -326,7 +310,7 @@ void display_labels(void)
 	int i,j;
 	char temp[20];
 	j = 0;
-	GDispStringAt(15,0,RTMAINC.name);
+//	GDispStringAt(15,0,RTMAINC.name);
 //	printString("displaying labels\r\n");
 
 	for(i = 0;i < no_prompts;i++)
@@ -346,295 +330,9 @@ void display_labels(void)
 	}
 }
 //******************************************************************************************//
-//*************************************** default_func *************************************//
+//******************************************* dispRC ***************************************//
 //******************************************************************************************//
-// for when no menu is shown
-UCHAR default_func(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-	UCHAR row1,col1,k;
-	UCHAR ret_char;
-//	printHexByte(ch);	
-	switch (ch)
-	{
-		case KP_1:
-			display_labels();
-			break;
-		case KP_AST:	// '*'
-			GDispClrTxt();
-			break;
-		case KP_0:	// '0'
-			GDispClrTxt();
-			k = 0x61;
-			for(row1 = 0;row1 < ROWS;row1++)
-			{
-				for(col1 = 0;col1 < COLUMN;col1++)
-				{
-					dispCharAt(row1,col1,k);
-					if(++k > 0x7a)
-						k = 0x61;
-				}
-			}
-
-			break;
-		case KP_POUND:	// '#'
-			GDispClrTxt();
-			k = 0x21;
-			for(row1 = 0;row1 < ROWS;row1++)
-			{
-				for(col1 = 0;col1 < COLUMN;col1++)
-				{
-					dispCharAt(row1,col1,k);
-					if(++k > 0x7e)
-						k = 0x21;
-				}
-			}
-			break;
-		case KP_D:	// 'D'
-			GDispClrTxt();
-			k = 0x41;
-			for(row1 = 0;row1 < ROWS;row1++)
-			{
-				for(col1 = 0;col1 < COLUMN;col1++)
-				{
-					dispCharAt(row1,col1,k);
-					if(++k > 0x5a)
-						k = 0x41;
-				}
-			}
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	ret_char = ch;
-	return ret_char;
-			
-}
-//******************************************************************************************//
-//************************************* main_menu_func *************************************//
-//******************************************************************************************//
-// displays the main menu at the bottom
-UCHAR main_menu_func(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-	UCHAR ret_char;
-	switch (ch)
-	{
-		case KP_POUND:
-			ret_char = '#';
-			break;
-		case KP_AST:
-			ret_char = '*';
-			break;
-		case KP_0:
-			ret_char = '0';
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu1a ****************************************//
-//******************************************************************************************//
-// displays the 1st choice of the main menu
-UCHAR menu1a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-	UCHAR ret_char;
-	switch (ch)
-	{
-		case KP_POUND:
-			ret_char = '#';
-			break;
-		case KP_AST:
-			ret_char = '*';
-			break;
-		case KP_0:
-			ret_char = '0';
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu1b ****************************************//
-//******************************************************************************************//
-// displays the 2nd choice of the main menu
-UCHAR menu1b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-	UCHAR ret_char;
-	switch (ch)
-	{
-		case KP_POUND:
-			ret_char = '#';
-			break;
-		case KP_AST:
-			ret_char = '*';
-			break;
-		case KP_0:
-			ret_char = '0';
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu1c ****************************************//
-//******************************************************************************************//
-// displays the 3rd choice of the main menu
-UCHAR menu1c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-	UCHAR ret_char;
-	switch (ch)
-	{
-		case KP_POUND:
-			ret_char = '#';
-			break;
-		case KP_AST:
-			ret_char = '*';
-			break;
-		case KP_0:
-			ret_char = '0';
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu1d ****************************************//
-//******************************************************************************************//
-// displays the 4th choice of the main menu
-UCHAR menu1d(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-	UCHAR ret_char;
-	switch (ch)
-	{
-		case KP_POUND:
-			ret_char = '#';
-			break;
-		case KP_AST:
-			ret_char = '*';
-			break;
-		case KP_0:
-			ret_char = '0';
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu2a ****************************************//
-//******************************************************************************************//
-// displays the 1st choice of the 1st choice of the main menu
-UCHAR menu2a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-	UCHAR ret_char;
-	switch (ch)
-	{
-		case KP_POUND:
-			ret_char = '#';
-			break;
-		case KP_AST:
-			ret_char = '*';
-			break;
-		case KP_0:
-			ret_char = '0';
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu2b ****************************************//
-//******************************************************************************************//
-// displays the 2nd choice of the 1st choice of the main menu
-UCHAR menu2b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-	UCHAR ret_char;
-	switch (ch)
-	{
-		case KP_POUND:
-			ret_char = '#';
-			break;
-		case KP_AST:
-			ret_char = '*';
-			break;
-		case KP_0:
-			ret_char = '0';
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu2c ****************************************//
-//******************************************************************************************//
-// displays the 3rd choice of the 1st choice of the main menu
-UCHAR menu2c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-	UCHAR ret_char;
-	switch (ch)
-	{
-		case KP_POUND:
-			ret_char = '#';
-			break;
-		case KP_AST:
-			ret_char = '*';
-			break;
-		case KP_0:
-			ret_char = '0';
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu2d ****************************************//
-//******************************************************************************************//
-// displays the 4th choice of the 1st choice of the main menu
-UCHAR menu2d(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-	UCHAR ret_char;
-	switch (ch)
-	{
-		case KP_POUND:
-			ret_char = '#';
-			break;
-		case KP_AST:
-			ret_char = '*';
-			break;
-		case KP_0:
-			ret_char = '0';
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-/*
-UCHAR menu3a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-}
-UCHAR menu3b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
-{
-}
-*/
-
+// show on monitor where the current row, col is
 void dispRC(int row, int col)
 {
     printString("col=");
@@ -645,7 +343,10 @@ void dispRC(int row, int col)
     printString("\r\n");
     printString("\r\n");
 }
-
+//******************************************************************************************//
+//****************************************** CheckRC ***************************************//
+//******************************************************************************************//
+// check row col to see if it is 'off the screen' so it can re-appear on the opposite border
 void CheckRC(int *row, int *col, UCHAR *k)
 {
     if(*row >= ROWS)
@@ -668,161 +369,9 @@ void set_defaults(void)
 {
 	sequence_counter = 0;
 	current_param = 0;
-	current_highbit = 0;
+	temp_UINT = 0;
 	last_char = 0;
+	parse_state = IDLE;
+	test = 0x21;
 }
-
-#if 0
-void printMenu()
-{
-	printString("a - display disclaimer\r\n");
-	printString("b - display menu 1\r\n");
-	printString("d - display menu 2\r\n");
-	printString("c - display menu 3\r\n");
-	printString("e - test LCD\r\n");
-	printString("f - turn off LCD\r\n");
-	printString("g - print prompt info\r\n");
-}
-    printHexByte(pnum);
-    transmitByte(0x20);
-    printHexByte(row);
-    transmitByte(0x20);
-    printHexByte(col);
-    transmitByte(0x20);
-    printHexByte((uint8_t)(offset>>8));
-    printHexByte((uint8_t)offset);
-    transmitByte(0x20);
-    printHexByte((uint8_t)(len>>8));
-    printHexByte((uint8_t)len);
-    transmitByte(0x20);
-    printHexByte(type);
-    transmitByte(0x20);
-    transmitByte(0x20);
-
-
-
-        switch(test1)
-        {
-            case 'a':
-                printString("displaying disclaimer\r\n");
-                GDispClrTxt();
-                for(i = 0;i < no_prompts;i++)
-                {
-                    if(prompts[i].type == DISCLAIMER)
-                    {
-                        eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
-                        GDispStringAt(prompts[i].row,prompts[i].col,ramString);
-                        printString(ramString);
-                        printString("\r\n");
-                    }
-                }
-               printString("\r\ndone displaying disclaimer\r\n");
-                break;
-            case 'b':
-                printString(" displaying menu 1\r\n");
-                GDispClrTxt();
-                for(i = 0;i < no_prompts;i++)
-                {
-                    if(prompts[i].type == MENU1)
-                    {
-                        eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
-                        GDispStringAt(prompts[i].row,prompts[i].col,ramString);
-                        printString(ramString);
-                        printString("\r\n");
-                    }
-                }
-				break;
-            case 'c':
-                printString(" displaying menu 2\r\n");
-                GDispClrTxt();
-                for(i = 0;i < no_prompts;i++)
-                {
-                    if(prompts[i].type == MENU2)
-                    {
-                        eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
-                        GDispStringAt(prompts[i].row,prompts[i].col,ramString);
-                        printString(ramString);
-                        printString("\r\n");
-                    }
-                }
-				break;
-            case 'd':
-                printString(" displaying menu 3\r\n");
-                GDispClrTxt();
-                for(i = 0;i < no_prompts;i++)
-                {
-                    if(prompts[i].type == MENU3)
-                    {
-                        eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
-                        GDispStringAt(prompts[i].row,prompts[i].col,ramString);
-                        printString(ramString);
-                        printString("\r\n");
-                    }
-                }
-				break;
-			case 'e':
-				printString("tesing LCD!\r\n");
-				GDispClrTxt();
-				k = 0x20;
-				for(row = 0;row < ROWS;row++)
-				{
-					for(col = 0;col < COLUMN;col++)
-					{
-						dispCharAt(row,col,k);
-						_delay_ms(10);
-						transmitByte(k);
-						if(++k > 0x7e)
-							k = 0x20;
-					}
-				}
-				break;
-			case 'f':
-				GDispClrTxt();
-				printString("turning off LCD. Enter '0' to turn back on\r\n");
-				GDispStringAt(1,1,"Exiting...");
-				_delay_ms(500);
-				GDispSetMode(DISPLAY_OFF);
-				return (0);
-				break;
-			case 'g':
-                for(i = 0;i < no_prompts;i++)
-                {
-					printHexByte((uint8_t)prompts[i].pnum);
-					transmitByte(0x20);
-					printHexByte((uint8_t)prompts[i].row);
-					transmitByte(0x20);
-					printHexByte((uint8_t)prompts[i].col);
-					transmitByte(0x20);
-					printHexByte((uint8_t)prompts[i].offset);
-					transmitByte(0x20);
-					printHexByte((uint8_t)prompts[i].len);
-					transmitByte(0x20);
-					printHexByte((uint8_t)prompts[i].type);
-                    printString("\r\n");
-				}
-				transmitByte(0x20);
-				break;
-            case '*':
-                col++;
-                row++;
-                k++;
-                CheckRC(&row,&col,&k);
-                dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,row,col,LINE_8_CURSOR);
-                dispCharAt(row,col,k);
-                dispRC(row,col);
-				break;
-            case 'D':
-                col++;
-                row++;
-                k++;
-                CheckRC(&row,&col,&k);
-                dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,row,col,LINE_8_CURSOR);
-                dispCharAt(row,col,k);
-                dispRC(row,col);
-				break;
-			default:
-				break;
-        }
-    }
-#endif	
 
