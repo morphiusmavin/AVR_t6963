@@ -29,16 +29,16 @@ int main(void)
 	uint8_t limit8 = 0;
 	UCHAR ret_char;
 	uint16_t prompt_info_offset = 0;
-	uint16_t layout_offset;
+	uint16_t layout_offset = 0;
+	size_t layout_size;
 
 //    size_t str_size = sizeof(PROMPT_STRUCT);
 	
-	UCHAR (*fptr[NUM_FPTS])(UCHAR, uint8_t, uint16_t, UCHAR, UCHAR) = { default_func,\
-		 main_menu_func,\
+	UCHAR (*fptr[NUM_FPTS])(UCHAR, uint8_t, uint16_t, UCHAR, UCHAR) = { main_menu_func,\
 		 menu1a, menu1b,\
 		 menu1c, menu1d,\
 		 menu2a, menu2b,\
-		 menu2c, menu2d };
+		 menu2c, menu2d, number_entry };
 #if 1
     initUSART();
 
@@ -50,9 +50,6 @@ int main(void)
 	_delay_us(10);
 	GDispClrTxt();    
 	GDispStringAt(1,1,"LCD is on!");
-	printString("LCD is on!.\r\n");
-
-	printString("tesing LCD\r\n");
 
 //******************************************************************************************//
 //******************* read all the data from eeprom into memory  ***************************//
@@ -90,12 +87,6 @@ int main(void)
 		printString("\r\nlayout_offset: ");
 		printHexByte((uint8_t)layout_offset);
 		printHexByte((uint8_t)layout_offset<<8);
-		labels = (char*)malloc((size_t)prompt_info_offset);
-		if(labels == NULL)
-		{
-			printString("malloc for labels returned NULL\r\n");
-		}	
-		eeprom_read_block(labels, eepromString,prompt_info_offset);
 		printString("\r\n");
 
 		eeprom_read_block(prompt_ptr, eepromString+prompt_info_offset, sizeof(PROMPT_STRUCT)*no_prompts);
@@ -115,10 +106,11 @@ int main(void)
 			transmitByte(0x20);
 			printHexByte((uint8_t)prompt_ptr[i].type);
 			printString("\r\n");
+//			_delay_ms(500);
 		}
 
 		// now read into the heap all the real-time display format data
-		rt_main = (RT_MAIN*)malloc(sizeof(RT_MAIN)*no_layouts);
+		rt_main = (RT_MAIN*)malloc((size_t)(sizeof(RT_MAIN)*no_layouts));
 		if(rt_main == NULL)
 		{
 			printString("malloc returned NULL for rt_main\r\n");
@@ -133,16 +125,32 @@ int main(void)
 			printString("num_params: ");
 			printHexByte(rt_main[i].num_params);
 			printString("\r\n");
+//			_delay_ms(500);
 		}
 
 		for(i = 0;i < no_layouts;i++)
 		{
-			rt_main[i].ptr_rt_layout = (RT_LAYOUT*)malloc((sizeof(RT_LAYOUT)*(rt_main[i].num_params)));
-			if(rt_main[i].ptr_rt_layout == NULL)
+			printHexByte(rt_main[i].num_params);
+			transmitByte(0x20);
+
+			printHexByte(rt_main[i].offset>>8);
+			printHexByte(rt_main[i].offset);
+			printString("\r\n");
+			layout_size = (size_t)(sizeof(RT_LAYOUT)*rt_main[i].num_params);
+			printHexByte(layout_size>>8);
+			printHexByte(layout_size);
+			printString("\r\n");
+			rt_tlayout = (RT_LAYOUT*)malloc(layout_size);
+//			if(rt_main[i].ptr_rt_layout == NULL)
+			if(rt_tlayout == NULL)
 			{
-				printString("malloc returned NULL for rt_main[i].ptr_rt_layout\r\n");
-				return 1;
+				printString("malloc returned NULL for rt_layout\r\n");
+//				return 1;
+				_delay_ms(1000);
 			}
+			else
+				rt_main[i].ptr_rt_layout = rt_tlayout;
+
 		}
 
 		// now all the new memory is malloc'd for the rt_layout and rt_main structs 
@@ -165,11 +173,24 @@ int main(void)
 				transmitByte(0x20);
 				printHexByte(rt_main[i].ptr_rt_layout[j].label_list);
 				printString("\r\n");
-
+				_delay_ms(500);
 			}	
-
 		}
-		
+
+//		labels = (char*)malloc((size_t)prompt_info_offset);
+		printString("\r\nmalloc for labels..\r\n");
+/*
+		labels = (char*)malloc((size_t)200);
+		if(labels == NULL)
+		{
+			printString("malloc for labels returned NULL\r\n");
+			_delay_ms(10000);
+		}	
+*/		
+//		eeprom_read_block((void*)&labels[0], eepromString,prompt_info_offset);
+		eeprom_read_block((void*)&labels[0], eepromString,92);
+		printString("done\r\n");
+		_delay_ms(10000);
 	}
 	else
 	{
@@ -181,18 +202,37 @@ int main(void)
 //******************************************************************************************//
 	curr_rt_layout = 0;
 	GDispClrTxt();
-	display_labels();
+//	display_labels();
 	set_defaults();
+//	display_menus();
     while (1) 
     {
         test1 = receiveByte();
+//		printHexByte(test1);
 		ret_char = (*fptr[current_fptr])(test1, limit8, limit16, cur_row, cur_col);
 		if(current_fptr != last_fptr)
-			display_labels();
+			display_menus();
 		last_fptr = current_fptr;
 		parse_PIC24(ret_char);
 	}
     return (0);		// this should never happen
+}
+//******************************************************************************************//
+//************************************* display_menus **************************************//
+//******************************************************************************************//
+// display a different menu
+void display_menus(void)
+{
+	int i;
+	char temp[10];
+	for(i = 0;i < no_prompts;i++)
+	{
+		if(prompt_ptr[i].type == current_fptr)
+		{
+			memcpy((void*)temp,(labels+prompt_ptr[i].offset),prompt_ptr[i].len+1);
+			GDispStringAt(prompt_ptr[i].row,prompt_ptr[i].col,temp);
+		}
+	}	
 }
 //******************************************************************************************//
 //*************************************** parse_PIC24 **************************************//
@@ -207,13 +247,13 @@ void parse_PIC24(UCHAR ch)
 	uint8_t done = 0;
 	char param_string[10];
 	UCHAR temp;
-
+/*
 	dispCharAt(15,19,test);
 	if(++test > 0x7e)
 		test = 0x21;
 
 	dispCharAt(15,0,parse_state+0x30);
-	
+*/	
 	switch(parse_state)
 	{
 		case IDLE:
@@ -221,7 +261,7 @@ void parse_PIC24(UCHAR ch)
 			{
 				current_param = ch;
 				parse_state = CHECK_HIGHBIT;
-				dispCharAt(15,2,parse_state+0x30);
+//				dispCharAt(12,2,parse_state+0x30);
 			}
 			break;
 		case CHECK_HIGHBIT:
@@ -229,21 +269,21 @@ void parse_PIC24(UCHAR ch)
 			{
 				case RT_HIGH0:
 					parse_state = SEND_UCHAR;
-					dispCharAt(15,4,parse_state+0x30);
+//					dispCharAt(12,4,parse_state+0x30);
 					break;
 				case RT_HIGH1:
 					temp_UINT = ch;
 					parse_state = SEND_UINT1;
-					dispCharAt(15,6,parse_state+0x30);
+//					dispCharAt(12,6,parse_state+0x30);
 					break;
 				case RT_HIGH2:
 					temp_UINT = ch;
-					dispCharAt(15,8,parse_state+0x30);
+//					dispCharAt(12,8,parse_state+0x30);
 					parse_state = SEND_UINT2;
 					break;
 				default:
 					xbyte = ch;
-					dispCharAt(15,10,parse_state+0x30);
+//					dispCharAt(12,10,parse_state+0x30);
 					sprintf(param_string,"%3d",xbyte);
 					done = 1;
 					break;	
@@ -251,7 +291,7 @@ void parse_PIC24(UCHAR ch)
 			break;
 		case SEND_UCHAR:
 			xbyte = ch | 0x80;
-			dispCharAt(15,12,parse_state+0x30);
+//			dispCharAt(12,12,parse_state+0x30);
 			sprintf(param_string,"%3d",xbyte);
 			done = 1;
 			break;
@@ -261,7 +301,7 @@ void parse_PIC24(UCHAR ch)
 			temp_UINT <<= 8;
 			xword |= temp_UINT;
 			xword |= 0x0080;
-			dispCharAt(15,14,parse_state+0x30);
+//			dispCharAt(12,14,parse_state+0x30);
 			sprintf(param_string,"%4u",xword);
 			done = 1;
 			break;
@@ -271,7 +311,7 @@ void parse_PIC24(UCHAR ch)
 			temp_UINT <<= 8;
 			xword |= temp_UINT;
 			xword |= 0x8000;
-			dispCharAt(15,16,parse_state+0x30);
+//			dispCharAt(12,16,parse_state+0x30);
 			sprintf(param_string,"%4u",xword);
 			done = 1;
 			break;

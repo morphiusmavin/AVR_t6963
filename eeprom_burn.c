@@ -11,6 +11,8 @@
 void update_prompt_struct(UCHAR pnum, UCHAR row, UCHAR col, uint16_t *offset, uint8_t type,char *ramstr);
 void printMenu(void);
 
+char eepromString[STRING_LEN] EEMEM;
+
 PROMPT_STRUCT prompts[30];
 							
 int main(void) 
@@ -48,7 +50,8 @@ int main(void)
 	GDispSetMode(TEXT_ON);
 	_delay_us(10);
 	GDispClrTxt();    
-	printMenu();
+//	printMenu();
+
     no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
 
 	if(no_prompts == 0xff)
@@ -58,11 +61,10 @@ int main(void)
 		
     while (1) 
     {
-//		printMenu();
         test1 = receiveByte();
         switch(test1)
         {
-            case 'a':
+            case KP_A:
 #if 1		
 #if 1		
                 printString("\r\nwriting to eeprom...\r\n");
@@ -137,6 +139,9 @@ int main(void)
 				i++;
 				update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU3,"MENU4c\0");
 
+				i++;
+				update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU3,"NUM_ENTRY\0");
+
                 no_prompts = i+1;
                 prompt_info_offset = total_strlen;
 				printString("\r\n");
@@ -163,7 +168,7 @@ int main(void)
                 }
 #endif
 				no_layouts = 5;
-				rt_main = (RT_MAIN*)malloc(sizeof(RT_MAIN)*no_layouts);
+				rt_main = (RT_MAIN*)malloc((size_t)(sizeof(RT_MAIN)*no_layouts));
 				if(rt_main == NULL)
 				{
 					printString("malloc returned NULL for rt_main\r\n");
@@ -298,7 +303,7 @@ int main(void)
 				}
 				printString("done writing prompts structs and screen layout to eeprom\r\n");
                 break;
-			case 'b':	
+			case KP_B:
 				printString("reading prompt data into prompt structs\r\n");
 				no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
 				no_layouts = eeprom_read_byte((uint8_t*)NO_LAYOUTS_EEPROM_LOCATION);
@@ -331,7 +336,7 @@ int main(void)
 */
 				if(rt_main_is_mallocd == 0)
 				{
-					rt_main = (RT_MAIN*)malloc(sizeof(RT_MAIN)*no_layouts);
+					rt_main = (RT_MAIN*)malloc((size_t)(sizeof(RT_MAIN)*no_layouts));
 					if(rt_main == NULL)
 					{
 						printString("malloc returned NULL for rt_main\r\n");
@@ -425,7 +430,7 @@ int main(void)
 				}
 				printString("done\r\n");
 				break;
-            case 'c':
+            case KP_C:
 #if 1			
                 printString("displaying RT labels\r\n");
                 GDispClrTxt();
@@ -442,8 +447,6 @@ int main(void)
                 }
 //               printString("\r\ndone displaying RT labels\r\n");
 #endif			   
-                break;
-            case 'd':
 #if 1			
                 printString(" displaying menu 1\r\n");
                 GDispClrTxt();
@@ -458,8 +461,6 @@ int main(void)
                     }
                 }
 #endif				
-				break;
-            case 'e':
 #if 1			
                 printString(" displaying menu 2\r\n");
                 GDispClrTxt();
@@ -475,8 +476,6 @@ int main(void)
                 }
 #endif				
 #endif				
-				break;
-            case 'f':
 #if 1			
                 printString(" displaying menu 3\r\n");
                 GDispClrTxt();
@@ -492,23 +491,10 @@ int main(void)
                 }
 #endif				
 				break;
-			case 'g':
-				GDispClrTxt();
-				k = 0x20;
-				for(row = 0;row < ROWS;row++)
-				{
-					for(col = 0;col < COLUMN;col++)
-					{
-						dispCharAt(row,col,k);
-						if(++k > 0x7e)
-							k = 0x20;
-					}
-				}
-				break;
 			case 'h':
 				printMenu();
 				break;
-			case 'i':
+			case KP_D:
 #if 1		
 				if(no_prompts == 0xff)
 					printString("no_prompts is blank\r\n");
@@ -594,7 +580,7 @@ int main(void)
 				}
 #endif				
 				break;
-			case 'j':
+			case KP_0:
 				printString("displaying layout info...\r\n");
 
 				no_layouts = eeprom_read_byte((uint8_t*)NO_LAYOUTS_EEPROM_LOCATION);
@@ -679,10 +665,7 @@ int main(void)
 				}
 				break;
 #if 1				
-			case '1':
-				GDispClrTxt();    
-				break;
-			case '2':
+			case KP_1:
 				printString("tesing pattern 1\r\n");
 				GDispClrTxt();
 				k = 0x20;
@@ -699,7 +682,7 @@ int main(void)
 				}
 				printString("done\r\n");
 				break;
-			case '3':
+			case KP_2:
 				printString("tesing pattern 2\r\n");
 				GDispClrTxt();
 				k = 0x30;
@@ -716,7 +699,7 @@ int main(void)
 				}
 				printString("done\r\n");
 				break;
-			case '4':	
+			case KP_3:
 				printString("tesing pattern 3\r\n");
 				GDispClrTxt();
 				k = 0x41;
@@ -733,7 +716,7 @@ int main(void)
 				}
 				printString("done\r\n");
 				break;
-			case '5':	
+			case KP_4:
 				printString("tesing pattern 4\r\n");
 				GDispClrTxt();
 				k = 0x61;
@@ -750,7 +733,7 @@ int main(void)
 				}
 				printString("done\r\n");
 				break;
-			case '6':
+			case KP_5:
 				printString("tesing pattern 1 (fast)\r\n");
 				GDispClrTxt();
 				k = 0x20;
@@ -765,7 +748,7 @@ int main(void)
 				}
 				printString("done\r\n");
 				break;
-			case '7':
+			case KP_6:
 				printString("tesing pattern 2 (fast)\r\n");
 				GDispClrTxt();
 				k = 0x30;
@@ -780,7 +763,7 @@ int main(void)
 				}
 				printString("done\r\n");
 				break;
-			case '8':	
+			case KP_7:	
 				printString("tesing pattern 3 (fast)\r\n");
 				GDispClrTxt();
 				k = 0x41;
@@ -795,7 +778,7 @@ int main(void)
 				}
 				printString("done\r\n");
 				break;
-			case '9':	
+			case KP_8:
 				printString("tesing pattern 4 (fast)\r\n");
 				GDispClrTxt();
 				k = 0x61;
@@ -810,7 +793,8 @@ int main(void)
 				}
 				printString("done\r\n");
 				break;
-            case '*':
+/*				
+            case KP_AST:
                 row++;
                 k++;
                 CheckRC(&row,&col,&k);
@@ -818,7 +802,7 @@ int main(void)
                 dispCharAt(row,col,k);
                 dispRC(row,col);
 				break;
-            case '0':
+            case KP_0:
                 row--;
                 k++;
                 CheckRC(&row,&col,&k);
@@ -826,7 +810,7 @@ int main(void)
                 dispCharAt(row,col,k);
                 dispRC(row,col);
 				break;
-            case '#':
+            case KP_POUND:
                 col++;
                 k++;
                 CheckRC(&row,&col,&k);
@@ -834,7 +818,7 @@ int main(void)
                 dispCharAt(row,col,k);
                 dispRC(row,col);
 				break;
-            case 'D':
+            case KP_D:
                 col--;
                 k++;
                 CheckRC(&row,&col,&k);
@@ -842,6 +826,7 @@ int main(void)
                 dispCharAt(row,col,k);
                 dispRC(row,col);
 				break;
+*/				
 			default:
 				break;
         }

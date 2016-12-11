@@ -164,15 +164,96 @@ is not finished when a keypad char is sent, the counter is reset and the sequenc
 ignored and then the keypad function will process the keypress.
 
 The beginning of the sequence is always one of the special characters. The function that
-parses the sequence will increment a global counter to keep track of how many bytes of data
-has been sent. If the byte sent just after the special char is RT_HIGH0/1/2 then set the high
+parses the sequence is a state machine that parses the bytes sent and formats param_string
+with either xbyte or xword. Currently the only words sent are if the special char is
+a RT_RPM. If the byte sent just after the special char is RT_HIGH0/1/2 then set the high
 bits for either the byte or word sent. 
 
-1st_byte <<= 1;
-2nd_byte <<= 1;
+menus:
+
+The menus are managed by function pointers. The default menu is main_menu_func. If the '*'
+key is pressed the context will return to the previous menu. (the only exception to this
+is the main menu).
 
 
+UCHAR (*fptr[NUM_FPTS])(UCHAR, uint8_t, uint16_t, UCHAR, UCHAR) = { main_menu_func,\
+	 menu1a, menu1b,\
+	 menu1c, menu1d,\
+	 menu2a, menu2b,\
+	 menu2c, menu2d, \
+	 number_entry };
+
+
+main_menu_func:
+1) menu1a
+	1) (go back)
+	2) menu2a
+	3) menu2b
+	4) menu2c
+2) menu1b
+	1) main_menu_func (go back to top menu for now)
+	2)	"    "    "                 "
+	3)	"    "    "                 "
+	4)	"    "    "                 "
+3) menu1c
+	1)	"    "    "                 "
+	2)	"    "    "                 "
+	3)	"    "    "                 "
+	4)	"    "    "                 "
+4) menu1d
+	1)	"    "    "                 "
+	2)	"    "    "                 "
+	3)	"    "    "                 "
+	4)	"    "    "                 "
+
+menu2a:	
+	1) number_entry
+	2) main_menu_func (go back to top menu for now)
+	3)	"    "    "                 "
+	4)	"    "    "                 "
+	
+num_entry:
+	enter keypad digits 0->9 - puts number in buffer
+	A,B - enter, cancel
+	(should present user with final number before enter
+
+alpha_entry:
+	enter alphanumeric 0x21->0x7e using a pull-down that lets user scroll thru list
+	(or enter 0->9 and/or A->D)
+	
+
+
+params in TS-5500 that can be set:
+	tasks: enable,delay,priority
+	comm port settings
+	change passcode
+	Qtraffic: record to logfile, view errors only, etc
+		Qtraffic: 
+			int type;
+			int error;
+			UCHAR param;
+			UCHAR onoff;
+			INT32U OSTime;
+			
+			
+	blinker time
+	number of blinks
+	rt params:
+		engine temp warning
+		engine temp shutdown
+		oil pressure warning
+		oil pressure shutdown
+		battery temp on (for battery heater)
+		battery temp off	"	"	"
+		
+checkbox group dialog:
+	predefines set of on/off params to change where user can scroll cursor
+	to checkboxes and set/unset
+
+dialog for viewing TS-5500 Qtraffic logfiles
+	view latest
+	view range (date/time)
+	reset/erase
+	manage files on flash disk
 				
-
-
 

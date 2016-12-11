@@ -21,7 +21,7 @@ LIBDIR = lib
 
 PROGRAMMER_TYPE = buspirate
 # extra arguments to avrdude: baud rate, chip type, -F flag, etc.
-PROGRAMMER_ARGS = -P /dev/ttyUSB0 -v
+PROGRAMMER_ARGS = -C avrdude.conf +atmega328p.conf -P /dev/ttyUSB0 -v
 # -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a -U eeprom:w:$(PROJECT).eep:a -U lfuse:w:0x$(AVRDUDE_LFUSE):m -U hfuse:w:0x$(AVRDUDE_HFUSE):m -U efuse:w:0x$(AVRDUDE_EFUSE):m
 
 ##########------------------------------------------------------##########
@@ -33,8 +33,8 @@ CC = avr-gcc
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 AVRSIZE = avr-size
-AVRDUDE = ./avrdude-test2
-#AVRDUDE = avrdude
+#AVRDUDE = ./avrdude-test2
+AVRDUDE = avrdude
 
 ##########------------------------------------------------------##########
 ##########                   Makefile Magic!                    ##########
@@ -126,7 +126,7 @@ clean:
 ##########------------------------------------------------------##########
 
 flash: $(TARGET).hex 
-	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS) -U flash:w:$<
+	sudo $(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS) -U flash:w:$<
 #	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS)
 
 ## An alias
