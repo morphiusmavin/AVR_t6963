@@ -6,11 +6,14 @@
 #include "t6963.h"
 #include "macros.h"
 #include "main.h"
+#include "memdebug.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+
 void update_prompt_struct(UCHAR pnum, UCHAR row, UCHAR col, uint16_t *offset, uint8_t type,char *ramstr);
 void printMenu(void);
-
+void showmem(void);
 char eepromString[STRING_LEN] EEMEM;
 
 PROMPT_STRUCT prompts[30];
@@ -40,8 +43,11 @@ int main(void)
     uint16_t total_strlen;
 	prompt_ptr = NULL;
 	rt_main = NULL;
+	UCHAR *test_ptr;
 
+	showmem();	
     initUSART();
+	showmem();	
 
 	GDispInit();
 	_delay_us(10);
@@ -51,22 +57,36 @@ int main(void)
 	_delay_us(10);
 	GDispClrTxt();    
 //	printMenu();
+	showmem();	
 
     no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
+	showmem();	
 
 	if(no_prompts == 0xff)
 		printString("no_prompts is blank\r\n");
 	if(no_layouts == 0xff)
 		printString("no_layouts is blank\r\n");
-		
+/*		
+	test_ptr = (UCHAR *)malloc((size_t)1000);
+	if(test_ptr == NULL)
+	{
+		printString("test_ptr == NULL\r\n");
+	}
+	else
+	{
+		memset((void*)test_ptr,0,sizeof(test_ptr));
+		for(i = 0;i < 1000;i++)
+			*(test_ptr + i) = i;
+		for(i = 0;i < 1000;i++)
+			printHexByte(i);
+	}		
+*/		
     while (1) 
     {
         test1 = receiveByte();
         switch(test1)
         {
             case KP_A:
-#if 1		
-#if 1		
                 printString("\r\nwriting to eeprom...\r\n");
                 total_strlen = 0;
                 i = 0;
@@ -150,10 +170,10 @@ int main(void)
 				printHexByte((uint8_t)prompt_info_offset);
 				transmitByte(0x20);
 				printHexByte((uint8_t)no_prompts);
-#ifndef SKIP_EEPROM
+
 				eeprom_update_byte((uint8_t *)NO_PROMPTS_EEPROM_LOCATION,no_prompts);
 				eeprom_update_word((uint16_t *)PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB,prompt_info_offset);
-#endif
+
 				printString("\r\ndone writing prompts to eeprom\r\n");
 
                 for(i = 0;i < no_prompts;i++)
@@ -161,19 +181,20 @@ int main(void)
 					// memcpy(dest,src,size)
                     memcpy((void*)(promptString),(void *)(&(prompts[i])),str_size);
 					// eeprom_block_update(src,dest,size)
-#ifndef SKIP_EEPROM
+
                     eeprom_update_block(promptString,\
 						(eepromString+((i*(uint8_t)str_size))+prompt_info_offset), str_size);
-#endif
                 }
-#endif
+
 				no_layouts = 5;
+				showmem();
 				rt_main = (RT_MAIN*)malloc((size_t)(sizeof(RT_MAIN)*no_layouts));
 				if(rt_main == NULL)
 				{
 					printString("malloc returned NULL for rt_main\r\n");
 					break;
 				}
+				showmem();
 				rt_main_is_mallocd = 1;
 				rt_main[0].num_params = 10;
 				rt_main[1].num_params = 8;
@@ -207,7 +228,6 @@ int main(void)
 						(tptr + j)->col = j<rt_main[i].num_params/2?0:15;	// col 15 is the middle of screen
 					}
 				}		
-#if 1				
 				// these have to match with where rt_main[n].num_params is assigned above
 				rt_main[0].ptr_rt_layout[0].label_list = 0;		// RPM
 				rt_main[0].ptr_rt_layout[1].label_list = 1;		// MPH
@@ -247,7 +267,7 @@ int main(void)
 				// 5th type shows only 2
 				rt_main[4].ptr_rt_layout[0].label_list = 1;		// RPM
 				rt_main[4].ptr_rt_layout[1].label_list = 2;		// MPH
-#endif
+
 				// the next free memory location in eeprom is going to be:
 				// no_prompts*sizeof(PROMPT_STRUCT)+prompt_info_offset
 				
@@ -270,9 +290,9 @@ int main(void)
 					for(j = 0;j < rt_main[i].num_params;j++)
 					{
 						// eeprom_update_block(src,dest,size)
-#ifndef SKIP_EEPROM
+
 						eeprom_update_block((const void*)&rt_main[i].ptr_rt_layout[j],(void*)eepromString+layout_offset,sizeof(RT_LAYOUT));
-#endif
+
 						layout_offset += sizeof(RT_LAYOUT);
 					}	
 				}
@@ -287,9 +307,9 @@ int main(void)
 				eeprom_update_word((uint16_t *)LAYOUT_OFFSET_EEPROM_LOCATION_LSB,layout_offset);
 				for(i = 0;i < no_layouts;i++)
 				{
-#ifndef SKIP_EEPROM
+
 					eeprom_update_block((const void*)&rt_main[i],(void*)(eepromString+layout_offset),sizeof(RT_MAIN));
-#endif
+
 					layout_offset += sizeof(RT_MAIN);
 				}
 				// free up all the malloc'd memory (heap)
@@ -336,12 +356,14 @@ int main(void)
 */
 				if(rt_main_is_mallocd == 0)
 				{
+					showmem();
 					rt_main = (RT_MAIN*)malloc((size_t)(sizeof(RT_MAIN)*no_layouts));
 					if(rt_main == NULL)
 					{
 						printString("malloc returned NULL for rt_main\r\n");
 						return 1;
 					}
+					showmem();
 					rt_main_is_mallocd = 1;
 					printString("rt_main is malloc'd\r\n");
 				}
@@ -431,7 +453,7 @@ int main(void)
 				printString("done\r\n");
 				break;
             case KP_C:
-#if 1			
+
                 printString("displaying RT labels\r\n");
                 GDispClrTxt();
                 for(i = 0;i < no_prompts;i++)
@@ -446,8 +468,6 @@ int main(void)
                     }
                 }
 //               printString("\r\ndone displaying RT labels\r\n");
-#endif			   
-#if 1			
                 printString(" displaying menu 1\r\n");
                 GDispClrTxt();
                 for(i = 0;i < no_prompts;i++)
@@ -460,8 +480,6 @@ int main(void)
                         printString("\r\n");
                     }
                 }
-#endif				
-#if 1			
                 printString(" displaying menu 2\r\n");
                 GDispClrTxt();
                 for(i = 0;i < no_prompts;i++)
@@ -474,9 +492,6 @@ int main(void)
                         printString("\r\n");
                     }
                 }
-#endif				
-#endif				
-#if 1			
                 printString(" displaying menu 3\r\n");
                 GDispClrTxt();
                 for(i = 0;i < no_prompts;i++)
@@ -489,13 +504,11 @@ int main(void)
                         printString("\r\n");
                     }
                 }
-#endif				
 				break;
 			case 'h':
 				printMenu();
 				break;
 			case KP_D:
-#if 1		
 				if(no_prompts == 0xff)
 					printString("no_prompts is blank\r\n");
 				else
@@ -578,7 +591,6 @@ int main(void)
 					}
 	//				free(prompt_ptr);
 				}
-#endif				
 				break;
 			case KP_0:
 				printString("displaying layout info...\r\n");
@@ -664,7 +676,6 @@ int main(void)
 					}
 				}
 				break;
-#if 1				
 			case KP_1:
 				printString("tesing pattern 1\r\n");
 				GDispClrTxt();
@@ -830,11 +841,10 @@ int main(void)
 			default:
 				break;
         }
-#endif		
     }
     return (0);
 }
-#if 1
+
 void dispRC(int row, int col)
 {
     printString("col=");
@@ -889,45 +899,23 @@ void update_prompt_struct(UCHAR pnum, UCHAR row, UCHAR col, uint16_t *offset, ui
     prompts[pnum].offset = *offset;
 	prompts[pnum].col = col;
     prompts[pnum].type = type;
-#ifndef SKIP_EEPROM
+
     eeprom_update_block(ramstr, eepromString+*offset, len);
-#endif
+
     *offset += len;
 }
-/*
-	for(i = 0;i < no_layouts;i++)
-	{
-		strcpy(rt_main[i].name,"layout\0");
-		temp[0] = i+0x30;
-		temp[1] = 0;
-		strcat(rt_main[i].name,temp);
-		rt_main[i].num_params = 5;
-		for(j = 0;j < 10;j++)
-		{
-			rt_main[i].rt_layout[j].row = j<5?j:j-5;
-			rt_main[i].rt_layout[j].col = j<5?0:16;
-			rt_main[i].rt_layout[j].label_list = j;
-			rt_main[i].rt_layout[j].offset = j;
-		}
-	}
-	eeprom_update_block(rt_main[0],(eepromString+(prompt_info_offset+(8*str_size))),sizeof(RT_MAIN));
-*/
 
-/*
-    printHexByte(pnum);
-    transmitByte(0x20);
-    printHexByte(row);
-    transmitByte(0x20);
-    printHexByte(col);
-    transmitByte(0x20);
-    printHexByte((uint8_t)(offset>>8));
-    printHexByte((uint8_t)offset);
-    transmitByte(0x20);
-    printHexByte((uint8_t)(len>>8));
-    printHexByte((uint8_t)len);
-    transmitByte(0x20);
-    printHexByte(type);
-    transmitByte(0x20);
-    transmitByte(0x20);
-*/
-#endif
+void showmem()
+{
+	char buffer[100];
+ 
+	sprintf(buffer,"%04u %04u %04u : used/free/large",
+		getMemoryUsed(),
+		getFreeMemory(),
+		getLargestAvailableMemoryBlock()
+		);
+ 
+	printString(buffer);
+	printString("\r\n");
+}
+
