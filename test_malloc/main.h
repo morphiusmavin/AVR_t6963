@@ -15,6 +15,7 @@ typedef struct prompts
     uint8_t type;
 } PROMPT_STRUCT;
 
+#if 0
 typedef struct RT_layout
 {
 	UCHAR row;		// row, col where this label goes (param is end of label + 1 space)
@@ -29,7 +30,7 @@ typedef struct RT_main
 	RT_LAYOUT *ptr_rt_layout;	// pointer to list of type RT_LAYOUT's (this is num_params long)
 	uint16_t offset;		// used by malloc after read from eeprom
 } RT_MAIN;
-
+#endif
 
 enum menu_types
 {
@@ -101,14 +102,11 @@ enum states
 #define NO_PROMPTS_EEPROM_LOCATION 0x03f0
 #define PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB 0x03f2	// points to just after all the labels (prompt_info)
 #define PROMPT_INFO_OFFSET_EEPROM_LOCATION_MSB 0x03f3
-#define NO_LAYOUTS_EEPROM_LOCATION 0x03f4
-#define LAYOUT_OFFSET_EEPROM_LOCATION_LSB 0x03f6	// points to just after all the prompt info (layout info)
-#define LAYOUT_OFFSET_EEPROM_LOCATION_MSB 0x03f7
 #define dispCharAt(_row,_col,_char) GDispCharAt((uint16_t)_row,(uint16_t)_col,(UCHAR)_char)
 #define dispSetCursor(_mode,_row,_col,_type) GDispSetCursor ((UCHAR)_mode, (uint16_t)_row, (uint16_t)_col, (UCHAR)_type)
 
 RT_MAIN *rt_main;
-RT_LAYOUT *rt_tlayout;
+//RT_LAYOUT *rt_tlayout;
 //char *labels;
 char labels[200];
 
@@ -138,7 +136,6 @@ uint16_t temp_UINT;
 UCHAR last_char;
 UCHAR parse_state;
 
-//PROMPT_STRUCT prompts[30];
 uint16_t prompt_info_offset;
 uint8_t hide_menu;
 uint8_t no_layouts;

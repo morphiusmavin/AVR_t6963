@@ -34,7 +34,7 @@ OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 AVRSIZE = avr-size
 #AVRDUDE = ./avrdude-test2
-AVRDUDE = avrdude
+AVRDUDE = sudo avrdude
 
 ##########------------------------------------------------------##########
 ##########                   Makefile Magic!                    ##########
@@ -126,7 +126,7 @@ clean:
 ##########------------------------------------------------------##########
 
 flash: $(TARGET).hex 
-	sudo $(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS) -U flash:w:$<
+	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS) -U flash:w:$<
 #	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p $(MCU) $(PROGRAMMER_ARGS)
 
 ## An alias
