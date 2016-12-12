@@ -15,16 +15,14 @@
 
 char eepromString[STRING_LEN] EEMEM;
 
+PROMPT_STRUCT prompts[26];	// this must be large enough for no_prompts
+
 int main(void) 
 {
     uint8_t test1;
-    char ramString[STRING_LEN];
-	int i,j;
-//    int row,col;
-//    UCHAR k;
+	int i;
 	uint8_t temp;
 	uint16_t temp2;
-	int last_fptr = 0;
 	uint16_t limit16 = 0;
 	uint8_t limit8 = 0;
 	UCHAR ret_char;
@@ -35,8 +33,9 @@ int main(void)
 	UCHAR (*fptr[NUM_FPTS])(UCHAR, uint8_t, uint16_t, UCHAR, UCHAR) = { main_menu_func,\
 		 menu1a, menu1b,\
 		 menu1c, menu1d,\
-		 menu2a, menu2b,\
-		 menu2c, menu2d, number_entry };
+		 menu2a, menu2b, menu2c,\
+		 menu3a, menu3b, menu3c,\
+		 menu4a, menu4b, menu4c, number_entry };
 #if 1
     initUSART();
 
@@ -56,27 +55,24 @@ int main(void)
 
 	if(no_prompts != 0xff)
 	{
-		printString("reading prompt data into prompt structs\r\n");
+//		printString("reading prompt data into prompt structs\r\n");
 		no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
-		printString("no_prompts: ");
+//		printString("no_prompts: ");
 		printHexByte(no_prompts);
-		printString("\r\n");
-		no_layouts = eeprom_read_byte((uint8_t*)NO_LAYOUTS_EEPROM_LOCATION);
-		printString("no_layouts: ");
-		printHexByte(no_layouts);
-		printString("\r\n");
+//		printString("\r\n");
 		prompt_info_offset = (uint16_t)eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB);
 		temp = eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_MSB);
 		temp2 = (uint16_t)temp;
 		prompt_info_offset |= (temp2 << 8);		// shift msb over and bit-or with lsb
-		printString("prompt_info_offset: ");
-		printHexByte((uint8_t)prompt_info_offset);
-		printHexByte((uint8_t)(prompt_info_offset>>8));
-
+//		printString("prompt_info_offset: ");
+//		printHexByte((uint8_t)prompt_info_offset);
+//		printHexByte((uint8_t)(prompt_info_offset>>8));
+//		printString("\r\n");
 		for(i = 0;i < no_prompts;i++)
 		{
 			eeprom_read_block((void*)&prompts[i], eepromString+(prompt_info_offset+(i*sizeof(PROMPT_STRUCT))),sizeof(PROMPT_STRUCT));
 		}
+/*		
 		for(i = 0;i < no_prompts;i++)
 		{
 			printHexByte((uint8_t)prompts[i].pnum);
@@ -93,6 +89,8 @@ int main(void)
 			printHexByte((uint8_t)prompts[i].type);
 			printString("\r\n");
 		}
+		printString("\r\ndone reading eeprom\r\n");
+*/		
 	}
 	else
 	{
@@ -102,15 +100,22 @@ int main(void)
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
-	curr_rt_layout = 0;
 	GDispClrTxt();
-//	display_labels();
+/*
+	_delay_ms(5000);
+	printString("\r\ndisplaying labels...");
+	display_labels();
+*/	
 	set_defaults();
-//	display_menus();
+	_delay_ms(500);
+//	printString("\r\ndisplaying menus...\r\n");
+	display_menus();
+	display_labels();
     while (1) 
     {
         test1 = receiveByte();
-//		printHexByte(test1);
+//		printHexByte(current_fptr);
+//		printString("\r\n");
 		ret_char = (*fptr[current_fptr])(test1, limit8, limit16, cur_row, cur_col);
 		if(current_fptr != last_fptr)
 			display_menus();
@@ -126,122 +131,15 @@ int main(void)
 void display_menus(void)
 {
 	int i;
-	char temp[10];
+	char temp[20];
 	for(i = 0;i < no_prompts;i++)
 	{
 		if(prompts[i].type == current_fptr)
 		{
-			memcpy((void*)temp,(labels+prompts[i].offset),prompt_ptr[i].len+1);
+			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
 			GDispStringAt(prompts[i].row,prompts[i].col,temp);
 		}
 	}	
-}
-//******************************************************************************************//
-//*************************************** parse_PIC24 **************************************//
-//******************************************************************************************//
-// get data from PIC24, convert from int to strings and place in param_string
-void parse_PIC24(UCHAR ch)
-{
-	int i,j;
-	uint8_t rowx,colx;
-	uint8_t xbyte;
-	uint16_t xword;
-	uint8_t done = 0;
-	char param_string[10];
-	UCHAR temp;
-/*
-	dispCharAt(15,19,test);
-	if(++test > 0x7e)
-		test = 0x21;
-
-	dispCharAt(15,0,parse_state+0x30);
-*/	
-	switch(parse_state)
-	{
-		case IDLE:
-			if(ch <= RT_RPM && ch >= RT_TRIP)
-			{
-				current_param = ch;
-				parse_state = CHECK_HIGHBIT;
-//				dispCharAt(12,2,parse_state+0x30);
-			}
-			break;
-		case CHECK_HIGHBIT:
-			switch(ch)
-			{
-				case RT_HIGH0:
-					parse_state = SEND_UCHAR;
-//					dispCharAt(12,4,parse_state+0x30);
-					break;
-				case RT_HIGH1:
-					temp_UINT = ch;
-					parse_state = SEND_UINT1;
-//					dispCharAt(12,6,parse_state+0x30);
-					break;
-				case RT_HIGH2:
-					temp_UINT = ch;
-//					dispCharAt(12,8,parse_state+0x30);
-					parse_state = SEND_UINT2;
-					break;
-				default:
-					xbyte = ch;
-//					dispCharAt(12,10,parse_state+0x30);
-					sprintf(param_string,"%3d",xbyte);
-					done = 1;
-					break;	
-			}
-			break;
-		case SEND_UCHAR:
-			xbyte = ch | 0x80;
-//			dispCharAt(12,12,parse_state+0x30);
-			sprintf(param_string,"%3d",xbyte);
-			done = 1;
-			break;
-		case SEND_UINT1:
-			xword = temp_UINT;
-			temp_UINT = (uint16_t)ch;
-			temp_UINT <<= 8;
-			xword |= temp_UINT;
-			xword |= 0x0080;
-//			dispCharAt(12,14,parse_state+0x30);
-			sprintf(param_string,"%4u",xword);
-			done = 1;
-			break;
-		case SEND_UINT2:
-			xword = temp_UINT;
-			temp_UINT = (uint16_t)ch;
-			temp_UINT <<= 8;
-			xword |= temp_UINT;
-			xword |= 0x8000;
-//			dispCharAt(12,16,parse_state+0x30);
-			sprintf(param_string,"%4u",xword);
-			done = 1;
-			break;
-		default:
-			break;
-	}
-	if(done)
-	{
-		temp = ~current_param;
-		for(i = 0;i < no_prompts;i++)
-		{
-			if(prompts[i].type == RT_LABEL)
-			{
-				for(j = 0;j < RTMAINC.num_params;j++)
-				{
-					if(temp == RTMAINC.ptr_rt_layout[j].label_list)
-					{
-						rowx = RTMAINC.ptr_rt_layout[j].row;
-						colx = RTMAINC.ptr_rt_layout[j].col;
-//						GDispStringAt(RTMAINC.ptr_rt_layout[j].row,RTMAINC.ptr_rt_layout[j].col+prompt_ptr[i].len+5,param_string);
-						GDispStringAt(rowx,colx+prompt_ptr[i].len+6,param_string);
-						i = no_prompts;
-					}
-				}
-			}
-		}
-		set_defaults();
-	}
 }
 //******************************************************************************************//
 //**************************************** display_labels **********************************//
@@ -249,26 +147,145 @@ void parse_PIC24(UCHAR ch)
 // displays only the labels of the current rt_layout
 void display_labels(void)
 {
-	int i,j;
+	int i;
 	char temp[20];
-	j = 0;
-//	GDispStringAt(15,0,RTMAINC.name);
-//	printString("displaying labels\r\n");
 
 	for(i = 0;i < no_prompts;i++)
 	{
-		for(j = 0;j < RTMAINC.num_params;j++)
+		if(prompts[i].type == RT_LABEL)
 		{
-			if(prompt_ptr[i].type == RT_LABEL && i == (RTMAINC.ptr_rt_layout[j].label_list))
+			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
+			GDispStringAt(prompts[i].row,prompts[i].col,temp);	
+		}
+	}
+}
+//******************************************************************************************//
+//*************************************** parse_PIC24 **************************************//
+//******************************************************************************************//
+// get data from PIC24, convert from int to strings and place in param_string
+void parse_PIC24(UCHAR ch)
+{
+	int i;
+	uint8_t xbyte;
+	uint16_t xword;
+	uint8_t done = 0;
+	char param_string[10];
+	UCHAR temp;
+
+	switch(parse_state)
+	{
+		case IDLE:
+			if(ch <= RT_RPM && ch >= RT_TRIP)
 			{
-				memcpy((void*)temp,(labels+prompt_ptr[i].offset),prompt_ptr[i].len+1);
-				
-//				GDispStringAt(prompt_ptr[i].row,prompt_ptr[i].col,temp);
-//				printString(temp);
-//				printString("\r\n");
-				GDispStringAt(RTMAINC.ptr_rt_layout[j].row,RTMAINC.ptr_rt_layout[j].col,temp);
+				current_param = ch;
+				parse_state = CHECK_HIGHBIT;
+			}
+			else
+			{
+				set_defaults();
+			}
+			break;
+		case CHECK_HIGHBIT:
+			switch(ch)
+			{
+				case RT_LOW:
+					parse_state = SEND_UCHAR0;
+					break;
+				case RT_HIGH0:		// if just a UCHAR is sent with high bit set
+					parse_state = SEND_UCHAR1;
+					break;
+				case RT_HIGH1:		// if UINT with neither bit 7 or 15 set
+					parse_state = GET_CH0;
+					break;	
+				case RT_HIGH2:		// if a UINT is sent with bit 7 set
+					parse_state = GET_CH1;
+					break;
+				case RT_HIGH3:		// if a UINT is sent with bit 15 set
+					parse_state = GET_CH2;
+					break;
+				default:
+					set_defaults();
+					break;
+			}
+			break;
+		case GET_CH0:
+			parse_state = SEND_UINT0;
+			temp_UINT = ch;
+			break;
+		case GET_CH1:
+			temp_UINT = ch;
+			parse_state = SEND_UINT1;
+			break;
+		case GET_CH2:
+			temp_UINT = ch;
+			parse_state = SEND_UINT2;
+			break;
+		case SEND_UCHAR0:
+			xbyte = ch;
+			sprintf(param_string,"%4d",xbyte);
+			printString("\r\n");
+			printString(param_string);
+			done = 1;
+			break;
+		case SEND_UCHAR1:
+			xbyte = ch | 0x80;
+			sprintf(param_string,"%4d",xbyte);
+			printString("\r\n");
+			printString(param_string);
+			done = 1;
+			break;
+		case SEND_UINT0:
+			xword = (uint16_t)temp_UINT;
+			temp_UINT = (uint16_t)ch;
+			temp_UINT <<= 8;
+			temp_UINT &= 0xff00;
+			xword |= temp_UINT;
+			sprintf(param_string,"%4u",xword);
+			printString("\r\n");
+			printString(param_string);
+			
+			done = 1;
+			break;
+		case SEND_UINT1:
+			xword = (uint16_t)temp_UINT;
+			temp_UINT = (uint16_t)ch;
+			temp_UINT <<= 8;
+			temp_UINT &= 0xff00;
+			xword |= temp_UINT;
+			xword |= 0x0080;
+			sprintf(param_string,"%4u",xword);
+			printString("\r\n");
+			printString(param_string);
+			done = 1;
+			break;
+		case SEND_UINT2:
+			xword = (uint16_t)temp_UINT;
+			temp_UINT = (uint16_t)ch;
+			temp_UINT <<= 8;
+			temp_UINT &= 0xff00;
+			xword |= temp_UINT;
+			xword |= 0x8000;
+			sprintf(param_string,"%4u",xword);
+			printString("\r\n");
+			printString(param_string);
+			done = 1;
+			break;
+		default:
+			printString("default ");
+			set_defaults();
+			break;
+	}
+	if(done)
+	{
+		temp = ~current_param;
+		for(i = 0;i < no_prompts;i++)
+		{
+			if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)
+			{
+				GDispStringAt(prompts[i].row,prompts[i].col+10,param_string);
 			}
 		}
+		set_defaults();
 	}
 }
 //******************************************************************************************//
@@ -309,11 +326,10 @@ void CheckRC(int *row, int *col, UCHAR *k)
 
 void set_defaults(void)
 {
-	sequence_counter = 0;
 	current_param = 0;
 	temp_UINT = 0;
-	last_char = 0;
 	parse_state = IDLE;
-	test = 0x21;
+	current_fptr = 0;
+	last_fptr = 0;
 }
 

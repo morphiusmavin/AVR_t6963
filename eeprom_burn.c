@@ -45,8 +45,6 @@ int main(void)
 	printString("starting eeprom_burn...\r\n");
 	if(no_prompts == 0xff)
 		printString("no_prompts is blank\r\n");
-	if(no_layouts == 0xff)
-		printString("no_layouts is blank\r\n");
 /*		
 	test_ptr = (UCHAR *)malloc((size_t)1000);
 	if(test_ptr == NULL)
@@ -119,7 +117,19 @@ int main(void)
                 GDispClrTxt();
                 for(i = 0;i < no_prompts;i++)
                 {
-                    if(prompts[i].type == MENU2)
+                    if(prompts[i].type == MENU3)
+                    {
+                        eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
+                        GDispStringAt(prompts[i].row,prompts[i].col,ramString);
+                        printString(ramString);
+                        printString("\r\n");
+                    }
+                }
+                printString(" displaying menu 4\r\n");
+                GDispClrTxt();
+                for(i = 0;i < no_prompts;i++)
+                {
+                    if(prompts[i].type == MENU4)
                     {
                         eeprom_read_block(ramString, eepromString+prompts[i].offset,prompts[i].len+1);
                         GDispStringAt(prompts[i].row,prompts[i].col,ramString);
@@ -342,34 +352,34 @@ int burn_eeprom(void)
     i = 0;
     // the row,col elements don't really apply for the RT params
     // because the are displayed according to the row,col elements of the rt_layout
-	update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"RPM\0");
+	update_prompt_struct((UCHAR)i,(UCHAR)i,0,&total_strlen,RT_LABEL,"RPM\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"MPH\0");
+	update_prompt_struct((UCHAR)i,(UCHAR)i,0,&total_strlen,RT_LABEL,"MPH\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"ENG TEMP\0");
+	update_prompt_struct((UCHAR)i,(UCHAR)i,0,&total_strlen,RT_LABEL,"ENG TEMP\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"OIL PRESS\0");
+	update_prompt_struct((UCHAR)i,(UCHAR)i,0,&total_strlen,RT_LABEL,"OIL PRESS\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"OIL TEMP\0");
+	update_prompt_struct((UCHAR)i,(UCHAR)i,0,&total_strlen,RT_LABEL,"OIL TEMP\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"MAP\0");
+	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"MAP\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"O2\0");
+	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"O2\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"AIR TEMP\0");
+	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"AIR TEMP\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"TIME\0");
+	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"TIME\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,(UCHAR)i,10,&total_strlen,RT_LABEL,"TRIP\0");
+	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"TRIP\0");
 
 	i++;
 	// the row, col elements specify where at the bottom of the screen 
@@ -377,40 +387,46 @@ int burn_eeprom(void)
 	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU1,"MENU1a\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,8,&total_strlen,MENU1,"MENU2a\0");
+	update_prompt_struct((UCHAR)i,15,8,&total_strlen,MENU1,"MENU1b\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,16,&total_strlen,MENU1,"MENU3a\0");
+	update_prompt_struct((UCHAR)i,15,16,&total_strlen,MENU1,"MENU1c\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,24,&total_strlen,MENU1,"MENU4a\0");
+	update_prompt_struct((UCHAR)i,15,24,&total_strlen,MENU1,"MENU1d\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU2,"MENU1b\0");
+	update_prompt_struct((UCHAR)i,15,8,&total_strlen,MENU2,"MENU2a\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,8,&total_strlen,MENU2,"MENU2b\0");
+	update_prompt_struct((UCHAR)i,15,16,&total_strlen,MENU2,"MENU2b\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,16,&total_strlen,MENU2,"MENU3b\0");
+	update_prompt_struct((UCHAR)i,15,24,&total_strlen,MENU2,"MENU2c\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,24,&total_strlen,MENU2,"MENU4b\0");
+	update_prompt_struct((UCHAR)i,15,8,&total_strlen,MENU3,"MENU3a\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU3,"MENU1c\0");
+	update_prompt_struct((UCHAR)i,15,16,&total_strlen,MENU3,"MENU3b\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU3,"MENU2c\0");
+	update_prompt_struct((UCHAR)i,15,24,&total_strlen,MENU3,"MENU3c\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU3,"MENU3c\0");
+	update_prompt_struct((UCHAR)i,15,8,&total_strlen,MENU4,"MENU4a\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU3,"MENU4c\0");
+	update_prompt_struct((UCHAR)i,15,16,&total_strlen,MENU4,"MENU4b\0");
 
 	i++;
-	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU3,"NUM_ENTRY\0");
+	update_prompt_struct((UCHAR)i,15,24,&total_strlen,MENU4,"MENU4c\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU5,"NUM_ENTRY\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU5,"ALNUM_ENTRY\0");
 
     no_prompts = i+1;
     prompt_info_offset = total_strlen;
@@ -434,6 +450,7 @@ int burn_eeprom(void)
 
         eeprom_update_block(promptString,(eepromString+((i*(uint8_t)str_size))+prompt_info_offset), str_size);
     }
+	printString("done writing eeprom\r\n");
 	return 0;
 }
 
@@ -447,7 +464,6 @@ int read_eeprom(void)
 	
 	printString("reading prompt data into prompt structs\r\n");
 	no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
-	no_layouts = eeprom_read_byte((uint8_t*)NO_LAYOUTS_EEPROM_LOCATION);
 	printString("no_prompts: ");
 	printHexByte(no_prompts);
 	printString("\r\n");
@@ -481,6 +497,7 @@ int read_eeprom(void)
 		printHexByte((uint8_t)prompts[i].type);
 		printString("\r\n");
 	}
+	printString("done reading eeprom\r\n");
 	return 0;
 }
 
@@ -501,6 +518,7 @@ void update_prompt_struct(UCHAR pnum, UCHAR row, UCHAR col, uint16_t *offset, ui
 {
 	int len;	
 	printString(ramstr);
+	printString("\r\n");
 	len = strlen(ramstr) + 1;
 	prompts[pnum].len = len;
 	prompts[pnum].pnum = pnum;

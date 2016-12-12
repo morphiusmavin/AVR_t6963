@@ -1,9 +1,8 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 #define TIME_DELAY1 1
-#define RT_LABEL 0
-#define STRING_LEN   255
-#define NUM_FPTS 10
+#define STRING_LEN   100
+#define NUM_FPTS 15
 
 typedef struct prompts
 {
@@ -30,21 +29,47 @@ typedef struct RT_main
 	uint16_t offset;		// used by malloc after read from eeprom
 } RT_MAIN;
 
-
 enum menu_types
 {
-	MENU1 = 1,
+	MENU1,
 	MENU2,
 	MENU3,
-	MENU4
+	MENU4,
+	MENU5,
+	RT_LABEL
 } MENU_TYPES;	
+
+enum menu_order
+{
+	MAIN_MENU,
+	MENU1A,
+	MENU1B,
+	MENU1C,
+	MENU1D,
+	MENU2A,
+	MENU2B,
+	MENU2C,
+	MENU3A,
+	MENU3B,
+	MENU3C,
+	MENU4A,
+	MENU4B,
+	MENU4C,
+	NUM_ENTRY
+} MENU_ORDER;
+
+enum data_types
+{
+	RT_LOW,			// UCHAR without high bit set
+	RT_HIGH0,			// UCHAR with bit 7 set
+	RT_HIGH1,			// UINT with neither 7 or 15 set
+	RT_HIGH2,			// bit 7 of UINT set
+	RT_HIGH3			// bit 15 of UINT set
+} DATA_TYPES;
 
 enum rt_types
 {
-	RT_HIGH2 = 0xF3,
-	RT_HIGH1,
-	RT_HIGH0,
-	RT_TRIP,
+	RT_TRIP = 0xF6,
 	RT_TIME,
 	RT_AIRT,
 	RT_OS,
@@ -53,7 +78,7 @@ enum rt_types
 	RT_OILP,
 	RT_ENGT,
 	RT_MPH,
-	RT_RPM	// this should be 0xFF
+	RT_RPM	// this should be 0xFE	
 } RT_TYPES;
 
 enum key_types
@@ -86,9 +111,14 @@ enum states
 {
 	IDLE,
 	CHECK_HIGHBIT,
-	SEND_UCHAR,
-	SEND_UINT1,
-	SEND_UINT2
+	SEND_UCHAR0,	// UCHAR without high bit set	
+	SEND_UCHAR1,	// UCHAR with high bit set
+	GET_CH0,
+	GET_CH1,
+	GET_CH2,
+	SEND_UINT0,		// UINT with neither bit 7 or 15 set
+	SEND_UINT1,		// UINT with bit 7 set
+	SEND_UINT2		// UINT with bit 15 set
 } STATES;	
 
 #define NUM_ENTRY_SIZE 7
@@ -101,16 +131,8 @@ enum states
 #define NO_PROMPTS_EEPROM_LOCATION 0x03f0
 #define PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB 0x03f2	// points to just after all the labels (prompt_info)
 #define PROMPT_INFO_OFFSET_EEPROM_LOCATION_MSB 0x03f3
-#define NO_LAYOUTS_EEPROM_LOCATION 0x03f4
-#define LAYOUT_OFFSET_EEPROM_LOCATION_LSB 0x03f6	// points to just after all the prompt info (layout info)
-#define LAYOUT_OFFSET_EEPROM_LOCATION_MSB 0x03f7
 #define dispCharAt(_row,_col,_char) GDispCharAt((uint16_t)_row,(uint16_t)_col,(UCHAR)_char)
 #define dispSetCursor(_mode,_row,_col,_type) GDispSetCursor ((UCHAR)_mode, (uint16_t)_row, (uint16_t)_col, (UCHAR)_type)
-
-RT_MAIN *rt_main;
-RT_LAYOUT *rt_tlayout;
-//char *labels;
-char labels[200];
 
 void dispRC(int row, int col);
 void CheckRC(int *row, int *col, UCHAR *k);
@@ -123,7 +145,12 @@ UCHAR menu1d(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
 UCHAR menu2a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
 UCHAR menu2b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
 UCHAR menu2c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu2d(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
+UCHAR menu3a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
+UCHAR menu3b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
+UCHAR menu3c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
+UCHAR menu4a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
+UCHAR menu4b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
+UCHAR menu4c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
 UCHAR number_entry(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
 void cursor_forward(void);
 void cursor_backward(void);
@@ -135,21 +162,14 @@ void set_defaults(void);
 
 UCHAR current_param;
 uint16_t temp_UINT;
-UCHAR last_char;
 UCHAR parse_state;
+UCHAR last_fptr;
 
 //PROMPT_STRUCT prompts[30];
-uint16_t prompt_info_offset;
-uint8_t hide_menu;
-uint8_t no_layouts;
 uint8_t no_prompts;
-int curr_rt_layout;
-int sequence_counter;
 int current_fptr;
-uint8_t test;
 
 char cur_global_number[NUM_ENTRY_SIZE];
 char new_global_number[NUM_ENTRY_SIZE];
 UCHAR cur_row, cur_col;	// used by the current menu/dialog function to keep track of the current row,col
-PROMPT_STRUCT *prompt_ptr;
 #endif
