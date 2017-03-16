@@ -113,27 +113,15 @@ limits.
 
 Screen Layout:
 
-rt_main is an array of RT_MAIN with 5 elements which represents the 5 different types of
-screen formats. rt_layout is an array for each rt_main which has the positions and labels
-of each param displayed on the screen. The PIC24 will send an 0xFE followed by however
-many elements (num_params) are in rt_layout (up to 10). 
-
-typedef struct RT_layout
+typedef struct prompts
 {
+	uint8_t pnum;
 	UCHAR row;
 	UCHAR col;
-	int label_list;
-	int offset;
-} RT_LAYOUT_STRUCT;
-
-typedef struct RT_main
-{
-	char name[10];
-	int num_params;
-	RT_LAYOUT_STRUCT *ptr_rt_layout;
-} RT_MAIN;
-
-RT_MAIN rt_main[no_layouts];
+    uint16_t offset;
+	int len;
+    uint8_t type;
+} PROMPT_STRUCT;
 
 eeprom_burn.c will record the initial 5 different types of screen layouts to eeprom and then
 later on we can add a dialog which lets the user change the screen layout to suit.
@@ -143,31 +131,70 @@ ram space with all the RT_MAIN layouts and then all the RT_LAYOUT_STRUCT's. Then
 will record it all to eeprom with the no_layouts next to no_prompts and prompt_info_offset at
 0x03f4 in eeprom. (no_prompts is at 0x03f0 (byte) and prompt_info_offset is at 0x03f2 (word).
 
-Special chars sent by PIC24 starting with 0xFE: 
+Special chars sent by PIC24:
 
-0xFF - RT_RPM	- should be a uint16_t	(2 or 3x a second)
-0xFE - RT_MPH	- can be a uint8_t		(1x per second)
-0xFD - RT_ENGT	- ENGINE TEMP uint8_t			"
-0xFC - RT_OILP  - OIL PRESS uint8_t				"
-0xFB - RT_OILT	- OIL TEMP uint8_t				"
-0xFA - RT_MAP	- MAP, O2, AIR TEMP uint8_t		"
-0xF9 - RT_TRIP	- TRIP uint16_t
-0xF8 - RT_HIGH0 - set msb of byte (UCHAR sent)
-0xF7 - RT_HIGH1	- set msb of low byte set (UINT sent)
-0xF6 - RT_HIGH2 - set msb of low byte set (UINT sent)
-0xF5 -> 0xF0	- (reserved for future)
+The PIC24 sends a sequence of chars starting with one of the RT_TYPES. Each RT_TYPE is followed
+by a DATA_TYPE which tells the AVR what kind of data to expect. All the data is sent as UCHAR
+except for RT_RPM which is a UINT. If the data sent as a UCHAR is < 0x7f (127) the data type
+will be RT_LOW. If the high bit is set (> 0x7f) the data type will be RT_HIGH0. If a UINT is 
+set without the high bit for the first or second byte the data type will be RT_HIGH1. RT_HIGH2
+has bit 7 set and RT_HIGH3 has bit 15 set. The AVR will then know by the data type sent just
+after the RT_TYPE how to format the data (adding the appropriate high bit back in before printing
+it to the screen. The reason for this is so it can filter out the keypresses (0xE0->0xEF).
 
-The problem is what to do if a keypad code is sent in the middle of a RT sequence:
+enum rt_types
+{
+	RT_TRIP = 0xF6,
+	RT_TIME,
+	RT_AIRT,
+	RT_OS,
+	RT_MAP,
+	RT_OILT,
+	RT_OILP,
+	RT_ENGT,
+	RT_MPH,
+	RT_RPM	// this should be 0xFF	
+} RT_TYPES;
 
-The routine that parses the sequence data will increment a global counter. If the counter
-is not finished when a keypad char is sent, the counter is reset and the sequence data is
-ignored and then the keypad function will process the keypress.
+enum data_types
+{
+	RT_LOW,				// UCHAR without high bit set
+	RT_HIGH0,			// UCHAR with bit 7 set
+	RT_HIGH1,			// UINT with neither 7 or 15 set
+	RT_HIGH2,			// bit 7 of UINT set
+	RT_HIGH3			// bit 15 of UINT set
+} DATA_TYPES;
 
-The beginning of the sequence is always one of the special characters. The function that
-parses the sequence is a state machine that parses the bytes sent and formats param_string
-with either xbyte or xword. Currently the only words sent are if the special char is
-a RT_RPM. If the byte sent just after the special char is RT_HIGH0/1/2 then set the high
-bits for either the byte or word sent. 
+
+enum menu_types
+{
+	MENU1,
+	MENU2,
+	MENU3,
+	MENU4,
+	MENU5,
+	RT_LABEL
+} MENU_TYPES;	
+
+enum menu_order
+{
+	MAIN_MENU,
+	MENU1A,
+	MENU1B,
+	MENU1C,
+	MENU1D,
+	MENU2A,
+	MENU2B,
+	MENU2C,
+	MENU3A,
+	MENU3B,
+	MENU3C,
+	MENU4A,
+	MENU4B,
+	MENU4C,
+	NUM_ENTRY
+} MENU_ORDER;
+
 
 menus:
 
@@ -179,10 +206,9 @@ is the main menu).
 UCHAR (*fptr[NUM_FPTS])(UCHAR, uint8_t, uint16_t, UCHAR, UCHAR) = { main_menu_func,\
 	 menu1a, menu1b,\
 	 menu1c, menu1d,\
-	 menu2a, menu2b,\
-	 menu2c, menu2d, \
-	 number_entry };
-
+	 menu2a, menu2b, menu2c,\
+	 menu3a, menu3b, menu3c,\
+	 menu4a, menu4b, menu4c, number_entry };
 
 main_menu_func:
 1) menu1a
@@ -221,8 +247,6 @@ alpha_entry:
 	enter alphanumeric 0x21->0x7e using a pull-down that lets user scroll thru list
 	(or enter 0->9 and/or A->D)
 	
-
-
 params in TS-5500 that can be set:
 	tasks: enable,delay,priority
 	comm port settings
@@ -234,7 +258,6 @@ params in TS-5500 that can be set:
 			UCHAR param;
 			UCHAR onoff;
 			INT32U OSTime;
-			
 			
 	blinker time
 	number of blinks

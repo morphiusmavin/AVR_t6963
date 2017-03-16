@@ -14,21 +14,6 @@ typedef struct prompts
     uint8_t type;
 } PROMPT_STRUCT;
 
-typedef struct RT_layout
-{
-	UCHAR row;		// row, col where this label goes (param is end of label + 1 space)
-	UCHAR col;
-	int label_list;		// index into list of labels (malloc_ptr)
-} RT_LAYOUT;
-
-typedef struct RT_main
-{
-	char name[10];	// name of layout style
-	int num_params;		// 
-	RT_LAYOUT *ptr_rt_layout;	// pointer to list of type RT_LAYOUT's (this is num_params long)
-	uint16_t offset;		// used by malloc after read from eeprom
-} RT_MAIN;
-
 enum menu_types
 {
 	MENU1,
@@ -72,13 +57,13 @@ enum rt_types
 	RT_TRIP = 0xF6,
 	RT_TIME,
 	RT_AIRT,
-	RT_OS,
+	RT_O2,
 	RT_MAP,
 	RT_OILT,
 	RT_OILP,
 	RT_ENGT,
 	RT_MPH,
-	RT_RPM	// this should be 0xFE	
+	RT_RPM	// this should be 0xFF	
 } RT_TYPES;
 
 enum key_types

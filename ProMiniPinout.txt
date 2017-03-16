@@ -7,7 +7,15 @@ bottom view of chip:
 
 RD	*	*	*	WR	CE	RST	CD	*	*	GND	+5V
 
+A5		A7
+A4		A6
+------------
+VCC		MISO
+MOSI	CLK
+GND		RST
+
 DATA7--------------------DATA0	*	*	*	*
+
 
 2	data 0
 3	data 1
@@ -32,13 +40,15 @@ A7
 DTR
 TXD
 RXD
-MIS		-		goes to MISO on buspirate	(same as pin 11)
-MOS		-		goes to MOSI on buspirate	(same as pin 12)
+MIS		-		goes to MISO on buspirate*	(same as pin 11)
+MOS		-		goes to MOSI on buspirate*	(same as pin 12)
 SCK		-		goes to CLK  "		"		(same as pin 13)
 VCC		-		goes to VCC	 "		"
 GND		-		goes to GND	 "		"
 RESET	-		goes to CS   "      "
 RAW		-		+5v input
+
+* most documentation shows MISO<-->MOSI and MOSI<-->MISO wtf?
 
 pinout for actual chip
 1	PD3		(PCINT19/OC2B/INT1)
@@ -107,7 +117,7 @@ BusPirate pinout
 (ribbon cable colors - starting from right when looking at top of board with ICD connection towards you)
 light brown		GND
 red				3v3
-orange			+5v
+orange			+5v**
 yellow			ADC0
 green			VPU
 blue			AUX
@@ -116,5 +126,21 @@ grey			MOSI
 white			CS
 black			MISO
 
+** don't hook this up from buspirate, but put VCC from AVR to separate 5v power supply (RAW)
 
+other chip (Mini Pro) has connections on side for FTDI:
 
+FTDI USB-to-TTL: TX (yellow) -> Arduino Mini Pro RX
+FTDI USB-to-TTL: RX (green) -> Arduino Mini Pro TX
+FTDI USB-to-TTL: GND (brown) -> Arduino Mini Pro GND
+FTDI USB-to-TTL: +5Vcc (red) -> Arduino Mini Pro VCC
+FTDI USB-to-TTL: DTR (orange) -> Arduino Mini Pro Reset
+FTDI USB-to-TTL: CTS (non connected)
+
+pin labels on bottom left with reset button on left
+13 - SCK
+12 - MISO
+11 - MOSI
+10 - SS
+
+	

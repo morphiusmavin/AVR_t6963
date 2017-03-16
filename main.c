@@ -223,15 +223,15 @@ void parse_PIC24(UCHAR ch)
 		case SEND_UCHAR0:
 			xbyte = ch;
 			sprintf(param_string,"%4d",xbyte);
-			printString("\r\n");
-			printString(param_string);
+//			printString("\r\n");
+//			printString(param_string);
 			done = 1;
 			break;
 		case SEND_UCHAR1:
 			xbyte = ch | 0x80;
 			sprintf(param_string,"%4d",xbyte);
-			printString("\r\n");
-			printString(param_string);
+//			printString("\r\n");
+//			printString(param_string);
 			done = 1;
 			break;
 		case SEND_UINT0:
@@ -241,8 +241,8 @@ void parse_PIC24(UCHAR ch)
 			temp_UINT &= 0xff00;
 			xword |= temp_UINT;
 			sprintf(param_string,"%4u",xword);
-			printString("\r\n");
-			printString(param_string);
+//			printString("\r\n");
+//			printString(param_string);
 			
 			done = 1;
 			break;
@@ -254,8 +254,8 @@ void parse_PIC24(UCHAR ch)
 			xword |= temp_UINT;
 			xword |= 0x0080;
 			sprintf(param_string,"%4u",xword);
-			printString("\r\n");
-			printString(param_string);
+//			printString("\r\n");
+//			printString(param_string);
 			done = 1;
 			break;
 		case SEND_UINT2:
@@ -266,8 +266,8 @@ void parse_PIC24(UCHAR ch)
 			xword |= temp_UINT;
 			xword |= 0x8000;
 			sprintf(param_string,"%4u",xword);
-			printString("\r\n");
-			printString(param_string);
+//			printString("\r\n");
+//			printString(param_string);
 			done = 1;
 			break;
 		default:
@@ -278,6 +278,11 @@ void parse_PIC24(UCHAR ch)
 	if(done)
 	{
 		temp = ~current_param;
+		if(temp == 0)
+		{
+			printString("\r");
+			printString(param_string);
+		}
 		for(i = 0;i < no_prompts;i++)
 		{
 			if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)
