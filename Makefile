@@ -3,9 +3,6 @@
 ##########    Check these every time you start a new project    ##########
 ##########------------------------------------------------------##########
 
-print-%:
-	@echo '$*=$($*)'
-
 MCU   = atmega328p
 F_CPU = 8200000UL  
 BAUD  = 19200UL
@@ -24,7 +21,7 @@ LIBDIR = lib
 
 PROGRAMMER_TYPE = buspirate
 # extra arguments to avrdude: baud rate, chip type, -F flag, etc.
-PROGRAMMER_ARGS = -C avrdude.conf +atmega328p.conf -P /dev/ttyUSB0
+PROGRAMMER_ARGS = -C avrdude.conf +atmega328p.conf -P /dev/ttyUSB0 -v
 # -p$(AVRDUDE_MCU) -c$(AVRDUDE_PROGRAMMERID) -P /dev/ttyUSB0 -e -U flash:w:$(PROJECT).hex:a -U eeprom:w:$(PROJECT).eep:a -U lfuse:w:0x$(AVRDUDE_LFUSE):m -U hfuse:w:0x$(AVRDUDE_HFUSE):m -U efuse:w:0x$(AVRDUDE_EFUSE):m
 
 ##########------------------------------------------------------##########
@@ -36,9 +33,8 @@ CC = avr-gcc
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 AVRSIZE = avr-size
-#to test without avrdude make a sym link to psuedo_avrdude (ln -s psuedo_avrdude avrdude)
-# otherwise use sym link (ln -s avrdude-6.3 avrdude)
-AVRDUDE = sudo ./avrdude
+#AVRDUDE = ./avrdude-test2
+AVRDUDE = sudo avrdude
 
 ##########------------------------------------------------------##########
 ##########                   Makefile Magic!                    ##########
