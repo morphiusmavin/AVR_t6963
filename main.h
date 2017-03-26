@@ -3,7 +3,16 @@
 #define TIME_DELAY1 1
 #define STRING_LEN   100
 #define NUM_FPTS 15
-
+#warning "main.h"
+typedef unsigned char UCHAR;
+typedef unsigned int UINT;
+typedef unsigned char uint8_t;
+#ifndef UINT16_T
+#warning "UINT16_T not defined"
+typedef unsigned int uint16_t;
+#else
+#warning "UINT16_T is defined"
+#endif
 typedef struct prompts
 {
 	uint8_t pnum;

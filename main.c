@@ -19,7 +19,6 @@ PROMPT_STRUCT prompts[26];	// this must be large enough for no_prompts
 
 int main(void) 
 {
-    uint8_t test1;
 	int i;
 	uint8_t temp;
 	uint16_t temp2;
@@ -36,7 +35,7 @@ int main(void)
 		 menu2a, menu2b, menu2c,\
 		 menu3a, menu3b, menu3c,\
 		 menu4a, menu4b, menu4c, number_entry };
-#if 1
+
     initUSART();
 
 	GDispInit();
@@ -55,24 +54,31 @@ int main(void)
 
 	if(no_prompts != 0xff)
 	{
-//		printString("reading prompt data into prompt structs\r\n");
+#ifdef TTY_DISPLAY
+#warning "TTY_DISPLAY defined"
+		printString("reading prompt data into prompt structs\r\n");
+#endif		
 		no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
-//		printString("no_prompts: ");
+#ifdef TTY_DISPLAY
+		printString("no_prompts: ");
 		printHexByte(no_prompts);
-//		printString("\r\n");
+		printString("\r\n");
+#endif		
 		prompt_info_offset = (uint16_t)eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB);
 		temp = eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_MSB);
 		temp2 = (uint16_t)temp;
 		prompt_info_offset |= (temp2 << 8);		// shift msb over and bit-or with lsb
-//		printString("prompt_info_offset: ");
-//		printHexByte((uint8_t)prompt_info_offset);
-//		printHexByte((uint8_t)(prompt_info_offset>>8));
-//		printString("\r\n");
+#ifdef TTY_DISPLAY
+		printString("prompt_info_offset: ");
+		printHexByte((uint8_t)prompt_info_offset);
+		printHexByte((uint8_t)(prompt_info_offset>>8));
+		printString("\r\n");
+#endif		
 		for(i = 0;i < no_prompts;i++)
 		{
 			eeprom_read_block((void*)&prompts[i], eepromString+(prompt_info_offset+(i*sizeof(PROMPT_STRUCT))),sizeof(PROMPT_STRUCT));
 		}
-/*		
+#ifdef TTY_DISPLAY
 		for(i = 0;i < no_prompts;i++)
 		{
 			printHexByte((uint8_t)prompts[i].pnum);
@@ -90,13 +96,12 @@ int main(void)
 			printString("\r\n");
 		}
 		printString("\r\ndone reading eeprom\r\n");
-*/		
+#endif
 	}
 	else
 	{
 		printString("prompts not set - run eeprom_burn.c to burn eeprom\r\n");
 	}
-#endif
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
@@ -107,18 +112,20 @@ int main(void)
 	display_labels();
 */	
 	set_defaults();
-	_delay_ms(500);
+	_delay_us(10);
 //	printString("\r\ndisplaying menus...\r\n");
 	display_menus();
 	display_labels();
     while (1) 
     {
-        test1 = receiveByte();
-//		printHexByte(current_fptr);
-//		printString("\r\n");
-		ret_char = (*fptr[current_fptr])(test1, limit8, limit16, cur_row, cur_col);
-		if(current_fptr != last_fptr)
-			display_menus();
+        ret_char = receiveByte();
+#ifdef TTY_DISPLAY
+		printHexByte(current_fptr);
+		printString("\r\n");
+#endif
+//		ret_char = (*fptr[current_fptr])(ret_char, limit8, limit16, cur_row, cur_col);
+//		if(current_fptr != last_fptr)
+//			display_menus();
 		last_fptr = current_fptr;
 		parse_PIC24(ret_char);
 	}
@@ -167,7 +174,7 @@ void parse_PIC24(UCHAR ch)
 {
 	int i;
 	uint8_t xbyte;
-	uint16_t xword;
+	uint16_t xword = 0;
 	uint8_t done = 0;
 	char param_string[10];
 	UCHAR temp;
@@ -280,9 +287,22 @@ void parse_PIC24(UCHAR ch)
 		temp = ~current_param;
 		if(temp == 0)
 		{
-			printString("\r");
-			printString(param_string);
+#ifdef TTY_DISPLAY
+			printHexByte((UCHAR)(xword>>8));
+			printHexByte((UCHAR)xword);
+#else
+			transmitByte((UCHAR)(xword>>8));
+			transmitByte((UCHAR)xword);
+#endif
 		}
+		else
+		{
+#ifdef TTY_DISPLAY
+			printHexByte(xbyte);
+#else
+			transmitByte(xbyte);
+#endif
+		}	
 		for(i = 0;i < no_prompts;i++)
 		{
 			if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)
@@ -299,6 +319,7 @@ void parse_PIC24(UCHAR ch)
 // show on monitor where the current row, col is
 void dispRC(int row, int col)
 {
+#if TTY_DISPLAY
     printString("col=");
     printByte(col);
     printString("\r\n");
@@ -306,6 +327,7 @@ void dispRC(int row, int col)
     printByte(row);
     printString("\r\n");
     printString("\r\n");
+#endif
 }
 //******************************************************************************************//
 //****************************************** CheckRC ***************************************//

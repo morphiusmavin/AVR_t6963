@@ -22,5 +22,6 @@ git add t6963_notes.txt
 git add menus.c
 git add main.h
 git add main.c
+git add test_write_data/*
 clear
 git status

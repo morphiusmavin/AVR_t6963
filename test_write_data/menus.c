@@ -1,18 +1,20 @@
 #ifndef NOAVR
-#warning "NOAVR"
 #include <avr/io.h>
-#include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
-#include "sfr_helper.h"
 #include <avr/eeprom.h>
-#include "macros.h"
 #endif
+//#include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
+#include "../sfr_helper.h"
 #include <stdlib.h>
-#include "main.h"
-#include "t6963.h"
-#include "USART.h"
+//#include "macros.h"
+#include "../main.h"
+#include "test_menu.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+extern int fd;
+void GDispStringAt(uint8_t x, uint8_t y, char *str);
+void printString(char *str);
+#define COLUMN 30
 //******************************************************************************************//
 //*************************************** default_func *************************************//
 //******************************************************************************************//
@@ -21,7 +23,9 @@ UCHAR main_menu_func(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHA
 {
 //	UCHAR row1,col1,k;
 	UCHAR ret_char = ch;
-//	printHexByte(ch);	
+//	printHexByte(ch);
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:	// '*'
@@ -54,6 +58,8 @@ UCHAR main_menu_func(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHA
 UCHAR menu1a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -93,6 +99,8 @@ UCHAR menu1a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu1b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -132,6 +140,8 @@ UCHAR menu1b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu1c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -171,6 +181,8 @@ UCHAR menu1c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu1d(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -210,6 +222,8 @@ UCHAR menu1d(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu2a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -252,6 +266,8 @@ UCHAR menu2a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu2b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -291,6 +307,8 @@ UCHAR menu2b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu2c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -330,6 +348,8 @@ UCHAR menu2c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu3a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -372,6 +392,8 @@ UCHAR menu3a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu3b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -411,6 +433,8 @@ UCHAR menu3b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu3c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -450,6 +474,8 @@ UCHAR menu3c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu4a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -489,6 +515,8 @@ UCHAR menu4a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu4b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -528,6 +556,8 @@ UCHAR menu4b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR menu4c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_AST:
@@ -567,6 +597,8 @@ UCHAR menu4c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 UCHAR number_entry(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	limit8 = 0;	// suppress warnings for now
+	limit16 = 0;
 	switch (ch)
 	{
 		case KP_0:
@@ -632,7 +664,7 @@ void cursor_forward(void)
 {
 	if(++cur_col > NUM_ENTRY_END_COL)
 		cur_col = NUM_ENTRY_BEGIN_COL;
-    dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,cur_row,cur_col,LINE_8_CURSOR);
+//    dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,cur_row,cur_col,LINE_8_CURSOR);
 }
 //******************************************************************************************//
 //************************************* cursor_backward ************************************//
@@ -641,7 +673,7 @@ void cursor_backward(void)
 {
 	if(--cur_col < NUM_ENTRY_BEGIN_COL)
 		cur_col = NUM_ENTRY_END_COL;
-	dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,cur_row,cur_col,LINE_8_CURSOR);
+//	dispSetCursor(TEXT_ON | CURSOR_BLINK_ON,cur_row,cur_col,LINE_8_CURSOR);
 }
 //******************************************************************************************//
 //********************************** cursor_forward_stuff **********************************//
@@ -657,7 +689,7 @@ void cursor_forward_stuff(char x)
 void stuff_num(char num)
 {
 	num += 0x30;
-	dispCharAt(cur_row,cur_col,num);
+//	dispCharAt(cur_row,cur_col,num);
 	cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = num;
 }		
 

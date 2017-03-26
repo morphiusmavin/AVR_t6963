@@ -1,0 +1,26 @@
+gcc -c -g -std=gnu99 -Wstrict-prototypes -DNOAVR  -o test_write_data.o test_write_data.c
+In file included from test_write_data.c:32:0:
+../main.h:6:2: warning: #warning "main.h" [-Wcpp]
+ #warning "main.h"
+  ^
+../main.h:14:2: warning: #warning "UINT16_T is defined" [-Wcpp]
+ #warning "UINT16_T is defined"
+  ^
+gcc -g -std=gnu99 -Wstrict-prototypes -DNOAVR test_write_data.o -o test_data -lcurses
+gcc -c -g -std=gnu99 -Wstrict-prototypes -DNOAVR  -o test_write_menu.o test_write_menu.c
+In file included from test_write_menu.c:29:0:
+../main.h:6:2: warning: #warning "main.h" [-Wcpp]
+ #warning "main.h"
+  ^
+../main.h:14:2: warning: #warning "UINT16_T is defined" [-Wcpp]
+ #warning "UINT16_T is defined"
+  ^
+gcc -c -g -std=gnu99 -Wstrict-prototypes -DNOAVR  -o menu.o ../menus.c
+In file included from ../menus.c:10:0:
+../main.h:6:2: warning: #warning "main.h" [-Wcpp]
+ #warning "main.h"
+  ^
+../main.h:11:2: warning: #warning "UINT16_T not defined" [-Wcpp]
+ #warning "UINT16_T not defined"
+  ^
+gcc -g -std=gnu99 -Wstrict-prototypes -DNOAVR test_write_menu.o menu.o -o test_menu -lcurses

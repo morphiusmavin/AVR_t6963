@@ -4,7 +4,8 @@
 ##########------------------------------------------------------##########
 
 MCU   = atmega328p
-F_CPU = 8200000UL  
+#F_CPU = 8200000UL	#this works on the first one
+F_CPU = 16000000UL  
 BAUD  = 19200UL
 ## Also try BAUD = 19200 or 38400 if you're feeling lucky.
 
@@ -59,6 +60,8 @@ HEADERS=$(SOURCES:.c=.h)
 
 ## Compilation options, type man avr-gcc if you're curious.
 CPPFLAGS = -DF_CPU=$(F_CPU) -DBAUD=$(BAUD) -I. -I$(LIBDIR)
+# use the TTY_DISPLAY define to print out to a tty (like minicom)
+#CPPFLAGS = -DTTY_DISPLAY -DF_CPU=$(F_CPU) -DBAUD=$(BAUD) -I. -I$(LIBDIR)
 CFLAGS = -Os -g -std=gnu99 -Wall
 ## Use short (8-bit) data types 
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums 
