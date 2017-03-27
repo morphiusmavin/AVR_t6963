@@ -137,10 +137,11 @@ FTDI USB-to-TTL: +5Vcc (red) -> Arduino Mini Pro VCC
 FTDI USB-to-TTL: DTR (orange) -> Arduino Mini Pro Reset
 FTDI USB-to-TTL: CTS (non connected)
 
+(new Pro-Mini)
 pin labels on bottom left with reset button on left
 13 - SCK
 12 - MISO
 11 - MOSI
 10 - SS
+reset - CS
 
-	

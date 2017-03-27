@@ -39,9 +39,9 @@ wtf?
 #define LEN 200
 void set_defaults(void);
 // really cranking
-//#define TIME_DELAY 500
+#define TIME_DELAY 2000
 // readable
-#define TIME_DELAY 300000
+//#define TIME_DELAY 300000
 UCHAR current_param;
 uint16_t temp_int;
 UCHAR parse_state;
@@ -99,18 +99,26 @@ int main(int argc, char *argv[])
 	{
 //		printf("write: ");
 //		mvwprintw(menu_win, 2, 2,
-		iters = atoi(argv[1]);
+		iters = atoi(argv[1])*10;
 //		printf("iters: %d\n",iters);
+		mvwprintw(menu_win,17,4,"interations: %d",iters);
 		type = 1;
 		if(argc > 2)
 		{
 			data2 = atoi(argv[2]);
 //			printf("rpm starting at: %d\n",data2);
+			mvwprintw(menu_win,18,4,"rpm starting at: %d",data2);
 		}
 		if(argc > 3)
 		{
 			data = atoi(argv[3]);
 //			printf("others starting at: %d\n",data);
+			mvwprintw(menu_win,19,4,"others starting at: %d",data);
+		}
+		if(argc > 4)
+		{
+			tdelay = atoi(argv[4])*1000;
+			mvwprintw(menu_win,20,4,"time delay: %dK",atoi(argv[4]));
 		}
 	}
 	else

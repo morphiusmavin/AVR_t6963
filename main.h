@@ -3,6 +3,7 @@
 #define TIME_DELAY1 1
 #define STRING_LEN   100
 #define NUM_FPTS 15
+#define SCREEN_EN
 #warning "main.h"
 typedef unsigned char UCHAR;
 typedef unsigned int UINT;

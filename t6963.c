@@ -47,6 +47,7 @@
 #include <string.h>
 #define bit_test(x,n)(x & (0x01<<n))
 #define TIME_DELAY 1
+#define SCREEN_EN
 /*
  ***********************************************************************************************
  *                                       LOCAL CONSTANTS
@@ -114,7 +115,8 @@ static void GDispCmdAddrSend (uint16_t Addr, UCHAR cmd)
  */
 void GDispInit (void)
 {
-#ifdef SCREEN
+#ifdef SCREEN_EN
+#warning "SCREEN is defined"
 	//Reset the LCD module and perform a hardware port init
 	GDispInitPort ();
 	//Set Text Home address to TEXT_HOME_ADDR
@@ -142,7 +144,7 @@ void GDispInit (void)
  */
 void GDispSetMode (UCHAR mode)
 {
-#ifdef SCREEN
+#ifdef SCREEN_EN
 	GDispCmdSend (mode);
 #endif
 }
@@ -158,7 +160,7 @@ void GDispSetMode (UCHAR mode)
  */
 void GDispClrTxt (void)
 {
-#ifdef SCREEN
+#ifdef SCREEN_EN
 	uint16_t row;
 	uint16_t col;
 	//Set address pointer to address (TEXT_HOME_ADDR)
@@ -269,7 +271,7 @@ void GDispCharAt (uint16_t row, uint16_t col, UCHAR c)
 }
 void GDispStringAt(uint16_t row, uint16_t col, char *c)
 {
-#ifdef SCREEN
+#ifdef SCREEN_EN
 	char *str;
 	int i;
 	str = c;
@@ -452,7 +454,7 @@ void GDispDataWr (UCHAR data)
 	  for (i = 0; i < 2; i++)
 		_delay_us(TIME_DELAY);
 	  GDispChipDi;
-#endif	  
+#endif
 }
 
 /*

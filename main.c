@@ -290,17 +290,21 @@ void parse_PIC24(UCHAR ch)
 #ifdef TTY_DISPLAY
 			printHexByte((UCHAR)(xword>>8));
 			printHexByte((UCHAR)xword);
+//			GDispStringAt(2,2,param_string);
 #else
 			transmitByte((UCHAR)(xword>>8));
 			transmitByte((UCHAR)xword);
+//			GDispStringAt(2,2,param_string);
 #endif
 		}
 		else
 		{
 #ifdef TTY_DISPLAY
 			printHexByte(xbyte);
+//			GDispStringAt(2,4,param_string);
 #else
 			transmitByte(xbyte);
+//			GDispStringAt(2,4,param_string);
 #endif
 		}	
 		for(i = 0;i < no_prompts;i++)
