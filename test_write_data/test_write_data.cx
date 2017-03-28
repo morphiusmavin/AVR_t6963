@@ -13,11 +13,8 @@
 #include <termios.h>
 #include <sys/time.h>
 #include <ncurses.h>
-#include "../sfr_helper.h"
-#include "../main.h"
-#include "../t6963.h"
 // this has to be commented out when compiling on 168.192.0.15 for some damn reason
-//#define UINT16_T
+#define UINT16_T
 /* comment it out in this machine and I get:
 
 ../main.h:12:22: error: conflicting types for ‘uint16_t’
@@ -51,11 +48,7 @@ UCHAR parse_state;
 
 int set_interface_attribs (int fd, int speed, int parity);
 void set_blocking (int fd, int should_block);
-void do_read(WINDOW *win, int fd);
 
-//******************************************************************************************//
-//****************************************** main ******************************************//
-//******************************************************************************************//
 int main(int argc, char *argv[])
 {
 	int fd, res, res2;
@@ -69,26 +62,27 @@ int main(int argc, char *argv[])
     UCHAR data = 2;
     UCHAR data1 = 0;
 	uint16_t data2 = 0;
+	UCHAR txword;
     UCHAR code = RT_TRIP;
     UCHAR read_buff[10];
+	char param_string[10];
 	//PROMPT_STRUCT prompts[30];
 //	UCHAR no_prompts;
+	UCHAR xbyte;
 	int done;
+	uint16_t xword;
+	UCHAR temp;
 	uint16_t rpm;
 	UCHAR key;
-	UCHAR wkey;
-	char param_string[10];
 
 	memset(read_buff,0,10);
 	initscr();			/* Start curses mode 		*/
 	clear();
 	noecho();
-	nodelay(stdscr,TRUE);
 	raw();				/* Line buffering disabled	*/
 	cbreak();	/* Line buffering disabled. pass on everything */
 	menu_win = newwin(25, 50, 10,10);
 	keypad(menu_win, TRUE);
-	nodelay(menu_win, TRUE);
 	box(menu_win,0,0);
 
 	mvwprintw(menu_win, 2, 2, "RT_TRIP ");
@@ -154,7 +148,142 @@ int main(int argc, char *argv[])
 // read
 	if(type == 0) 
 	{
-		do_read(menu_win, fd);
+		while(TRUE)
+		{	
+			done = 0;
+			res = read(fd,&ch,1);
+//			printf("parse_state:%x %x\n",parse_state,ch);
+			switch(parse_state)
+			{
+				case IDLE:
+					if(ch <= RT_RPM && ch >= RT_TRIP)
+					{
+						current_param = ch;
+//						printf("current:");
+						parse_state = CHECK_HIGHBIT;
+					}
+					else
+					{
+//						printf("opps\n");
+						set_defaults();
+					}
+					break;
+				case CHECK_HIGHBIT:
+					switch(ch)
+					{
+						case RT_LOW:
+							parse_state = SEND_UCHAR0;
+							break;
+						case RT_HIGH0:		// if just a UCHAR is sent with high bit set
+							parse_state = SEND_UCHAR1;
+							break;
+						case RT_HIGH1:		// if UINT with neither bit 7 or 15 set
+							parse_state = GET_CH0;
+							break;	
+						case RT_HIGH2:		// if a UINT is sent with bit 7 set
+							parse_state = GET_CH1;
+							break;
+						case RT_HIGH3:		// if a UINT is sent with bit 15 set
+							parse_state = GET_CH2;
+							break;
+						default:
+							set_defaults();
+							break;
+					}
+					break;
+				case GET_CH0:
+					parse_state = SEND_UINT0;
+					temp_int = ch;
+					break;
+				case GET_CH1:
+					temp_int = ch;
+					parse_state = SEND_UINT1;
+					break;
+				case GET_CH2:
+					temp_int = ch;
+					parse_state = SEND_UINT2;
+					break;
+				case SEND_UCHAR0:
+					xbyte = ch;
+					sprintf(param_string,"%4d",xbyte);
+//					printf("uchar0:%s\n",param_string);
+					done = 1;
+					break;
+				case SEND_UCHAR1:
+					xbyte = ch | 0x80;
+					sprintf(param_string,"%4d",xbyte);
+//					printf("uchar1:%s\n",param_string);
+					done = 1;
+					break;
+				case SEND_UINT0:
+					xword = (uint16_t)temp_int;
+					temp_int = (uint16_t)ch;
+					temp_int <<= 8;
+					temp_int &= 0xff00;
+					xword |= temp_int;
+					sprintf(param_string,"%4u",xword);
+//					printf("uint0:%s\n",param_string);
+		
+					done = 1;
+					break;
+				case SEND_UINT1:
+					xword = (uint16_t)temp_int;
+					temp_int = (uint16_t)ch;
+					temp_int <<= 8;
+					temp_int &= 0xff00;
+					xword |= temp_int;
+					xword |= 0x0080;
+					sprintf(param_string,"%4u",xword);
+//					printf("uint1:%s\n",param_string);
+					done = 1;
+					break;
+				case SEND_UINT2:
+					xword = (uint16_t)temp_int;
+					temp_int = (uint16_t)ch;
+					temp_int <<= 8;
+					temp_int &= 0xff00;
+					xword |= temp_int;
+					xword |= 0x8000;
+					sprintf(param_string,"%4u",xword);
+//					printf("uint2:%s\n",param_string);
+					done = 1;
+					break;
+				default:
+					printf("%s\n","default ");
+					set_defaults();
+					break;
+			}
+			if(done)
+			{
+//				printf("%5s\n",param_string);
+				mvwprintw(menu_win, current_param-0xF4, 10, param_string);
+				wrefresh(menu_win);
+
+				temp = ~current_param;
+
+				if(temp == 0)
+				{
+					txword = (uint8_t)(xword>>8);
+					write(fd,&txword,1);
+					txword = (uint8_t)(xword);
+					write(fd,&txword,1);
+				}
+				else
+					write(fd,&xbyte,1);
+
+/*
+				for(i = 0;i < no_prompts;i++)
+				{
+					if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)
+					{
+	//						GDispStringAt(prompts[i].row,prompts[i].col+10,param_string);
+					}
+				}
+*/
+				set_defaults();
+
+			}
+		}	// end of while(1)	
 	}	// end of else
 
 // write
@@ -277,87 +406,8 @@ int main(int argc, char *argv[])
 			wrefresh(menu_win);
 			if(code == RT_TRIP-1)
 				usleep(tdelay*2);
-			key = wgetch(menu_win);	
-			if(key != 0xff)
-			{
-				switch(key)
-				{
-					case '0':
-						mvwprintw(menu_win, 22, 8, "zero  ");
-						wkey = KP_0;
-						break;
-					case '1':
-						mvwprintw(menu_win, 22, 8, "one   ");
-						wkey = KP_1;
-						break;
-					case '2':
-						mvwprintw(menu_win, 22, 8, "two   ");
-						wkey = KP_2;
-						break;
-					case '3':
-						mvwprintw(menu_win, 22, 8, "three ");
-						wkey = KP_3;
-						break;
-					case '4':
-						mvwprintw(menu_win, 22, 8, "four  ");
-						wkey = KP_4;
-						break;
-					case '5':
-						mvwprintw(menu_win, 22, 8, "five  ");
-						wkey = KP_5;
-						break;	
-					case '6':
-						mvwprintw(menu_win, 22, 8, "six   ");
-						wkey = KP_6;
-						break;	
-					case '7':
-						mvwprintw(menu_win, 22, 8, "seven ");
-						wkey = KP_7;
-						break;	
-					case '8':
-						mvwprintw(menu_win, 22, 8, "eight ");
-						wkey = KP_8;
-						break;	
-					case '9':
-						mvwprintw(menu_win, 22, 8, "nine  ");
-						wkey = KP_9;
-						break;	
-					case '*':
-						mvwprintw(menu_win, 22, 8, "ast   ");
-						wkey = KP_AST;
-						break;	
-					case '#':
-						mvwprintw(menu_win, 22, 8, "pound ");
-						wkey = KP_POUND;
-						break;	
-					case 'A':
-					case 'a':
-						mvwprintw(menu_win, 22, 8, "A     ");
-						wkey = KP_A;
-						break;	
-					case 'B':
-					case 'b':
-						mvwprintw(menu_win, 22, 8, "B     ");
-						wkey = KP_B;
-						break;	
-					case 'C':
-					case 'c':
-						mvwprintw(menu_win, 22, 8, "C     ");
-						wkey = KP_C;
-						break;	
-					case 'D':
-					case 'd':
-						mvwprintw(menu_win, 22, 8, "D     ");
-						wkey = KP_D;
-						break;	
-					default:
-						mvwprintw(menu_win, 22, 8, "?     ");
-						wkey = 0xff;
-						break;
-				}
-				if(wkey != 0xff)
-					write(fd,&wkey,1);
-			}			
+			key = getch();	
+			mvwprintw(menu_win, 17, 8, "%x",key);
 		}	// end of for(...
 	}	// end of else
 
@@ -382,227 +432,6 @@ void set_defaults(void)
 {
 	temp_int = 0;
 	parse_state = IDLE;
-}
-
-//******************************************************************************************//
-//**************************************** do_read *****************************************//
-//******************************************************************************************//
-void do_read(WINDOW *win, int fd)
-{
-	int done;
-	int res;
-	UCHAR ch;
-	UCHAR xbyte;
-	char param_string[10];
-	uint16_t xword;
-	UCHAR txword;
-	UCHAR temp;
-	UCHAR wkey;
-	
-	while(TRUE)
-	{	
-		done = 0;
-		res = read(fd,&ch,1);
-//			printf("parse_state:%x %x\n",parse_state,ch);
-		switch(ch)
-		{
-			case KP_0:
-				mvwprintw(win, 22, 8, "zero  ");
-				wkey = KP_0;
-				break;
-			case KP_1:
-				mvwprintw(win, 22, 8, "one   ");
-				wkey = KP_1;
-				break;
-			case KP_2:
-				mvwprintw(win, 22, 8, "two   ");
-				wkey = KP_2;
-				break;
-			case KP_3:
-				mvwprintw(win, 22, 8, "three ");
-				wkey = KP_3;
-				break;
-			case KP_4:
-				mvwprintw(win, 22, 8, "four  ");
-				wkey = KP_4;
-				break;
-			case KP_5:
-				mvwprintw(win, 22, 8, "five  ");
-				wkey = KP_5;
-				break;	
-			case KP_6:
-				mvwprintw(win, 22, 8, "six   ");
-				wkey = KP_6;
-				break;	
-			case KP_7:
-				mvwprintw(win, 22, 8, "seven ");
-				wkey = KP_7;
-				break;	
-			case KP_8:
-				mvwprintw(win, 22, 8, "eight ");
-				wkey = KP_8;
-				break;	
-			case KP_9:
-				mvwprintw(win, 22, 8, "nine  ");
-				wkey = KP_9;
-				break;	
-			case KP_AST:
-				mvwprintw(win, 22, 8, "ast   ");
-				wkey = KP_AST;
-				break;	
-			case KP_POUND:
-				mvwprintw(win, 22, 8, "pound ");
-				wkey = KP_POUND;
-				break;	
-			case KP_A:
-				mvwprintw(win, 22, 8, "A     ");
-				wkey = KP_A;
-				break;	
-			case KP_B:
-				mvwprintw(win, 22, 8, "B     ");
-				wkey = KP_B;
-				break;	
-			case KP_C:
-				mvwprintw(win, 22, 8, "C     ");
-				wkey = KP_C;
-				break;	
-			case KP_D:
-				mvwprintw(win, 22, 8, "D     ");
-				wkey = KP_D;
-				break;	
-			default:
-
-				switch(parse_state)
-				{
-					case IDLE:
-						if(ch <= RT_RPM && ch >= RT_TRIP)
-						{
-							current_param = ch;
-		//						printf("current:");
-							parse_state = CHECK_HIGHBIT;
-						}
-						else
-						{
-		//						printf("opps\n");
-							set_defaults();
-						}
-						break;
-					case CHECK_HIGHBIT:
-						switch(ch)
-						{
-							case RT_LOW:
-								parse_state = SEND_UCHAR0;
-								break;
-							case RT_HIGH0:		// if just a UCHAR is sent with high bit set
-								parse_state = SEND_UCHAR1;
-								break;
-							case RT_HIGH1:		// if UINT with neither bit 7 or 15 set
-								parse_state = GET_CH0;
-								break;	
-							case RT_HIGH2:		// if a UINT is sent with bit 7 set
-								parse_state = GET_CH1;
-								break;
-							case RT_HIGH3:		// if a UINT is sent with bit 15 set
-								parse_state = GET_CH2;
-								break;
-							default:
-								set_defaults();
-								break;
-						}
-						break;
-					case GET_CH0:
-						parse_state = SEND_UINT0;
-						temp_int = ch;
-						break;
-					case GET_CH1:
-						temp_int = ch;
-						parse_state = SEND_UINT1;
-						break;
-					case GET_CH2:
-						temp_int = ch;
-						parse_state = SEND_UINT2;
-						break;
-					case SEND_UCHAR0:
-						xbyte = ch;
-						sprintf(param_string,"%4d",xbyte);
-		//					printf("uchar0:%s\n",param_string);
-						done = 1;
-						break;
-					case SEND_UCHAR1:
-						xbyte = ch | 0x80;
-						sprintf(param_string,"%4d",xbyte);
-		//					printf("uchar1:%s\n",param_string);
-						done = 1;
-						break;
-					case SEND_UINT0:
-						xword = (uint16_t)temp_int;
-						temp_int = (uint16_t)ch;
-						temp_int <<= 8;
-						temp_int &= 0xff00;
-						xword |= temp_int;
-						sprintf(param_string,"%4u",xword);
-		//					printf("uint0:%s\n",param_string);
-	
-						done = 1;
-						break;
-					case SEND_UINT1:
-						xword = (uint16_t)temp_int;
-						temp_int = (uint16_t)ch;
-						temp_int <<= 8;
-						temp_int &= 0xff00;
-						xword |= temp_int;
-						xword |= 0x0080;
-						sprintf(param_string,"%4u",xword);
-		//					printf("uint1:%s\n",param_string);
-						done = 1;
-						break;
-					case SEND_UINT2:
-						xword = (uint16_t)temp_int;
-						temp_int = (uint16_t)ch;
-						temp_int <<= 8;
-						temp_int &= 0xff00;
-						xword |= temp_int;
-						xword |= 0x8000;
-						sprintf(param_string,"%4u",xword);
-		//					printf("uint2:%s\n",param_string);
-						done = 1;
-						break;
-					default:
-						printf("%s\n","default ");
-						set_defaults();
-						break;
-				}	// end of inner switch
-				if(done)
-				{
-		//				printf("%5s\n",param_string);
-					mvwprintw(win, current_param-0xF4, 10, param_string);
-					wrefresh(win);
-
-					temp = ~current_param;
-
-					if(temp == 0)
-					{
-						txword = (uint8_t)(xword>>8);
-						write(fd,&txword,1);
-						txword = (uint8_t)(xword);
-						write(fd,&txword,1);
-					}
-					else
-						write(fd,&xbyte,1);
-
-		/*
-					for(i = 0;i < no_prompts;i++)
-					{
-						if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)
-						{
-		//						GDispStringAt(prompts[i].row,prompts[i].col+10,param_string);
-						}
-					}
-		*/
-					set_defaults();
-				}	// end of done
-		}	// end of outer switch
-	}	// end of while(1)	
 }
 
 int set_interface_attribs (int fd, int speed, int parity)

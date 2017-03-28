@@ -11,21 +11,24 @@ NOANSI = ${GNUNOANSI}
 CFLAGS = ${GNUCFLAGS}
 LDFLAGS = ${GNULDFLAGS}
 #SFLAGS = ${GNUSFLAGS}
-SFLAGS =
+#SFLAGS = -DUINT16_T
 
 all: test_data # test_menu
 
-menu.o : ../menus.c 
-	${CC} -c ${CFLAGS} ${SFLAGS} -o menu.o ../menus.c
+t6963.o : ../t6963.c
+	${CC} -c ${CFLAGS} ${SFLAGS} -o t6963.o ../t6963.c
+
+menus.o : ../menus.c 
+	${CC} -c ${CFLAGS} ${SFLAGS} -o menus.o ../menus.c
 	
 test_write_data.o : test_write_data.c ../main.h ../sfr_helper.h
-	${CC} -c ${CFLAGS} ${SFLAGS} -o test_write_data.o test_write_data.c
+	${CC} -c  ${CFLAGS} ${SFLAGS} -o test_write_data.o test_write_data.c
 
 test_write_menu.o : test_write_menu.c
 	${CC} -c ${CFLAGS} ${SFLAGS} -o test_write_menu.o test_write_menu.c
 
-test_data : test_write_data.o
-	${CC} ${CFLAGS} test_write_data.o -o test_data -lcurses
+test_data : menus.o test_write_data.o t6963.o
+	${CC} ${CFLAGS} test_write_data.o t6963.o menus.o -o test_data -lcurses
 	
 test_menu : test_write_menu.o menu.o
 	${CC} ${CFLAGS} test_write_menu.o menu.o -o test_menu -lcurses

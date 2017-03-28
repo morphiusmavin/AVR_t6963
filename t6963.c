@@ -79,7 +79,7 @@
  *                                   LOCAL FUNCTION PROTOTYPES
  *********************************************************************************************************
  */
-static void GDispCmdAddrSend (uint16_t Addr, UCHAR cmd);
+static void GDispCmdAddrSend (UINT Addr, UCHAR cmd);
 /*
 *********************************************************************************************************
  *                                       SEND ADDRESS COMMAND
@@ -93,7 +93,7 @@ static void GDispCmdAddrSend (uint16_t Addr, UCHAR cmd);
  *               GRH_HOME_ADDR (0x0200), say.
  *********************************************************************************************************
  */
-static void GDispCmdAddrSend (uint16_t Addr, UCHAR cmd)
+static void GDispCmdAddrSend (UINT Addr, UCHAR cmd)
 {
 	UCHAR c;
 
@@ -161,8 +161,8 @@ void GDispSetMode (UCHAR mode)
 void GDispClrTxt (void)
 {
 #ifdef SCREEN_EN
-	uint16_t row;
-	uint16_t col;
+	UINT row;
+	UINT col;
 	//Set address pointer to address (TEXT_HOME_ADDR)
 	GDispCmdAddrSend (TEXT_HOME_ADDR, ADDR_PTR_SET);
 	//Set Auto Write ON
@@ -193,8 +193,8 @@ void GDispClrTxt (void)
 /*
 void GDispClrGrh (void)
 {
-	uint16_t row;
-	uint16_t col;
+	UINT row;
+	UINT col;
 
 	//Set address pointer to address (GRH_HOME_ADDR)
 	GDispCmdAddrSend (GRH_HOME_ADDR, ADDR_PTR_SET);
@@ -221,9 +221,9 @@ void GDispClrGrh (void)
  * Notes       : 
  *********************************************************************************************************
  */
-void GDispGoto (uint16_t row, uint16_t col)
+void GDispGoto (UINT row, UINT col)
 {
-	uint16_t addr;
+	UINT addr;
 
 	addr = row * COLUMN + col + TEXT_HOME_ADDR;
 	GDispCmdAddrSend (addr, ADDR_PTR_SET); //Set address pointer
@@ -263,13 +263,13 @@ void GDispChar (UCHAR c)
  * Notes       : COLUMN constant determines the number of page, can be > physical size of the LCD
  *********************************************************************************************************
  */
-void GDispCharAt (uint16_t row, uint16_t col, UCHAR c)
+void GDispCharAt (UINT row, UINT col, UCHAR c)
 {
 	GDispGoto (row, col);
 	GDispDataWr (c - 0x20);
 	GDispCmdSend (DATA_WR);
 }
-void GDispStringAt(uint16_t row, uint16_t col, char *c)
+void GDispStringAt(UINT row, UINT col, char *c)
 {
 #ifdef SCREEN_EN
 	char *str;
@@ -302,10 +302,10 @@ void GDispStringAt(uint16_t row, uint16_t col, char *c)
  * Notes       : Cursor address is not like text address pointer. Cannot use GDispGoto(row,col).
  *********************************************************************************************************
  */
-void GDispSetCursor (UCHAR mode, uint16_t row, uint16_t col, UCHAR type)
+void GDispSetCursor (UCHAR mode, UINT row, UINT col, UCHAR type)
 {
 #ifndef NOAVR
-	uint16_t addr;
+	UINT addr;
 	addr = row << 8;
 	addr = addr | (col & 0x00FF);
 	GDispCmdAddrSend (addr, ADDR_PTR_SET);
@@ -327,10 +327,10 @@ void GDispSetCursor (UCHAR mode, uint16_t row, uint16_t col, UCHAR type)
  *********************************************************************************************************
  */
 /*
-void GDispSetPixel (uint16_t X, uint16_t Y, UCHAR color)
+void GDispSetPixel (UINT X, UINT Y, UCHAR color)
 {
-	uint16_t addr;
-	uint16_t row, col;
+	UINT addr;
+	UINT row, col;
 	UCHAR cmd;
 	UCHAR FontSize = 8;
 

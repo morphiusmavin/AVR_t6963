@@ -26,6 +26,7 @@ int main(void)
 	uint8_t limit8 = 0;
 	UCHAR ret_char;
 	uint16_t prompt_info_offset = 0;
+	current_fptr = 0;
 
 //    size_t str_size = sizeof(PROMPT_STRUCT);
 	
@@ -123,9 +124,9 @@ int main(void)
 		printHexByte(current_fptr);
 		printString("\r\n");
 #endif
-//		ret_char = (*fptr[current_fptr])(ret_char, limit8, limit16, cur_row, cur_col);
-//		if(current_fptr != last_fptr)
-//			display_menus();
+		ret_char = (*fptr[current_fptr])(ret_char, limit8, limit16, cur_row, cur_col);
+		if(current_fptr != last_fptr)
+			display_menus();
 		last_fptr = current_fptr;
 		parse_PIC24(ret_char);
 	}
@@ -360,7 +361,6 @@ void set_defaults(void)
 	current_param = 0;
 	temp_UINT = 0;
 	parse_state = IDLE;
-	current_fptr = 0;
 	last_fptr = 0;
 }
 

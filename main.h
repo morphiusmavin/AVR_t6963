@@ -5,23 +5,14 @@
 #define NUM_FPTS 15
 #define SCREEN_EN
 #warning "main.h"
-typedef unsigned char UCHAR;
-typedef unsigned int UINT;
-typedef unsigned char uint8_t;
-#ifndef UINT16_T
-#warning "UINT16_T not defined"
-typedef unsigned int uint16_t;
-#else
-#warning "UINT16_T is defined"
-#endif
 typedef struct prompts
 {
-	uint8_t pnum;
+	UCHAR pnum;
 	UCHAR row;
 	UCHAR col;
-    uint16_t offset;
+    UINT offset;
 	int len;
-    uint8_t type;
+    UCHAR type;
 } PROMPT_STRUCT;
 
 enum menu_types
@@ -126,27 +117,27 @@ enum states
 #define NO_PROMPTS_EEPROM_LOCATION 0x03f0
 #define PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB 0x03f2	// points to just after all the labels (prompt_info)
 #define PROMPT_INFO_OFFSET_EEPROM_LOCATION_MSB 0x03f3
-#define dispCharAt(_row,_col,_char) GDispCharAt((uint16_t)_row,(uint16_t)_col,(UCHAR)_char)
-#define dispSetCursor(_mode,_row,_col,_type) GDispSetCursor ((UCHAR)_mode, (uint16_t)_row, (uint16_t)_col, (UCHAR)_type)
+#define dispCharAt(_row,_col,_char) GDispCharAt((UINT)_row,(UINT)_col,(UCHAR)_char)
+#define dispSetCursor(_mode,_row,_col,_type) GDispSetCursor ((UCHAR)_mode, (UINT)_row, (UINT)_col, (UCHAR)_type)
 
 void dispRC(int row, int col);
 void CheckRC(int *row, int *col, UCHAR *k);
 void display_labels(void);
-UCHAR main_menu_func(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu1a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu1b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu1c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu1d(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu2a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu2b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu2c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu3a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu3b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu3c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu4a(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu4b(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR menu4c(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
-UCHAR number_entry(UCHAR ch, uint8_t limit8, uint16_t limit16, UCHAR row, UCHAR col);
+UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu1c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu1d(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu2a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu2b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu2c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu3b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu3c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 void cursor_forward(void);
 void cursor_backward(void);
 void cursor_forward_stuff(char);
@@ -156,12 +147,12 @@ void display_menus(void);
 void set_defaults(void);
 
 UCHAR current_param;
-uint16_t temp_UINT;
+UINT temp_UINT;
 UCHAR parse_state;
 UCHAR last_fptr;
 
 //PROMPT_STRUCT prompts[30];
-uint8_t no_prompts;
+UCHAR no_prompts;
 int current_fptr;
 
 char cur_global_number[NUM_ENTRY_SIZE];

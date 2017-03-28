@@ -17,6 +17,7 @@
 */
 
 #include <avr/io.h>
+#include "sfr_helper.h"
 #include "USART.h"
 #include <util/setbaud.h>
 
@@ -81,7 +82,7 @@ void printByte(uint8_t byte) {
   transmitByte('0' + (byte % 10));                             /* Ones */
 }
 
-void printWord(uint16_t word) {
+void printWord(UINT word) {
   transmitByte('0' + (word / 10000));                 /* Ten-thousands */
   transmitByte('0' + ((word / 1000) % 10));               /* Thousands */
   transmitByte('0' + ((word / 100) % 10));                 /* Hundreds */
