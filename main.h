@@ -29,21 +29,21 @@ enum menu_types
 
 enum menu_order
 {
-	MAIN_MENU,
-	MENU1A,
-	MENU1B,
-	MENU1C,
-	MENU1D,
-	MENU2A,
-	MENU2B,
-	MENU2C,
-	MENU3A,
-	MENU3B,
-	MENU3C,
-	MENU4A,
-	MENU4B,
-	MENU4C,
-	NUM_ENTRY
+	MAIN_MENU,	// 0
+	MENU1A,		// 1
+	MENU1B,		// 2
+	MENU1C,		// 3
+	MENU1D,		// 4
+	MENU2A,		// 5
+	MENU2B,		// 6
+	MENU2C,		// 7
+	MENU3A,		// 8
+	MENU3B,		// 9
+	MENU3C,		// 10
+	MENU4A,		// 11
+	MENU4B,		// 12
+	MENU4C,		// 13
+	NUM_ENTRY	// 14
 } MENU_ORDER;
 
 enum data_types
@@ -148,14 +148,19 @@ void parse_PIC24(UCHAR);
 void display_menus(void);
 void set_defaults(void);
 
+void init_list(void);
+UCHAR get_key(UCHAR ch, UCHAR limit8, UINT limit16);
+int get_curr_fptr(void);
+int curr_fptr_changed(void);
+int get_curr_menu(void);
+int get_type(void);
+
 UCHAR current_param;
 UINT temp_UINT;
 UCHAR parse_state;
-UCHAR last_fptr;
 
 //PROMPT_STRUCT prompts[30];
 UCHAR no_prompts;
-int current_fptr;
 
 char cur_global_number[NUM_ENTRY_SIZE];
 char new_global_number[NUM_ENTRY_SIZE];

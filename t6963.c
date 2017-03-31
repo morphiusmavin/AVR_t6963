@@ -299,7 +299,7 @@ void GDispStringAt(UINT row, UINT col, char *c)
 			return;
 	}
 #else
-	mvwprintw(win,row+5,5+(col+i),"%s",str);
+	mvwprintw(win,row+2,7+(col+i),"%s",str);
 //	mvwprintw(win, 25,5,"test");
 #endif
 

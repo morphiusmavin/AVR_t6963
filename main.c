@@ -26,17 +26,9 @@ int main(void)
 	uint8_t limit8 = 0;
 	UCHAR ret_char;
 	uint16_t prompt_info_offset = 0;
-	current_fptr = 0;
 
 //    size_t str_size = sizeof(PROMPT_STRUCT);
 	
-	UCHAR (*fptr[NUM_FPTS])(UCHAR, uint8_t, uint16_t, UCHAR, UCHAR) = { main_menu_func,\
-		 menu1a, menu1b,\
-		 menu1c, menu1d,\
-		 menu2a, menu2b, menu2c,\
-		 menu3a, menu3b, menu3c,\
-		 menu4a, menu4b, menu4c, number_entry };
-
     initUSART();
 
 	GDispInit();
@@ -124,10 +116,12 @@ int main(void)
 		printHexByte(current_fptr);
 		printString("\r\n");
 #endif
-		ret_char = (*fptr[current_fptr])(ret_char, limit8, limit16, cur_row, cur_col);
-		if(current_fptr != last_fptr)
+//		ret_char = (*fptr[current_fptr])(ret_char, limit8, limit16, cur_row, cur_col);
+		ret_char = get_key(ret_char,limit8,limit16);
+//		if(current_fptr != last_fptr)
+		if(curr_fptr_changed())
 			display_menus();
-		last_fptr = current_fptr;
+//		last_fptr = current_fptr;
 		parse_PIC24(ret_char);
 	}
     return (0);		// this should never happen
@@ -140,9 +134,15 @@ void display_menus(void)
 {
 	int i;
 	char temp[20];
+
+	if(get_curr_fptr() > 0)
+		GDispStringAt(15,0,"<back>");
+	else
+		GDispStringAt(15,0,"      ");
+	
 	for(i = 0;i < no_prompts;i++)
 	{
-		if(prompts[i].type == current_fptr)
+		if(prompts[i].type == get_type())
 		{
 			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
 			GDispStringAt(prompts[i].row,prompts[i].col,temp);
@@ -358,9 +358,7 @@ void CheckRC(int *row, int *col, UCHAR *k)
 
 void set_defaults(void)
 {
-	current_param = 0;
 	temp_UINT = 0;
 	parse_state = IDLE;
-	last_fptr = 0;
 }
 

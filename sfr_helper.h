@@ -9,12 +9,6 @@
 typedef unsigned char UCHAR;
 typedef unsigned int UINT;
 typedef unsigned char uint8_t;
-#ifndef UINT16_T
-#warning "UINT16_T not defined"
-#else
-typedef unsigned int uint16_t;
-#warning "UINT16_T is defined"
-#endif
 #warning "sfr_helper.h"
 //typedef unsigned int uint16_t;
 #endif /* __SFR_HELPER__ */

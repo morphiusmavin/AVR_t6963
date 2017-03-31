@@ -34,7 +34,7 @@ UCHAR current_param;
 UINT temp_int;
 UCHAR parse_state;
 
-PROMPT_STRUCT prompts[24];	// fill this in just as the eeprom read would
+PROMPT_STRUCT prompts[30];	// fill this in just as the eeprom read would
 
 int set_interface_attribs (int fd, int speed, int parity);
 void set_blocking (int fd, int should_block);
@@ -71,7 +71,8 @@ int main(int argc, char *argv[])
 	int display_offset;
 
 	burn_eeprom();	
-	for(i = 0;i < 23;i++)
+	printf("no prompts: %d\n",no_prompts);
+	for(i = 0;i < no_prompts;i++)
 	{
 		printf("%d\t",prompts[i].pnum);
 		printf("%d\t",prompts[i].row);
@@ -88,27 +89,31 @@ int main(int argc, char *argv[])
 	nodelay(stdscr,TRUE);
 	raw();				/* Line buffering disabled	*/
 	cbreak();	/* Line buffering disabled. pass on everything */
-	menu_win = newwin(50, 100, 10,10);
+	if(argc > 1)
+		menu_win = newwin(30, 40, 0,0);
+	else
+		menu_win = newwin(50, 42, 0,0);
 	keypad(menu_win, TRUE);
 	nodelay(menu_win, TRUE);
 	box(menu_win,0,0);
 	set_win(menu_win);
+
 	if(argc > 1)
 		display_offset = 0;
 	else
 	{
 		display_offset = DISP_OFFSET;
-		mvwprintw(menu_win, display_offset+2, 2, "RT_TRIP ");
-		mvwprintw(menu_win, display_offset+3, 2,"RT_TIME ");
-		mvwprintw(menu_win, display_offset+4, 2,"RT_AIRT ");
-		mvwprintw(menu_win, display_offset+5, 2,"RT_O2 ");
-		mvwprintw(menu_win, display_offset+6, 2,"RT_MAP ");
-		mvwprintw(menu_win, display_offset+7, 2,"RT_OILT ");
-		mvwprintw(menu_win, display_offset+8, 2,"RT_OILP ");
-		mvwprintw(menu_win, display_offset+9, 2,"RT_ENGT ");
-		mvwprintw(menu_win, display_offset+10, 2,"RT_MPH ");
-		mvwprintw(menu_win, display_offset+11, 2,"RT_RPM ");
-	}
+	}	
+	mvwprintw(menu_win, display_offset+2, 2, "RT_TRIP ");
+	mvwprintw(menu_win, display_offset+3, 2,"RT_TIME ");
+	mvwprintw(menu_win, display_offset+4, 2,"RT_AIRT ");
+	mvwprintw(menu_win, display_offset+5, 2,"RT_O2 ");
+	mvwprintw(menu_win, display_offset+6, 2,"RT_MAP ");
+	mvwprintw(menu_win, display_offset+7, 2,"RT_OILT ");
+	mvwprintw(menu_win, display_offset+8, 2,"RT_OILP ");
+	mvwprintw(menu_win, display_offset+9, 2,"RT_ENGT ");
+	mvwprintw(menu_win, display_offset+10, 2,"RT_MPH ");
+	mvwprintw(menu_win, display_offset+11, 2,"RT_RPM ");
 		
 	wrefresh(menu_win);
 	if(argc > 1)
@@ -363,6 +368,17 @@ int main(int argc, char *argv[])
 						mvwprintw(menu_win, display_offset+22, 8, "D     ");
 						wkey = KP_D;
 						break;	
+// use 'z' as a shortcut to '#' and 'y' as a shcortcut to '#'						
+					case 'Y':
+					case 'y':	
+						mvwprintw(menu_win, display_offset+22, 8, "pound ");
+						wkey = KP_POUND;
+						break;	
+					case 'Z':
+					case 'z':
+						mvwprintw(menu_win, display_offset+22, 8, "ast   ");
+						wkey = KP_AST;
+						break;	
 					default:
 						mvwprintw(menu_win, display_offset+22, 8, "?     ");
 						wkey = 0xff;
@@ -395,8 +411,6 @@ void set_defaults(void)
 {
 	temp_int = 0;
 	parse_state = IDLE;
-	current_fptr = 0;
-	no_prompts = 23;
 }
 //******************************************************************************************//
 //************************************* display_menus **************************************//
@@ -405,10 +419,15 @@ void set_defaults(void)
 void display_menus(void)
 {
 	int i;
-	char temp[20];
+
+	if(get_curr_fptr() > 0)
+		GDispStringAt(15,0,"<back>");
+	else
+		GDispStringAt(15,0,"      ");
+
 	for(i = 0;i < no_prompts;i++)
 	{
-		if(prompts[i].type == current_fptr)
+		if(prompts[i].type == get_type())
 		{
 //			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
 			GDispStringAt(prompts[i].row,prompts[i].col,prompts[i].label);
@@ -422,7 +441,6 @@ void display_menus(void)
 void display_labels(void)
 {
 	int i;
-	char temp[20];
 
 	for(i = 0;i < no_prompts;i++)
 	{
@@ -448,220 +466,226 @@ void do_read(WINDOW *win, int fd, int display_offset)
 	UCHAR txword;
 	UCHAR temp;
 	UCHAR wkey;
-	int i;
+	UCHAR limit8;
+	UINT limit16;
+	int i,j;
+	char test_str[7];
 
+	init_list();
 	display_labels();
 	display_menus();		
+
 	while(TRUE)
 	{	
 		done = 0;
 		res = read(fd,&ch,1);
-//			printf("parse_state:%x %x\n",parse_state,ch);
-		switch(ch)
+		ch = get_key(ch,limit8,limit16);
+//		mvwprintw(win, display_offset+22, 16, "%x ",ch);
+		if(curr_fptr_changed())
 		{
-			case KP_0:
-				mvwprintw(win, display_offset+22, 8, "zero  ");
-				wkey = KP_0;
-				break;
-			case KP_1:
-				mvwprintw(win, display_offset+22, 8, "one   ");
-				wkey = KP_1;
-				break;
-			case KP_2:
-				mvwprintw(win, display_offset+22, 8, "two   ");
-				wkey = KP_2;
-				break;
-			case KP_3:
-				mvwprintw(win, display_offset+22, 8, "three ");
-				wkey = KP_3;
-				break;
-			case KP_4:
-				mvwprintw(win, display_offset+22, 8, "four  ");
-				wkey = KP_4;
-				break;
-			case KP_5:
-				mvwprintw(win, display_offset+22, 8, "five  ");
-				wkey = KP_5;
-				break;	
-			case KP_6:
-				mvwprintw(win, display_offset+22, 8, "six   ");
-				wkey = KP_6;
-				break;	
-			case KP_7:
-				mvwprintw(win, display_offset+22, 8, "seven ");
-				wkey = KP_7;
-				break;	
-			case KP_8:
-				mvwprintw(win, display_offset+22, 8, "eight ");
-				wkey = KP_8;
-				break;	
-			case KP_9:
-				mvwprintw(win, display_offset+22, 8, "nine  ");
-				wkey = KP_9;
-				break;	
-			case KP_AST:
-				mvwprintw(win, display_offset+22, 8, "ast   ");
-				wkey = KP_AST;
-				break;	
-			case KP_POUND:
-				mvwprintw(win, display_offset+22, 8, "pound ");
-				wkey = KP_POUND;
-				break;	
-			case KP_A:
-				mvwprintw(win, display_offset+22, 8, "A     ");
-				wkey = KP_A;
-				break;	
-			case KP_B:
-				mvwprintw(win, display_offset+22, 8, "B     ");
-				wkey = KP_B;
-				break;	
-			case KP_C:
-				mvwprintw(win, display_offset+22, 8, "C     ");
-				wkey = KP_C;
-				break;	
-			case KP_D:
-				mvwprintw(win, display_offset+22, 8, "D     ");
-				wkey = KP_D;
-				break;	
-			default:
+			display_menus();
 
-				switch(parse_state)
+			for(j = 0;j < 6;j++)
+				mvwprintw(win, display_offset+15+j, 10,"                         ");
+			j++;
+			
+			j = 0;
+			for(i = 0;i < no_prompts;i++)
+			{
+				if(prompts[i].type == get_curr_fptr())
 				{
-					case IDLE:
-						if(ch <= RT_RPM && ch >= RT_TRIP)
-						{
-							current_param = ch;
-		//						printf("current:");
-							parse_state = CHECK_HIGHBIT;
-						}
-						else
-						{
-		//						printf("opps\n");
-							set_defaults();
-						}
+					GDispStringAt(prompts[i].row,prompts[i].col,prompts[i].label);
+//					mvwprintw(win,prompts[i].col,prompts[i].row, "%s",prompts[i].label);
+//					mvwprintw(win, display_offset+15+j, 10, "%d  %d  %d   ",get_curr_fptr(), \
+							prompts[i].row,prompts[i].col);
+					j++;
+				}
+			}
+			switch(get_curr_menu())
+			{
+				case 0:
+				strcpy(test_str,"MAIN\0");
+				break;
+				case 1:
+				strcpy(test_str,"MENU1A\0");
+				break;
+				case 2:
+				strcpy(test_str,"MENU1B\0");
+				break;
+				case 3:
+				strcpy(test_str,"MENU1C\0");
+				break;
+				case 4:
+				strcpy(test_str,"MENU1D\0");
+				break;
+				case 5:
+				strcpy(test_str,"MENU2A\0");
+				break;
+				case 6:
+				strcpy(test_str,"MENU2B\0");
+				break;
+				case 7:
+				strcpy(test_str,"MENU2C\0");
+				break;
+				case 8:
+				strcpy(test_str,"MENU3A\0");
+				break;
+				case 9:
+				strcpy(test_str,"MENU3B\0");
+				break;
+				case 10:
+				strcpy(test_str,"MENU3C\0");
+				break;
+				case 11:
+				strcpy(test_str,"MENU4A\0");
+				break;
+				case 12:
+				strcpy(test_str,"MENU4B\0");
+				break;
+				case 13:
+				strcpy(test_str,"MAIN4C\0");
+				break;
+				default:
+				break;
+			}
+			mvwprintw(win, display_offset+15+j, 10, "%d  %s  ",get_curr_fptr(),test_str);
+		}	
+		
+		switch(parse_state)
+		{
+			case IDLE:
+				if(ch <= RT_RPM && ch >= RT_TRIP)
+				{
+					current_param = ch;
+//						printf("current:");
+					parse_state = CHECK_HIGHBIT;
+				}
+				else
+				{
+//						printf("opps\n");
+					set_defaults();
+				}
+				break;
+			case CHECK_HIGHBIT:
+				switch(ch)
+				{
+					case RT_LOW:
+						parse_state = SEND_UCHAR0;
 						break;
-					case CHECK_HIGHBIT:
-						switch(ch)
-						{
-							case RT_LOW:
-								parse_state = SEND_UCHAR0;
-								break;
-							case RT_HIGH0:		// if just a UCHAR is sent with high bit set
-								parse_state = SEND_UCHAR1;
-								break;
-							case RT_HIGH1:		// if UINT with neither bit 7 or 15 set
-								parse_state = GET_CH0;
-								break;	
-							case RT_HIGH2:		// if a UINT is sent with bit 7 set
-								parse_state = GET_CH1;
-								break;
-							case RT_HIGH3:		// if a UINT is sent with bit 15 set
-								parse_state = GET_CH2;
-								break;
-							default:
-								set_defaults();
-								break;
-						}
+					case RT_HIGH0:		// if just a UCHAR is sent with high bit set
+						parse_state = SEND_UCHAR1;
 						break;
-					case GET_CH0:
-						parse_state = SEND_UINT0;
-						temp_int = ch;
+					case RT_HIGH1:		// if UINT with neither bit 7 or 15 set
+						parse_state = GET_CH0;
+						break;	
+					case RT_HIGH2:		// if a UINT is sent with bit 7 set
+						parse_state = GET_CH1;
 						break;
-					case GET_CH1:
-						temp_int = ch;
-						parse_state = SEND_UINT1;
-						break;
-					case GET_CH2:
-						temp_int = ch;
-						parse_state = SEND_UINT2;
-						break;
-					case SEND_UCHAR0:
-						xbyte = ch;
-						sprintf(param_string,"%4d",xbyte);
-		//					printf("uchar0:%s\n",param_string);
-						done = 1;
-						break;
-					case SEND_UCHAR1:
-						xbyte = ch | 0x80;
-						sprintf(param_string,"%4d",xbyte);
-		//					printf("uchar1:%s\n",param_string);
-						done = 1;
-						break;
-					case SEND_UINT0:
-						xword = (UINT)temp_int;
-						temp_int = (UINT)ch;
-						temp_int <<= 8;
-						temp_int &= 0xff00;
-						xword |= temp_int;
-						sprintf(param_string,"%4u",xword);
-		//					printf("uint0:%s\n",param_string);
-	
-						done = 1;
-						break;
-					case SEND_UINT1:
-						xword = (UINT)temp_int;
-						temp_int = (UINT)ch;
-						temp_int <<= 8;
-						temp_int &= 0xff00;
-						xword |= temp_int;
-						xword |= 0x0080;
-						sprintf(param_string,"%4u",xword);
-		//					printf("uint1:%s\n",param_string);
-						done = 1;
-						break;
-					case SEND_UINT2:
-						xword = (UINT)temp_int;
-						temp_int = (UINT)ch;
-						temp_int <<= 8;
-						temp_int &= 0xff00;
-						xword |= temp_int;
-						xword |= 0x8000;
-						sprintf(param_string,"%4u",xword);
-		//					printf("uint2:%s\n",param_string);
-						done = 1;
+					case RT_HIGH3:		// if a UINT is sent with bit 15 set
+						parse_state = GET_CH2;
 						break;
 					default:
-						printf("%s\n","default ");
 						set_defaults();
 						break;
-				}	// end of inner switch
-				if(done)
-				{
-		//				printf("%5s\n",param_string);
-					mvwprintw(win, display_offset+current_param-0xF4, 15, param_string);
-					wrefresh(win);
+				}
+				break;
+			case GET_CH0:
+				parse_state = SEND_UINT0;
+				temp_int = ch;
+				break;
+			case GET_CH1:
+				temp_int = ch;
+				parse_state = SEND_UINT1;
+				break;
+			case GET_CH2:
+				temp_int = ch;
+				parse_state = SEND_UINT2;
+				break;
+			case SEND_UCHAR0:
+				xbyte = ch;
+				sprintf(param_string,"%4d",xbyte);
+//					printf("uchar0:%s\n",param_string);
+				done = 1;
+				break;
+			case SEND_UCHAR1:
+				xbyte = ch | 0x80;
+				sprintf(param_string,"%4d",xbyte);
+//					printf("uchar1:%s\n",param_string);
+				done = 1;
+				break;
+			case SEND_UINT0:
+				xword = (UINT)temp_int;
+				temp_int = (UINT)ch;
+				temp_int <<= 8;
+				temp_int &= 0xff00;
+				xword |= temp_int;
+				sprintf(param_string,"%4u",xword);
+//					printf("uint0:%s\n",param_string);
 
-					temp = ~current_param;
+				done = 1;
+				break;
+			case SEND_UINT1:
+				xword = (UINT)temp_int;
+				temp_int = (UINT)ch;
+				temp_int <<= 8;
+				temp_int &= 0xff00;
+				xword |= temp_int;
+				xword |= 0x0080;
+				sprintf(param_string,"%4u",xword);
+//					printf("uint1:%s\n",param_string);
+				done = 1;
+				break;
+			case SEND_UINT2:
+				xword = (UINT)temp_int;
+				temp_int = (UINT)ch;
+				temp_int <<= 8;
+				temp_int &= 0xff00;
+				xword |= temp_int;
+				xword |= 0x8000;
+				sprintf(param_string,"%4u",xword);
+//					printf("uint2:%s\n",param_string);
+				done = 1;
+				break;
+			default:
+				printf("%s\n","default ");
+				set_defaults();
+				break;
+		}	// end of inner switch
+		if(done)
+		{
+//				printf("%5s\n",param_string);
+			mvwprintw(win, display_offset+current_param-0xF4, 15, param_string);
+			wrefresh(win);
 
-					if(temp == 0)
-					{
-						txword = (UCHAR)(xword>>8);
-						write(fd,&txword,1);
-						txword = (UCHAR)(xword);
-						write(fd,&txword,1);
-					}
-					else
-						write(fd,&xbyte,1);
+			temp = ~current_param;
 
-					for(i = 0;i < no_prompts;i++)
-					{
+			if(temp == 0)
+			{
+				txword = (UCHAR)(xword>>8);
+				write(fd,&txword,1);
+				txword = (UCHAR)(xword);
+				write(fd,&txword,1);
+			}
+			else
+				write(fd,&xbyte,1);
+
+			for(i = 0;i < no_prompts;i++)
+			{
 //						mvwprintw(win, display_offset+current_param-0xF4, (i*3)+10, param_string);
 
-						if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)
-						{
-								GDispStringAt(prompts[i].row,prompts[i].col+10,param_string);
+				if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)
+				{
+						GDispStringAt(prompts[i].row,prompts[i].col+10,param_string);
 //								mvwprintw(win, display_offset+current_param-0xF4, (i*3)+10, param_string);
-						}
-					}
-					set_defaults();
-				}	// end of done
-		}	// end of outer switch
+				}
+			}
+			set_defaults();
+		}	// end of done
 	}	// end of while(1)	
 }
 int burn_eeprom(void)
 {
 	int i;
-	uint8_t no_prompts = 0;
 	UINT prompt_info_offset = 0;
     UINT total_strlen = 0;
     uint8_t promptString[sizeof(PROMPT_STRUCT)];
@@ -748,6 +772,7 @@ int burn_eeprom(void)
 	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU5,"ALNUM_ENTRY\0");
 
     no_prompts = i+1;
+    no_prompts -= 2;
     prompt_info_offset = total_strlen;
 /*
 	printString("\r\n");

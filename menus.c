@@ -15,6 +15,106 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+static void show_legend(char *ch0, char *ch1, char *ch2, char *ch3, char *ch4);
+static void show_legend(char *ch0, char *ch1, char *ch2, char *ch3, char *ch4)
+{
+	GDispStringAt(9,0,"              ");
+	GDispStringAt(9,0,ch0);
+	GDispStringAt(10,0,"* - ");
+	GDispStringAt(10,5,"              ");
+	GDispStringAt(10,5,ch1);
+	GDispStringAt(11,0,"0 - ");
+	GDispStringAt(11,5,"              ");
+	GDispStringAt(11,5,ch2);
+	GDispStringAt(12,0,"# - ");
+	GDispStringAt(12,5,"              ");
+	GDispStringAt(12,5,ch3);
+	GDispStringAt(13,0,"D - ");
+	GDispStringAt(13,5,"              ");
+	GDispStringAt(13,5,ch4);
+}
+static int first_menu = MAIN_MENU;
+static int last_menu = NUM_ENTRY;
+static int current_fptr;
+static int last_fptr;
+static int prev_fptr;
+static int list_size;
+static int curr_type;
+
+#define LIST_SIZE 50
+static int prev_list(void);
+static int next_list(void);
+static int reset_list(void);
+static int menu_list[LIST_SIZE];
+
+static UCHAR (*fptr[NUM_FPTS])(UCHAR, UCHAR, UINT, UCHAR, UCHAR) = { main_menu_func,\
+	 menu1a, menu1b,\
+	 menu1c, menu1d,\
+	 menu2a, menu2b, menu2c,\
+	 menu3a, menu3b, menu3c,\
+	 menu4a, menu4b, menu4c, number_entry };
+
+void init_list(void)
+{
+	list_size = LIST_SIZE;
+	current_fptr = first_menu;
+	last_fptr = first_menu;
+	prev_fptr = first_menu;
+	memset(menu_list,0,sizeof(menu_list));
+	menu_list[0] = current_fptr;
+	curr_type = MENU1;
+}	
+
+static int prev_list(void)
+{
+	if(current_fptr == 0)
+		return first_menu;
+	else
+	{
+		menu_list[current_fptr] = 0;
+		current_fptr--;
+	}	
+	return menu_list[current_fptr];
+}
+
+static void set_list(int fptr)
+{
+	if(current_fptr < list_size)
+	{
+		current_fptr++;
+		menu_list[current_fptr] = fptr;
+	}
+}			
+
+UCHAR get_key(UCHAR ch, UCHAR limit8, UINT limit16)
+{
+	UCHAR wkey;
+	wkey = (*fptr[get_curr_menu()])(ch, limit8, limit16, cur_row, cur_col);
+	return ch;
+}
+	
+int get_curr_fptr(void)
+{
+	return current_fptr;
+}
+
+int get_curr_menu(void)
+{
+	return menu_list[current_fptr];
+}
+
+int curr_fptr_changed(void)
+{
+	int ret;
+	ret = current_fptr != last_fptr;
+	last_fptr = current_fptr;
+	return ret;
+}
+
+int get_type(void)
+{
+	return curr_type;
+}
 
 //******************************************************************************************//
 //*************************************** default_func *************************************//
@@ -25,23 +125,31 @@ UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //	UCHAR row1,col1,k;
 	UCHAR ret_char = ch;
 //	printHexByte(ch);	
+	curr_type = MENU1;
+
+	show_legend("main","1a","1b","1c","1d");
+//	GDispStringAt(12,0,"back to main menu   ");
+//	GDispStringAt(13,0,"                    ");
+
 	switch (ch)
 	{
 		case KP_AST:	// '*'
-			current_fptr = MENU1A;
-//			printString("menu1a\r\n");
+			set_list(MENU1A);
+//			GDispStringAt(13,0,"goto menu1a       ");
 			break;
 		case KP_0:	// '0'
-			current_fptr = MENU1B;
-//			printString("menu1b\r\n");
+			set_list(MENU1B);
+//			current_fptr = MENU1B;
+//			GDispStringAt(13,0,"goto menu1b       ");
 			break;
 		case KP_POUND:	// '#'
-			current_fptr = MENU1C;
-//			printString("menu1c\r\n");
+//			current_fptr = MENU1C;
+			set_list(MENU1C);
+//			GDispStringAt(13,0,"goto menu1c       ");
 			break;
 		case KP_D:	// 'D'
-			current_fptr = MENU1D;
-//			printString("menu1d\r\n");
+			set_list(MENU1D);
+//			GDispStringAt(13,0,"goto menu1d       ");
 			break;
 		default:
 			ret_char = ch;
@@ -57,31 +165,33 @@ UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU2;
+	show_legend("1a","back","2a","2b","2c");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu1a 1st choice");
-			GDispStringAt(13,0,"go back          ");
+//			GDispStringAt(12,0,"menu1a 1st choice");
+//			GDispStringAt(13,0,"go back          ");
 //			printString("going back to main menu\r\n");
-			current_fptr--;
+			current_fptr = prev_list();
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu1a 2nd choice");
-			GDispStringAt(13,0,"displaying menu2a");
+//			GDispStringAt(12,0,"menu1a 2nd choice");
+//			GDispStringAt(13,0,"displaying menu2a");
 //			printString("menu2a\r\n");
-			current_fptr = MENU2A;
+			set_list(MENU2A);
 			break;
 		case KP_POUND:
-			GDispStringAt(12,0,"menu1a 3rd choice");
-			GDispStringAt(13,0,"displaying menu2b");
+//			GDispStringAt(12,0,"menu1a 3rd choice");
+//			GDispStringAt(13,0,"displaying menu2b");
 //			printString("menu2b\r\n");
-			current_fptr = MENU2B;
+			set_list(MENU2B);
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu1a 4th choice");
-			GDispStringAt(13,0,"displaying menu2c");
+//			GDispStringAt(12,0,"menu1a 4th choice");
+//			GDispStringAt(13,0,"displaying menu2c");
 //			printString("menu2c\r\n");
-			current_fptr = MENU2C;
+			set_list(MENU2C);
 			break;
 		default:
 			ret_char = ch;
@@ -96,31 +206,33 @@ UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU3;
+	show_legend("1b","back","3a","3b","3c");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu1b 1st choice");
-			GDispStringAt(13,0,"go back          ");
+//			GDispStringAt(12,0,"menu1b 1st choice");
+//			GDispStringAt(13,0,"go back          ");
 //			printString("going back to main menu\r\n");
-			current_fptr--;
+			current_fptr = prev_list();
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu1b 2nd choice");
-			GDispStringAt(13,0,"displaying menu3a");
+//			GDispStringAt(12,0,"menu1b 2nd choice");
+//			GDispStringAt(13,0,"displaying menu3a");
 //			printString("menu3a\r\n");
-			current_fptr = MENU3A;
+			set_list(MENU3A);
 			break;
 		case KP_POUND:
-			GDispStringAt(12,0,"menu1b 3rd choice");
-			GDispStringAt(13,0,"displaying menu3b");
+//			GDispStringAt(12,0,"menu1b 3rd choice");
+//			GDispStringAt(13,0,"displaying menu3b");
 //			printString("menu3b\r\n");
-			current_fptr = MENU3B;
+			set_list(MENU3B);
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu1b 4th choice");
-			GDispStringAt(13,0,"displaying menu3c");
+//			GDispStringAt(12,0,"menu1b 4th choice");
+//			GDispStringAt(13,0,"displaying menu3c");
 //			printString("menu3c\r\n");
-			current_fptr = MENU3C;
+			set_list(MENU3C);
 			break;
 		default:
 			ret_char = ch;
@@ -135,31 +247,33 @@ UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu1c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU3;
+	show_legend("1c","back","4a","4b","4c");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu1c 1st choice");
-			GDispStringAt(13,0,"go back          ");
+//			GDispStringAt(12,0,"menu1c 1st choice");
+//			GDispStringAt(13,0,"go back          ");
 //			printString("going back to main menu\r\n");
-			current_fptr--;
+			current_fptr = prev_list();
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu1c 2nd choice");
-			GDispStringAt(13,0,"displaying menu4a");
+//			GDispStringAt(12,0,"menu1c 2nd choice");
+//			GDispStringAt(13,0,"displaying menu4a");
 //			printString("menu4a\r\n");
-			current_fptr = MENU4A;
+			set_list(MENU4A);
 			break;
 		case KP_POUND:
-			GDispStringAt(12,0,"menu1c 3rd choice");
-			GDispStringAt(13,0,"displaying menu4b");
+//			GDispStringAt(12,0,"menu1c 3rd choice");
+//			GDispStringAt(13,0,"displaying menu4b");
 //			printString("menu4b\r\n");
-			current_fptr = MENU4B;
+			set_list(MENU4B);
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu1c 4th choice");
-			GDispStringAt(13,0,"displaying menu4c");
+//			GDispStringAt(12,0,"menu1c 4th choice");
+//			GDispStringAt(13,0,"displaying menu4c");
 //			printString("menu4c\r\n");
-			current_fptr = MENU4C;
+			set_list(MENU4C);
 			break;
 		default:
 			ret_char = ch;
@@ -174,31 +288,21 @@ UCHAR menu1c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu1d(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU4;
+	show_legend("1d","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu1d 1st choice");
-			GDispStringAt(13,0,"go back          ");
-//			printString("going back to main menu\r\n");
-			current_fptr--;
+			current_fptr = prev_list();
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu1d 2nd choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_POUND:
-			GDispStringAt(12,0,"menu1d 3rd choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu1d 4th choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		default:
 			ret_char = ch;
@@ -213,34 +317,25 @@ UCHAR menu1d(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu2a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU4;
+	show_legend("2a","back","main","num entry","main");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu2a 1st choice");
-			GDispStringAt(13,0,"go back          ");
-//			printString("going back to menu1a\r\n");
-			current_fptr--;
+			current_fptr = prev_list();
+//			current_fptr = 0;
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu2a 2nd choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_POUND:
-			GDispStringAt(13,0,"menu2a 3rd choice");
-			GDispStringAt(14,0,"number entry     ");
 			cur_row = NUM_ENTRY_ROW;
 			cur_col = NUM_ENTRY_BEGIN_COL;
 			memset((void*)new_global_number,0,sizeof(new_global_number));
-//			printString("menu\r\n");
 			current_fptr = NUM_ENTRY;
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu2a 4th choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		default:
 			ret_char = ch;
@@ -255,31 +350,22 @@ UCHAR menu2a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu2b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU4;
+	show_legend("2b","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu2b 1st choice");
-			GDispStringAt(13,0,"go back          ");
-//			printString("going back to menu1a\r\n");
-			current_fptr--;
+			current_fptr = prev_list();
+//			current_fptr = 0;
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu2b 2nd choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_POUND:
-			GDispStringAt(12,0,"menu2b 3rd choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu2b 4th choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		default:
 			ret_char = ch;
@@ -294,31 +380,21 @@ UCHAR menu2b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu2c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU4;
+	show_legend("2c","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu2c 1st choice");
-			GDispStringAt(13,0,"go back          ");
-//			printString("going back to menu1a\r\n");
 			current_fptr--;
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu2c 2nd choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_POUND:
-			GDispStringAt(12,0,"menu2c 3rd choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu2c 4th choice");
-			GDispStringAt(13,0,"displaying main menu");
-//			printString("main menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		default:
 			ret_char = ch;
@@ -333,34 +409,24 @@ UCHAR menu2c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU4;
+	show_legend("3a","back","main","num entry","main");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu3a 1st choice");
-			GDispStringAt(13,0,"go back          ");
-//			printString("menu\r\n");
 			current_fptr--;
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu3a 2nd choice");
-			GDispStringAt(13,0,"displaying menu3a");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_POUND:
-			GDispStringAt(13,0,"menu3a 3rd choice");
-			GDispStringAt(14,0,"number entry     ");
 			cur_row = NUM_ENTRY_ROW;
 			cur_col = NUM_ENTRY_BEGIN_COL;
 			memset((void*)new_global_number,0,sizeof(new_global_number));
-//			printString("menu\r\n");
 			current_fptr = NUM_ENTRY;
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu3a 4th choice");
-			GDispStringAt(13,0,"displaying menu3a");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		default:
 			ret_char = ch;
@@ -375,31 +441,21 @@ UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu3b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU4;
+	show_legend("3b","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu3b 1st choice");
-			GDispStringAt(13,0,"go back          ");
-//			printString("menu\r\n");
 			current_fptr--;
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu3b 2nd choice");
-			GDispStringAt(13,0,"displaying menu3b");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_POUND:
-			GDispStringAt(12,0,"menu3b 3rd choice");
-			GDispStringAt(13,0,"displaying menu3b");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu3b 4th choice");
-			GDispStringAt(13,0,"displaying menu3b");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		default:
 			ret_char = ch;
@@ -414,31 +470,22 @@ UCHAR menu3b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu3c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU4;
+	show_legend("3c","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu3c 1st choice");
-			GDispStringAt(13,0,"go back          ");
-//			printString("menu\r\n");
-			current_fptr--;
+//			current_fptr--;
+			current_fptr = 0;
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu3c 2nd choice");
-			GDispStringAt(13,0,"displaying menu3c");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_POUND:
-			GDispStringAt(12,0,"menu3c 3rd choice");
-			GDispStringAt(13,0,"displaying menu3c");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu3c 4th choice");
-			GDispStringAt(13,0,"displaying menu3c");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		default:
 			ret_char = ch;
@@ -453,31 +500,21 @@ UCHAR menu3c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU4;
+	show_legend("4a","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu4a 1st choice");
-			GDispStringAt(13,0,"go back          ");
-//			printString("menu\r\n");
 			current_fptr--;
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu4a 2nd choice");
-			GDispStringAt(13,0,"displaying menu4a");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_POUND:
-			GDispStringAt(13,0,"menu4a 3rd choice");
-			GDispStringAt(13,0,"displaying menu4a");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu4a 4th choice");
-			GDispStringAt(13,0,"displaying menu4a");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		default:
 			ret_char = ch;
@@ -492,31 +529,21 @@ UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU4;
+	show_legend("4b","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu4b 1st choice");
-			GDispStringAt(13,0,"go back          ");
-//			printString("menu\r\n");
 			current_fptr--;
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu4b 2nd choice");
-			GDispStringAt(13,0,"displaying menu4b");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_POUND:
-			GDispStringAt(12,0,"menu4b 3rd choice");
-			GDispStringAt(13,0,"displaying menu4b");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu4b 4th choice");
-			GDispStringAt(13,0,"displaying menu4b");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		default:
 			ret_char = ch;
@@ -531,31 +558,21 @@ UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
+	curr_type = MENU4;
+	show_legend("4c","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
-			GDispStringAt(12,0,"menu4c 1st choice");
-			GDispStringAt(13,0,"go back          ");
-//			printString("menu\r\n");
 			current_fptr--;
 			break;
 		case KP_0:
-			GDispStringAt(12,0,"menu4c 2nd choice");
-			GDispStringAt(13,0,"displaying menu4c");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_POUND:
-			GDispStringAt(12,0,"menu4c 3rd choice");
-			GDispStringAt(13,0,"displaying menu4c");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		case KP_D:
-			GDispStringAt(12,0,"menu4c 4th choice");
-			GDispStringAt(13,0,"displaying menu4c");
-//			printString("menu\r\n");
-			current_fptr = MAIN_MENU;
+			init_list();
 			break;
 		default:
 			ret_char = ch;
