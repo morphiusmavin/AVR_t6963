@@ -40,14 +40,24 @@
 #ifndef NOAVR
 #include <avr/io.h>
 #include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
+#else
+#include <ncurses.h>
 #endif
 #include "sfr_helper.h"
 #include "t6963.h"
 //#include "font5x7.h"        //custom-defined 5x7 font, for GDispPixFontAt(...)
 #include <string.h>
+
+#ifdef NOAVR
+WINDOW *win;
+void set_win(WINDOW *w)
+{
+	win = w;
+}
+#endif
+
 #define bit_test(x,n)(x & (0x01<<n))
 #define TIME_DELAY 1
-#define SCREEN_EN
 /*
  ***********************************************************************************************
  *                                       LOCAL CONSTANTS
@@ -115,8 +125,7 @@ static void GDispCmdAddrSend (UINT Addr, UCHAR cmd)
  */
 void GDispInit (void)
 {
-#ifdef SCREEN_EN
-#warning "SCREEN is defined"
+#ifndef NOAVR
 	//Reset the LCD module and perform a hardware port init
 	GDispInitPort ();
 	//Set Text Home address to TEXT_HOME_ADDR
@@ -144,7 +153,7 @@ void GDispInit (void)
  */
 void GDispSetMode (UCHAR mode)
 {
-#ifdef SCREEN_EN
+#ifndef NOAVR
 	GDispCmdSend (mode);
 #endif
 }
@@ -160,7 +169,7 @@ void GDispSetMode (UCHAR mode)
  */
 void GDispClrTxt (void)
 {
-#ifdef SCREEN_EN
+#ifndef NOAVR
 	UINT row;
 	UINT col;
 	//Set address pointer to address (TEXT_HOME_ADDR)
@@ -265,17 +274,23 @@ void GDispChar (UCHAR c)
  */
 void GDispCharAt (UINT row, UINT col, UCHAR c)
 {
+#ifndef NOAVR
 	GDispGoto (row, col);
 	GDispDataWr (c - 0x20);
 	GDispCmdSend (DATA_WR);
+#else
+	mvwaddch(win,col,row,c);
+#endif
 }
+
 void GDispStringAt(UINT row, UINT col, char *c)
 {
-#ifdef SCREEN_EN
 	char *str;
 	int i;
 	str = c;
 	i = 0;
+#ifndef NOAVR
+
 	while(*(str+i) != 0)
 	{
 		GDispCharAt(row,col+i,*(str+i));
@@ -283,7 +298,11 @@ void GDispStringAt(UINT row, UINT col, char *c)
 		if(i > 100)
 			return;
 	}
-#endif	
+#else
+	mvwprintw(win,row+5,5+(col+i),"%s",str);
+//	mvwprintw(win, 25,5,"test");
+#endif
+
 }
 /*
 *********************************************************************************************************

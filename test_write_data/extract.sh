@@ -2,6 +2,6 @@
 #and copy ../main.h and ../sfr_helper.h to /home/dan/dev
 tar xvf test_write.tar
 make clean
-mv menu.c main.h ..
+mv menus.c main.h t6963.* USART.* sfr_helper.h ..
 make
 rm *.o

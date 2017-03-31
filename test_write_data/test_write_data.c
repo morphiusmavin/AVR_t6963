@@ -16,22 +16,6 @@
 #include "../sfr_helper.h"
 #include "../main.h"
 #include "../t6963.h"
-// this has to be commented out when compiling on 168.192.0.15 for some damn reason
-//#define UINT16_T
-/* comment it out in this machine and I get:
-
-../main.h:12:22: error: conflicting types for ‘uint16_t’
- typedef unsigned int uint16_t;
-                      ^
-In file included from /usr/lib/gcc/x86_64-linux-gnu/5/include/stdint.h:9:0,
-                 from /usr/include/curses.h:63,
-                 from test_write_data.c:15:
-/usr/include/stdint.h:49:28: note: previous declaration of ‘uint16_t’ was here
- typedef unsigned short int uint16_t;
-
-wtf?
-
-*/
 #include "../main.h"
 
 #define BAUDRATE B19200
@@ -40,19 +24,25 @@ wtf?
 #define FALSE 0
 #define TRUE 1
 #define LEN 200
+#define DISP_OFFSET 25
 void set_defaults(void);
 // really cranking
 #define TIME_DELAY 2000
 // readable
 //#define TIME_DELAY 300000
 UCHAR current_param;
-uint16_t temp_int;
+UINT temp_int;
 UCHAR parse_state;
+
+PROMPT_STRUCT prompts[24];	// fill this in just as the eeprom read would
 
 int set_interface_attribs (int fd, int speed, int parity);
 void set_blocking (int fd, int should_block);
-void do_read(WINDOW *win, int fd);
-
+void do_read(WINDOW *win, int fd, int display_offset);
+void update_prompt_struct(UCHAR pnum, UCHAR row, UCHAR col, UINT *offset, uint8_t type,char *ramstr);
+int burn_eeprom(void);
+void display_menus(void);
+void display_labels(void);
 //******************************************************************************************//
 //****************************************** main ******************************************//
 //******************************************************************************************//
@@ -68,17 +58,29 @@ int main(int argc, char *argv[])
 	useconds_t tdelay = TIME_DELAY;
     UCHAR data = 2;
     UCHAR data1 = 0;
-	uint16_t data2 = 0;
+	UINT data2 = 0;
     UCHAR code = RT_TRIP;
     UCHAR read_buff[10];
 	//PROMPT_STRUCT prompts[30];
 //	UCHAR no_prompts;
 	int done;
-	uint16_t rpm;
+	UINT rpm;
 	UCHAR key;
 	UCHAR wkey;
 	char param_string[10];
+	int display_offset;
 
+	burn_eeprom();	
+	for(i = 0;i < 23;i++)
+	{
+		printf("%d\t",prompts[i].pnum);
+		printf("%d\t",prompts[i].row);
+		printf("%d\t",prompts[i].col);
+		printf("%d\t",prompts[i].len);
+		printf("%d\t",prompts[i].type);
+		printf("%s\n",prompts[i].label);
+	}
+	
 	memset(read_buff,0,10);
 	initscr();			/* Start curses mode 		*/
 	clear();
@@ -86,21 +88,28 @@ int main(int argc, char *argv[])
 	nodelay(stdscr,TRUE);
 	raw();				/* Line buffering disabled	*/
 	cbreak();	/* Line buffering disabled. pass on everything */
-	menu_win = newwin(25, 50, 10,10);
+	menu_win = newwin(50, 100, 10,10);
 	keypad(menu_win, TRUE);
 	nodelay(menu_win, TRUE);
 	box(menu_win,0,0);
-
-	mvwprintw(menu_win, 2, 2, "RT_TRIP ");
-	mvwprintw(menu_win, 3, 2,"RT_TIME ");
-	mvwprintw(menu_win, 4, 2,"RT_AIRT ");
-	mvwprintw(menu_win, 5, 2,"RT_O2 ");
-	mvwprintw(menu_win, 6, 2,"RT_MAP ");
-	mvwprintw(menu_win, 7, 2,"RT_OILT ");
-	mvwprintw(menu_win, 8, 2,"RT_OILP ");
-	mvwprintw(menu_win, 9, 2,"RT_ENGT ");
-	mvwprintw(menu_win, 10, 2,"RT_MPH ");
-	mvwprintw(menu_win, 11, 2,"RT_RPM ");
+	set_win(menu_win);
+	if(argc > 1)
+		display_offset = 0;
+	else
+	{
+		display_offset = DISP_OFFSET;
+		mvwprintw(menu_win, display_offset+2, 2, "RT_TRIP ");
+		mvwprintw(menu_win, display_offset+3, 2,"RT_TIME ");
+		mvwprintw(menu_win, display_offset+4, 2,"RT_AIRT ");
+		mvwprintw(menu_win, display_offset+5, 2,"RT_O2 ");
+		mvwprintw(menu_win, display_offset+6, 2,"RT_MAP ");
+		mvwprintw(menu_win, display_offset+7, 2,"RT_OILT ");
+		mvwprintw(menu_win, display_offset+8, 2,"RT_OILP ");
+		mvwprintw(menu_win, display_offset+9, 2,"RT_ENGT ");
+		mvwprintw(menu_win, display_offset+10, 2,"RT_MPH ");
+		mvwprintw(menu_win, display_offset+11, 2,"RT_RPM ");
+	}
+		
 	wrefresh(menu_win);
 	if(argc > 1)
 	{
@@ -108,24 +117,25 @@ int main(int argc, char *argv[])
 //		mvwprintw(menu_win, 2, 2,
 		iters = atoi(argv[1])*10;
 //		printf("iters: %d\n",iters);
-		mvwprintw(menu_win,17,4,"interations: %d",iters);
+		burn_eeprom();
+		mvwprintw(menu_win,display_offset+17,4,"interations: %d",iters);
 		type = 1;
 		if(argc > 2)
 		{
 			data2 = atoi(argv[2]);
 //			printf("rpm starting at: %d\n",data2);
-			mvwprintw(menu_win,18,4,"rpm starting at: %d",data2);
+			mvwprintw(menu_win,display_offset+18,4,"rpm starting at: %d",data2);
 		}
 		if(argc > 3)
 		{
 			data = atoi(argv[3]);
 //			printf("others starting at: %d\n",data);
-			mvwprintw(menu_win,19,4,"others starting at: %d",data);
+			mvwprintw(menu_win,display_offset+19,4,"others starting at: %d",data);
 		}
 		if(argc > 4)
 		{
 			tdelay = atoi(argv[4])*1000;
-			mvwprintw(menu_win,20,4,"time delay: %dK",atoi(argv[4]));
+			mvwprintw(menu_win,display_offset+20,4,"time delay: %dK",atoi(argv[4]));
 		}
 	}
 	else
@@ -154,7 +164,7 @@ int main(int argc, char *argv[])
 // read
 	if(type == 0) 
 	{
-		do_read(menu_win, fd);
+		do_read(menu_win, fd,display_offset);
 	}	// end of else
 
 // write
@@ -222,7 +232,7 @@ int main(int argc, char *argv[])
 				data2++;
 //				printf("%d\n",data2);
 				sprintf(param_string,"%4u",data2);
-				mvwprintw(menu_win, code-0xF4, 10, param_string);
+				mvwprintw(menu_win, display_offset+code-0xF4, 10, param_string);
 				wrefresh(menu_win);
 				code = RT_TRIP-1;
 	//				code = RT_OILP;
@@ -255,103 +265,106 @@ int main(int argc, char *argv[])
 				data++;
 //				printf("%d\n",data);
 				sprintf(param_string,"%4u",data);
-				mvwprintw(menu_win, code-0xF4, 10, param_string);
+				mvwprintw(menu_win, display_offset+code-0xF4, 10, param_string);
 				wrefresh(menu_win);
 			}
 			res = read(fd,read_buff,5);
-			mvwprintw(menu_win, 13, 7, "bytes read: %d",res);
-			mvwprintw(menu_win, 14, 8, "               ");
+			mvwprintw(menu_win, display_offset+13, 7, "bytes read: %d",res);
+			mvwprintw(menu_win, display_offset+14, 8, "               ");
 			for(j = 0;j < res;j++)
-				mvwprintw(menu_win, 14, 10+(j*3), "%x",read_buff[j]);
+				mvwprintw(menu_win, display_offset+14, 10+(j*3), "%x",read_buff[j]);
 			if(res == 2)
 			{
 				rpm = read_buff[0];
 				rpm <<= 8;
 				rpm |= read_buff[1];
-				mvwprintw(menu_win, 15, 8, "rpm:  %d  ",rpm);
+				mvwprintw(menu_win, display_offset+15, 8, "rpm:  %d  ",rpm);
 			}
 			else if(res == 1)
 			{
-				mvwprintw(menu_win, 16, 8, "others:  %d  ",read_buff[0]);
+				mvwprintw(menu_win, display_offset+16, 8, "others:  %d  ",read_buff[0]);
 			}
 			wrefresh(menu_win);
 			if(code == RT_TRIP-1)
 				usleep(tdelay*2);
+
+// see if one of the keys from the "keypad" is pressed 
+
 			key = wgetch(menu_win);	
 			if(key != 0xff)
 			{
 				switch(key)
 				{
 					case '0':
-						mvwprintw(menu_win, 22, 8, "zero  ");
+						mvwprintw(menu_win, display_offset+22, 8, "zero  ");
 						wkey = KP_0;
 						break;
 					case '1':
-						mvwprintw(menu_win, 22, 8, "one   ");
+						mvwprintw(menu_win, display_offset+22, 8, "one   ");
 						wkey = KP_1;
 						break;
 					case '2':
-						mvwprintw(menu_win, 22, 8, "two   ");
+						mvwprintw(menu_win, display_offset+22, 8, "two   ");
 						wkey = KP_2;
 						break;
 					case '3':
-						mvwprintw(menu_win, 22, 8, "three ");
+						mvwprintw(menu_win,display_offset+22, 8, "three ");
 						wkey = KP_3;
 						break;
 					case '4':
-						mvwprintw(menu_win, 22, 8, "four  ");
+						mvwprintw(menu_win, display_offset+22, 8, "four  ");
 						wkey = KP_4;
 						break;
 					case '5':
-						mvwprintw(menu_win, 22, 8, "five  ");
+						mvwprintw(menu_win, display_offset+22, 8, "five  ");
 						wkey = KP_5;
 						break;	
 					case '6':
-						mvwprintw(menu_win, 22, 8, "six   ");
+						mvwprintw(menu_win, display_offset+22, 8, "six   ");
 						wkey = KP_6;
 						break;	
 					case '7':
-						mvwprintw(menu_win, 22, 8, "seven ");
+						mvwprintw(menu_win, display_offset+22, 8, "seven ");
 						wkey = KP_7;
 						break;	
 					case '8':
-						mvwprintw(menu_win, 22, 8, "eight ");
+						mvwprintw(menu_win, display_offset+22, 8, "eight ");
 						wkey = KP_8;
 						break;	
 					case '9':
-						mvwprintw(menu_win, 22, 8, "nine  ");
+						mvwprintw(menu_win, display_offset+22, 8, "nine  ");
 						wkey = KP_9;
 						break;	
 					case '*':
-						mvwprintw(menu_win, 22, 8, "ast   ");
+						mvwprintw(menu_win, display_offset+22, 8, "ast   ");
 						wkey = KP_AST;
 						break;	
 					case '#':
-						mvwprintw(menu_win, 22, 8, "pound ");
+						mvwprintw(menu_win, display_offset+22, 8, "pound ");
 						wkey = KP_POUND;
 						break;	
 					case 'A':
 					case 'a':
-						mvwprintw(menu_win, 22, 8, "A     ");
+						mvwprintw(menu_win, display_offset+22, 8, "A     ");
 						wkey = KP_A;
 						break;	
 					case 'B':
 					case 'b':
-						mvwprintw(menu_win, 22, 8, "B     ");
+						mvwprintw(menu_win, display_offset+22, 8, "B     ");
 						wkey = KP_B;
 						break;	
 					case 'C':
 					case 'c':
-						mvwprintw(menu_win, 22, 8, "C     ");
+						mvwprintw(menu_win, display_offset+22, 8, "C     ");
 						wkey = KP_C;
 						break;	
 					case 'D':
 					case 'd':
-						mvwprintw(menu_win, 22, 8, "D     ");
+						mvwprintw(menu_win, display_offset+22, 8, "D     ");
 						wkey = KP_D;
 						break;	
 					default:
-						mvwprintw(menu_win, 22, 8, "?     ");
+						mvwprintw(menu_win, display_offset+22, 8, "?     ");
 						wkey = 0xff;
 						break;
 				}
@@ -382,23 +395,63 @@ void set_defaults(void)
 {
 	temp_int = 0;
 	parse_state = IDLE;
+	current_fptr = 0;
+	no_prompts = 23;
+}
+//******************************************************************************************//
+//************************************* display_menus **************************************//
+//******************************************************************************************//
+// display a different menu
+void display_menus(void)
+{
+	int i;
+	char temp[20];
+	for(i = 0;i < no_prompts;i++)
+	{
+		if(prompts[i].type == current_fptr)
+		{
+//			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
+			GDispStringAt(prompts[i].row,prompts[i].col,prompts[i].label);
+		}
+	}	
+}
+//******************************************************************************************//
+//**************************************** display_labels **********************************//
+//******************************************************************************************//
+// displays only the labels of the current rt_layout
+void display_labels(void)
+{
+	int i;
+	char temp[20];
+
+	for(i = 0;i < no_prompts;i++)
+	{
+		if(prompts[i].type == RT_LABEL)
+		{
+//			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
+			GDispStringAt(prompts[i].row,prompts[i].col,prompts[i].label);
+		}
+	}
 }
 
 //******************************************************************************************//
 //**************************************** do_read *****************************************//
 //******************************************************************************************//
-void do_read(WINDOW *win, int fd)
+void do_read(WINDOW *win, int fd, int display_offset)
 {
 	int done;
 	int res;
 	UCHAR ch;
 	UCHAR xbyte;
 	char param_string[10];
-	uint16_t xword;
+	UINT xword;
 	UCHAR txword;
 	UCHAR temp;
 	UCHAR wkey;
-	
+	int i;
+
+	display_labels();
+	display_menus();		
 	while(TRUE)
 	{	
 		done = 0;
@@ -407,67 +460,67 @@ void do_read(WINDOW *win, int fd)
 		switch(ch)
 		{
 			case KP_0:
-				mvwprintw(win, 22, 8, "zero  ");
+				mvwprintw(win, display_offset+22, 8, "zero  ");
 				wkey = KP_0;
 				break;
 			case KP_1:
-				mvwprintw(win, 22, 8, "one   ");
+				mvwprintw(win, display_offset+22, 8, "one   ");
 				wkey = KP_1;
 				break;
 			case KP_2:
-				mvwprintw(win, 22, 8, "two   ");
+				mvwprintw(win, display_offset+22, 8, "two   ");
 				wkey = KP_2;
 				break;
 			case KP_3:
-				mvwprintw(win, 22, 8, "three ");
+				mvwprintw(win, display_offset+22, 8, "three ");
 				wkey = KP_3;
 				break;
 			case KP_4:
-				mvwprintw(win, 22, 8, "four  ");
+				mvwprintw(win, display_offset+22, 8, "four  ");
 				wkey = KP_4;
 				break;
 			case KP_5:
-				mvwprintw(win, 22, 8, "five  ");
+				mvwprintw(win, display_offset+22, 8, "five  ");
 				wkey = KP_5;
 				break;	
 			case KP_6:
-				mvwprintw(win, 22, 8, "six   ");
+				mvwprintw(win, display_offset+22, 8, "six   ");
 				wkey = KP_6;
 				break;	
 			case KP_7:
-				mvwprintw(win, 22, 8, "seven ");
+				mvwprintw(win, display_offset+22, 8, "seven ");
 				wkey = KP_7;
 				break;	
 			case KP_8:
-				mvwprintw(win, 22, 8, "eight ");
+				mvwprintw(win, display_offset+22, 8, "eight ");
 				wkey = KP_8;
 				break;	
 			case KP_9:
-				mvwprintw(win, 22, 8, "nine  ");
+				mvwprintw(win, display_offset+22, 8, "nine  ");
 				wkey = KP_9;
 				break;	
 			case KP_AST:
-				mvwprintw(win, 22, 8, "ast   ");
+				mvwprintw(win, display_offset+22, 8, "ast   ");
 				wkey = KP_AST;
 				break;	
 			case KP_POUND:
-				mvwprintw(win, 22, 8, "pound ");
+				mvwprintw(win, display_offset+22, 8, "pound ");
 				wkey = KP_POUND;
 				break;	
 			case KP_A:
-				mvwprintw(win, 22, 8, "A     ");
+				mvwprintw(win, display_offset+22, 8, "A     ");
 				wkey = KP_A;
 				break;	
 			case KP_B:
-				mvwprintw(win, 22, 8, "B     ");
+				mvwprintw(win, display_offset+22, 8, "B     ");
 				wkey = KP_B;
 				break;	
 			case KP_C:
-				mvwprintw(win, 22, 8, "C     ");
+				mvwprintw(win, display_offset+22, 8, "C     ");
 				wkey = KP_C;
 				break;	
 			case KP_D:
-				mvwprintw(win, 22, 8, "D     ");
+				mvwprintw(win, display_offset+22, 8, "D     ");
 				wkey = KP_D;
 				break;	
 			default:
@@ -535,8 +588,8 @@ void do_read(WINDOW *win, int fd)
 						done = 1;
 						break;
 					case SEND_UINT0:
-						xword = (uint16_t)temp_int;
-						temp_int = (uint16_t)ch;
+						xword = (UINT)temp_int;
+						temp_int = (UINT)ch;
 						temp_int <<= 8;
 						temp_int &= 0xff00;
 						xword |= temp_int;
@@ -546,8 +599,8 @@ void do_read(WINDOW *win, int fd)
 						done = 1;
 						break;
 					case SEND_UINT1:
-						xword = (uint16_t)temp_int;
-						temp_int = (uint16_t)ch;
+						xword = (UINT)temp_int;
+						temp_int = (UINT)ch;
 						temp_int <<= 8;
 						temp_int &= 0xff00;
 						xword |= temp_int;
@@ -557,8 +610,8 @@ void do_read(WINDOW *win, int fd)
 						done = 1;
 						break;
 					case SEND_UINT2:
-						xword = (uint16_t)temp_int;
-						temp_int = (uint16_t)ch;
+						xword = (UINT)temp_int;
+						temp_int = (UINT)ch;
 						temp_int <<= 8;
 						temp_int &= 0xff00;
 						xword |= temp_int;
@@ -575,34 +628,170 @@ void do_read(WINDOW *win, int fd)
 				if(done)
 				{
 		//				printf("%5s\n",param_string);
-					mvwprintw(win, current_param-0xF4, 10, param_string);
+					mvwprintw(win, display_offset+current_param-0xF4, 15, param_string);
 					wrefresh(win);
 
 					temp = ~current_param;
 
 					if(temp == 0)
 					{
-						txword = (uint8_t)(xword>>8);
+						txword = (UCHAR)(xword>>8);
 						write(fd,&txword,1);
-						txword = (uint8_t)(xword);
+						txword = (UCHAR)(xword);
 						write(fd,&txword,1);
 					}
 					else
 						write(fd,&xbyte,1);
 
-		/*
 					for(i = 0;i < no_prompts;i++)
 					{
+//						mvwprintw(win, display_offset+current_param-0xF4, (i*3)+10, param_string);
+
 						if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)
 						{
-		//						GDispStringAt(prompts[i].row,prompts[i].col+10,param_string);
+								GDispStringAt(prompts[i].row,prompts[i].col+10,param_string);
+//								mvwprintw(win, display_offset+current_param-0xF4, (i*3)+10, param_string);
 						}
 					}
-		*/
 					set_defaults();
 				}	// end of done
 		}	// end of outer switch
 	}	// end of while(1)	
+}
+int burn_eeprom(void)
+{
+	int i;
+	uint8_t no_prompts = 0;
+	UINT prompt_info_offset = 0;
+    UINT total_strlen = 0;
+    uint8_t promptString[sizeof(PROMPT_STRUCT)];
+    size_t str_size = sizeof(PROMPT_STRUCT);
+
+//    printString("\r\nwriting to eeprom...\r\n");
+    i = 0;
+    // the row,col elements don't really apply for the RT params
+    // because the are displayed according to the row,col elements of the rt_layout
+	update_prompt_struct((UCHAR)i,(UCHAR)i,0,&total_strlen,RT_LABEL,"RPM\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,(UCHAR)i,0,&total_strlen,RT_LABEL,"MPH\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,(UCHAR)i,0,&total_strlen,RT_LABEL,"ENG TEMP\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,(UCHAR)i,0,&total_strlen,RT_LABEL,"OIL PRESS\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,(UCHAR)i,0,&total_strlen,RT_LABEL,"OIL TEMP\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"MAP\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"O2\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"AIR TEMP\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"TIME\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"TRIP\0");
+
+	i++;
+	// the row, col elements specify where at the bottom of the screen 
+	// menu choices will be
+	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU1,"MENU1a\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,8,&total_strlen,MENU1,"MENU1b\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,16,&total_strlen,MENU1,"MENU1c\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,24,&total_strlen,MENU1,"MENU1d\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,8,&total_strlen,MENU2,"MENU2a\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,16,&total_strlen,MENU2,"MENU2b\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,24,&total_strlen,MENU2,"MENU2c\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,8,&total_strlen,MENU3,"MENU3a\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,16,&total_strlen,MENU3,"MENU3b\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,24,&total_strlen,MENU3,"MENU3c\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,8,&total_strlen,MENU4,"MENU4a\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,16,&total_strlen,MENU4,"MENU4b\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,24,&total_strlen,MENU4,"MENU4c\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU5,"NUM_ENTRY\0");
+
+	i++;
+	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU5,"ALNUM_ENTRY\0");
+
+    no_prompts = i+1;
+    prompt_info_offset = total_strlen;
+/*
+	printString("\r\n");
+	printHexByte((uint8_t)prompt_info_offset>>8);
+	transmitByte(0x20);
+	printHexByte((uint8_t)prompt_info_offset);
+	transmitByte(0x20);
+	printHexByte((uint8_t)no_prompts);
+*/
+//	eeprom_update_byte((uint8_t *)NO_PROMPTS_EEPROM_LOCATION,no_prompts);
+//	eeprom_update_word((UINT *)PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB,prompt_info_offset);
+
+//	printString("\r\ndone writing prompts to eeprom\r\n");
+/*
+    for(i = 0;i < no_prompts;i++)
+    {
+		// memcpy(dest,src,size)
+        memcpy((void*)(promptString),(void *)(&(prompts[i])),str_size);
+		// eeprom_block_update(src,dest,size)
+
+		eeprom_update_block(promptString,(eepromString+((i*(uint8_t)str_size))+prompt_info_offset), str_size);
+    }
+*/    
+//	printString("done writing eeprom\r\n");
+	return 0;
+}
+
+void update_prompt_struct(UCHAR pnum, UCHAR row, UCHAR col, UINT *offset, uint8_t type,char *ramstr)
+{
+	int len;
+//	printString(ramstr);
+//	printString("\r\n");
+	strcpy(prompts[pnum].label,ramstr);
+	len = strlen(ramstr);
+	prompts[pnum].len = len;
+	prompts[pnum].pnum = pnum;
+	prompts[pnum].row = row;
+    prompts[pnum].offset = *offset;
+	prompts[pnum].col = col;
+    prompts[pnum].type = type;
+
+//    eeprom_update_block(ramstr, eepromString+*offset, len);
+
+    *offset += len;
 }
 
 int set_interface_attribs (int fd, int speed, int parity)

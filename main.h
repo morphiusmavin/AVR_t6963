@@ -3,10 +3,12 @@
 #define TIME_DELAY1 1
 #define STRING_LEN   100
 #define NUM_FPTS 15
-#define SCREEN_EN
 #warning "main.h"
 typedef struct prompts
 {
+#ifdef NOAVR
+	char label[10];
+#endif
 	UCHAR pnum;
 	UCHAR row;
 	UCHAR col;

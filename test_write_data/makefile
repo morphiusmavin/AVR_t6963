@@ -13,7 +13,7 @@ LDFLAGS = ${GNULDFLAGS}
 #SFLAGS = ${GNUSFLAGS}
 #SFLAGS = -DUINT16_T
 
-all: test_data # test_menu
+all: test_data
 
 t6963.o : ../t6963.c
 	${CC} -c ${CFLAGS} ${SFLAGS} -o t6963.o ../t6963.c
@@ -24,16 +24,10 @@ menus.o : ../menus.c
 test_write_data.o : test_write_data.c ../main.h ../sfr_helper.h
 	${CC} -c  ${CFLAGS} ${SFLAGS} -o test_write_data.o test_write_data.c
 
-test_write_menu.o : test_write_menu.c
-	${CC} -c ${CFLAGS} ${SFLAGS} -o test_write_menu.o test_write_menu.c
-
 test_data : menus.o test_write_data.o t6963.o
 	${CC} ${CFLAGS} test_write_data.o t6963.o menus.o -o test_data -lcurses
 	
-test_menu : test_write_menu.o menu.o
-	${CC} ${CFLAGS} test_write_menu.o menu.o -o test_menu -lcurses
-
 clean :
 	rm -f *.o *~ *# core  a.out \
-	test_data test_menu
+	test_data
 

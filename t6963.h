@@ -231,6 +231,9 @@ extern UCHAR    CGBuffer[8];    /* Buffer for custom pattern                    
 						SET_WR();	\
 						CLR_RD();
 #endif
+#ifdef NOAVR
+void set_win(WINDOW *w);
+#endif
 void GDispInit(void);
 void GDispSetMode(UCHAR mode);
 void GDispClrTxt(void);
