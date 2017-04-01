@@ -126,7 +126,6 @@ void dispRC(int row, int col);
 void CheckRC(int *row, int *col, UCHAR *k);
 void display_labels(void);
 void parse_PIC24(UCHAR);
-void display_menus(void);
 void set_defaults(void);
 
 void init_list(void);

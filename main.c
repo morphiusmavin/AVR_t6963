@@ -99,15 +99,9 @@ int main(void)
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
 	GDispClrTxt();
-/*
-	_delay_ms(5000);
-	printString("\r\ndisplaying labels...");
-	display_labels();
-*/
 	set_defaults();
 	_delay_us(10);
-//	printString("\r\ndisplaying menus...\r\n");
-	display_menus();
+	init_list();
 	display_labels();
     while (1)
     {
@@ -119,8 +113,8 @@ int main(void)
 //		ret_char = (*fptr[current_fptr])(ret_char, limit8, limit16, cur_row, cur_col);
 		ret_char = get_key(ret_char,limit8,limit16);
 //		if(current_fptr != last_fptr)
-		if(curr_fptr_changed())
-			display_menus();
+//		if(curr_fptr_changed())
+//			display_menus();
 //		last_fptr = current_fptr;
 		parse_PIC24(ret_char);
 	}
@@ -130,6 +124,7 @@ int main(void)
 //************************************* display_menus **************************************//
 //******************************************************************************************//
 // display a different menu
+#if 0
 void display_menus(void)
 {
 	int i;
@@ -149,6 +144,7 @@ void display_menus(void)
 		}
 	}
 }
+#endif
 //******************************************************************************************//
 //**************************************** display_labels **********************************//
 //******************************************************************************************//

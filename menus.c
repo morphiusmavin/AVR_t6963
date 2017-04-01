@@ -1,10 +1,10 @@
 #ifndef NOAVR
-#warning "NOAVR"
 #include <avr/io.h>
 #include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
 #include <avr/eeprom.h>
 #include "macros.h"
 #else
+#warning "NOAVR"
 #include <ncurses.h>
 #endif
 #include "sfr_helper.h"
@@ -107,7 +107,7 @@ void init_list(void)
 static void prev_list(void)
 {
 	if(current_fptr == 0)
-		return first_menu;
+		return;
 	else
 	{
 		menu_list[current_fptr] = 0;
