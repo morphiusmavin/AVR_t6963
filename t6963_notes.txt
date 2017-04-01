@@ -25,14 +25,6 @@ dec		hex		char
 67		43		C
 68		44		D
 
-If the bottom left key '*' is pressed a menu will appear at the bottom for 5 seconds.
-If any other key is not pressed within 5 seconds, the menu will go away. To do this,
-use one of the AVR timers.
-
-Depending on the keypress, we can send a special code to tell the PIC24's keypad 
-routine to delay for so long after a keypress. Like when moving the cursor, the
-delay between keypresses can be shorter so the cursor can move faster.
-
 The menu at the bottom can be any number of rows. '*' will cancel the menu at anytime.
 When the key that corrisponds to the menu is pressed, another menu or dialog will appear.
 The most common dialog is one that lets the user enter a number. The menus will be 

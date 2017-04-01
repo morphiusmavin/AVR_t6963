@@ -20,6 +20,8 @@ static void cursor_forward(void);
 static void cursor_backward(void);
 static void cursor_forward_stuff(char);
 static void stuff_num(char);
+static void scroll_alnum_list(int dir, int single);
+static void show_alnum_list(int show);
 static UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 static UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 static UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
@@ -35,41 +37,56 @@ static UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 static UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 static UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 static UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-static void show_legend(char *ch0, char *ch1, char *ch2, char *ch3, char *ch4);
-static void show_legend(char *ch0, char *ch1, char *ch2, char *ch3, char *ch4)
+static UCHAR alnum_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static void show_legend(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4);
+static void show_legend(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4)
 {
-	GDispStringAt(11,0,"            ");
-	GDispStringAt(11,0,ch0);
-	GDispStringAt(12,0,"* - ");
-	GDispStringAt(12,5,"            ");
-	GDispStringAt(12,5,ch1);
-	GDispStringAt(13,0,"0 - ");
-	GDispStringAt(13,5,"            ");
-	GDispStringAt(13,5,ch2);
-	GDispStringAt(14,0,"# - ");
-	GDispStringAt(14,5,"            ");
-	GDispStringAt(14,5,ch3);
-	GDispStringAt(15,0,"D - ");
-	GDispStringAt(15,5,"            ");
-	GDispStringAt(15,5,ch4);
+	if(!override && curr_fptr_changed() == 0)
+		return;
+	GDispStringAt(MENU_START_ROW-1,0,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW-1,10,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW-1,15,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW,0,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW,10,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW,0,ch0);
+	GDispStringAt(MENU_START_ROW+1,0,"* - ");
+	GDispStringAt(MENU_START_ROW+1,5,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW+1,5,ch1);
+	GDispStringAt(MENU_START_ROW+1,MENU_START_COL,"0 - ");
+	GDispStringAt(MENU_START_ROW+1,MENU_START_COL+2,"");
+	GDispStringAt(MENU_START_ROW+1,MENU_START_COL+2,ch2);
+	GDispStringAt(MENU_START_ROW+2,0,"# - ");
+	GDispStringAt(MENU_START_ROW+2,5,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW+2,5,ch3);
+	GDispStringAt(MENU_START_ROW+2,MENU_START_COL,"D - ");
+	GDispStringAt(MENU_START_ROW+2,MENU_START_COL+2,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW+2,MENU_START_COL+2,ch4);
 }
-static void show_legend2(char *ch0, char *ch1, char *ch2, char *ch3, char *ch4);
-static void show_legend2(char *ch0, char *ch1, char *ch2, char *ch3, char *ch4)
+static void show_legend2(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4,char *ch5, char *ch6);
+static void show_legend2(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4,char *ch5, char *ch6)
 {
-	GDispStringAt(11,0,"            ");
-	GDispStringAt(11,0,ch0);
-	GDispStringAt(12,0,"A - ");
-	GDispStringAt(12,5,"            ");
-	GDispStringAt(12,5,ch1);
-	GDispStringAt(13,0,"B - ");
-	GDispStringAt(13,5,"            ");
-	GDispStringAt(13,5,ch2);
-	GDispStringAt(14,0,"C - ");
-	GDispStringAt(14,5,"            ");
-	GDispStringAt(14,5,ch3);
-	GDispStringAt(15,0,"D - ");
-	GDispStringAt(15,5,"            ");
-	GDispStringAt(15,5,ch4);
+	if(!override && curr_fptr_changed() == 0)
+		return;
+	GDispStringAt(MENU_START_ROW-1,0,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW-1,0,ch0);
+	GDispStringAt(MENU_START_ROW,0,"A - ");
+	GDispStringAt(MENU_START_ROW,5,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW,5,ch1);
+	GDispStringAt(MENU_START_ROW,MENU_START_COL,"B - ");
+	GDispStringAt(MENU_START_ROW,MENU_START_COL+2,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW,MENU_START_COL+2,ch2);
+	GDispStringAt(MENU_START_ROW+1,0,"C - ");
+	GDispStringAt(MENU_START_ROW+1,5,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW+1,5,ch3);
+	GDispStringAt(MENU_START_ROW+1,MENU_START_COL,"D - ");
+	GDispStringAt(MENU_START_ROW+1,MENU_START_COL+2,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW+1,MENU_START_COL+2,ch4);
+	GDispStringAt(MENU_START_ROW+2,0,"# - ");
+	GDispStringAt(MENU_START_ROW+2,5,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW+2,5,ch5);
+	GDispStringAt(MENU_START_ROW+2,MENU_START_COL,"* - ");
+	GDispStringAt(MENU_START_ROW+2,MENU_START_COL+2,MENU_BLANK);
+	GDispStringAt(MENU_START_ROW+2,MENU_START_COL+2,ch6);
 }
 static int first_menu = MAIN_MENU;
 static int last_menu = NUM_ENTRY;
@@ -78,12 +95,12 @@ static int last_fptr;
 static int prev_fptr;
 static int list_size;
 static int curr_type;
+static int scroll_ptr;
 static UCHAR cur_row, cur_col;	// used by the current menu/dialog function to keep track of the current row,col
-
+static UCHAR alnum_array[NUM_ALNUM];
+static UCHAR choose_alnum;
 #define LIST_SIZE 50
 static void prev_list(void);
-static int next_list(void);
-static int reset_list(void);
 static int menu_list[LIST_SIZE];
 
 static UCHAR (*fptr[NUM_FPTS])(UCHAR, UCHAR, UINT, UCHAR, UCHAR) = { main_menu_func,\
@@ -91,10 +108,20 @@ static UCHAR (*fptr[NUM_FPTS])(UCHAR, UCHAR, UINT, UCHAR, UCHAR) = { main_menu_f
 	 menu1c, menu1d,\
 	 menu2a, menu2b, menu2c,\
 	 menu3a, menu3b, menu3c,\
-	 menu4a, menu4b, menu4c, number_entry };
+	 menu4a, menu4b, menu4c, number_entry, alnum_entry };
 
 void init_list(void)
 {
+	int i = 0;
+	UCHAR k;
+	for(k = 33;k < 58;k++)	// '!' - '9'
+		alnum_array[i++] = k;
+	for(k = 65;k < 91;k++)	// 'A' - 'Z'
+		alnum_array[i++] = k;
+	for(k = 97;k < 123;k++)	// 'a' - 'z'
+		alnum_array[i++] = k;
+	choose_alnum = 0x30;
+	scroll_ptr = 25;		// start showing at 'a' (skip '!' - '9')
 	list_size = LIST_SIZE;
 	current_fptr = first_menu;
 	last_fptr = first_menu;
@@ -102,6 +129,7 @@ void init_list(void)
 	memset(menu_list,0,sizeof(menu_list));
 	menu_list[0] = current_fptr;
 	curr_type = MENU1;
+	show_legend(1,"main","1a","1b","1c","1d");
 }
 
 static void prev_list(void)
@@ -156,7 +184,7 @@ int get_type(void)
 }
 
 //******************************************************************************************//
-//*************************************** default_func *************************************//
+//************************************* main_menu_func *************************************//
 //******************************************************************************************//
 // for when no menu is shown
 static UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
@@ -166,7 +194,7 @@ static UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCH
 //	printHexByte(ch);
 	curr_type = MENU1;
 
-	show_legend("main","1a","1b","1c","1d");
+	show_legend(1,"main","1a","1b","1c","num entry");
 //	GDispStringAt(12,0,"back to main menu   ");
 //	GDispStringAt(13,0,"                    ");
 
@@ -182,7 +210,12 @@ static UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCH
 			set_list(MENU1C);
 			break;
 		case KP_D:	// 'D'
-			set_list(MENU1D);
+			show_legend2(1,"number entry","enter","cancel","forwd","backwd","alnum","exit");
+			cur_row = NUM_ENTRY_ROW;
+			cur_col = NUM_ENTRY_BEGIN_COL;
+			memset((void*)new_global_number,0,sizeof(new_global_number));
+			clean_disp_num();
+			set_list(NUM_ENTRY);
 			break;
 		default:
 			ret_char = ch;
@@ -199,7 +232,7 @@ static UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU2;
-	show_legend("1a","back","2a","2b","2c");
+	show_legend(1,"1a","back","2a","2b","2c");
 	switch (ch)
 	{
 		case KP_AST:
@@ -228,7 +261,7 @@ static UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU3;
-	show_legend("1b","back","3a","3b","3c");
+	show_legend(1,"1b","back","3a","3b","3c");
 	switch (ch)
 	{
 		case KP_AST:
@@ -257,7 +290,7 @@ static UCHAR menu1c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU3;
-	show_legend("1c","back","4a","4b","4c");
+	show_legend(1,"1c","back","4a","4b","4c");
 	switch (ch)
 	{
 		case KP_AST:
@@ -286,7 +319,7 @@ static UCHAR menu1d(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("1d","back","menu4a","menu4b","menu4c");
+	show_legend(1,"1d","back","menu4a","menu4b","menu4c");
 	switch (ch)
 	{
 		case KP_AST:
@@ -315,7 +348,7 @@ static UCHAR menu2a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("2a","back","menu1b","num entry","menu1a");
+	show_legend(1,"2a","back","menu1b","num entry","menu1a");
 	switch (ch)
 	{
 		case KP_AST:
@@ -326,7 +359,7 @@ static UCHAR menu2a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 			set_list(MENU1B);
 			break;
 		case KP_POUND:
-			show_legend2("numentry","enter","cancel","forwd","backwd");
+			show_legend2(1,"number entry","enter","cancel","forwd","backwd","alnum","exit");
 			cur_row = NUM_ENTRY_ROW;
 			cur_col = NUM_ENTRY_BEGIN_COL;
 			memset((void*)new_global_number,0,sizeof(new_global_number));
@@ -350,7 +383,7 @@ static UCHAR menu2b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("2b","back","main","main","main");
+	show_legend(1,"2b","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
@@ -380,7 +413,7 @@ static UCHAR menu2c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("2c","back","main","main","main");
+	show_legend(1,"2c","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
@@ -409,7 +442,7 @@ static UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("3a","back","main","num entry","main");
+	show_legend(1,"3a","back","main","num entry","main");
 	switch (ch)
 	{
 		case KP_AST:
@@ -419,12 +452,6 @@ static UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 			init_list();
 			break;
 		case KP_POUND:
-			show_legend2("num","enter","cancel","forwd","backwd");
-			cur_row = NUM_ENTRY_ROW;
-			cur_col = NUM_ENTRY_BEGIN_COL;
-			memset((void*)new_global_number,0,sizeof(new_global_number));
-			clean_disp_num();
-			set_list(NUM_ENTRY);
 			break;
 		case KP_D:
 			init_list();
@@ -443,7 +470,7 @@ static UCHAR menu3b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("3b","back","main","main","main");
+	show_legend(1,"3b","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
@@ -472,7 +499,7 @@ static UCHAR menu3c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("3c","back","main","main","main");
+	show_legend(1,"3c","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
@@ -501,7 +528,7 @@ static UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("4a","back","main","main","main");
+	show_legend(1,"4a","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
@@ -530,7 +557,7 @@ static UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("4b","back","main","main","main");
+	show_legend(1,"4b","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
@@ -559,7 +586,7 @@ static UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("4c","back","main","main","main");
+	show_legend(1,"4c","back","main","main","main");
 	switch (ch)
 	{
 		case KP_AST:
@@ -632,12 +659,55 @@ static UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR
 			break;
 		case KP_D:
 			cursor_backward();
+			dispCharAt(cur_row,cur_col,0x20);
+			cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = 0x20;
 			break;
 		case KP_POUND:
+			show_legend2(1,"alnum entry","pgup","pgdwn","up","down","choose","exit");
+			show_alnum_list(1);
+			set_list(ALNUM_ENTRY);
 			break;
 		case KP_AST:	// cancel changes and leave menu
+//			show_legend2(1,"number entry","enter","cancel","forwd","backwd","alnum","exit");
 			memset((void*)cur_global_number,0,sizeof(cur_global_number));
 			prev_list();
+			break;
+		default:
+			ret_char = ch;
+			break;
+	}
+	return ret_char;
+}
+//******************************************************************************************//
+//*************************************** alnum_entry **************************************//
+//******************************************************************************************//
+static UCHAR alnum_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+{
+	UCHAR ret_char = ch;
+	switch (ch)
+	{
+		case KP_A:
+			scroll_alnum_list(1,0);		// scroll page up
+			break;
+		case KP_B:
+			scroll_alnum_list(0,0);		// scroll page down
+			break;
+		case KP_C:
+			scroll_alnum_list(1,1);		// scroll up one
+			break;
+		case KP_D:
+			scroll_alnum_list(0,1);		// scroll down one
+			break;
+		case KP_AST:
+			// show the menu for the previous
+			show_legend2(1,"number entry","enter","cancel","forwd","backwd","alnum","exit");
+			show_alnum_list(0);
+			prev_list();
+			break;
+		case KP_POUND:
+			dispCharAt(cur_row,cur_col,choose_alnum);
+			cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = choose_alnum;
+			cursor_forward();
 			break;
 		default:
 			ret_char = ch;
@@ -680,6 +750,9 @@ static void stuff_num(char num)
 	dispCharAt(cur_row,cur_col,num);
 	cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = num;
 }
+//******************************************************************************************//
+//************************************ clean_disp_num **************************************//
+//******************************************************************************************//
 static void clean_disp_num(void)
 {
 	int i;
@@ -688,3 +761,94 @@ static void clean_disp_num(void)
 		dispCharAt(cur_row,cur_col+i,0x20);
 	}
 }
+//******************************************************************************************//
+//********************************** scroll_alnum_list *************************************//
+//******************************************************************************************//
+static void scroll_alnum_list(int dir,int single)
+{
+	int i;
+	UCHAR k;
+	UCHAR row, col;
+	int len = 1;
+	int tscroll_ptr;
+	row = NUM_ENTRY_ROW;
+	col = NUM_ENTRY_BEGIN_COL - 2;
+	if(single)
+	{
+		if(dir)
+		{
+			if(--scroll_ptr < 0)
+				scroll_ptr = NUM_ALNUM - 1;
+		}
+		else
+		{
+			if(++scroll_ptr > NUM_ALNUM - 1)
+				scroll_ptr = 0;
+		}
+		tscroll_ptr = scroll_ptr;
+		for(i = 0;i < ALNUM_SCROLL_LIST_LEN;i++)
+		{
+			if(tscroll_ptr > NUM_ALNUM-1)
+				tscroll_ptr = 0;
+			k = alnum_array[tscroll_ptr++];
+			if(i == 0)
+				choose_alnum = k;
+			dispCharAt(row,col,k);
+			row++;
+		}
+//		scroll_ptr = tscroll_ptr - ALNUM_SCROLL_LIST_LEN - 1;
+	}
+	else
+	{
+		for(i = 0;i < ALNUM_SCROLL_LIST_LEN;i++)
+		{
+			k = alnum_array[scroll_ptr];
+			if(i == 0)
+				choose_alnum = k;
+			dispCharAt(row,col,k);
+			row++;
+			if(dir)
+			{
+				if(--scroll_ptr == 0)
+					scroll_ptr = NUM_ALNUM-1;
+			}
+			else
+			{
+				if(++scroll_ptr > NUM_ALNUM-1)
+					scroll_ptr = 0;
+			}
+		}
+	}
+}
+//******************************************************************************************//
+//*********************************** show_alnum_list **************************************//
+//******************************************************************************************//
+static void show_alnum_list(int show)
+{
+	int i;
+	UCHAR k;
+	UCHAR row, col;
+	row = NUM_ENTRY_ROW;
+	col = NUM_ENTRY_BEGIN_COL - 2;
+	if(show)
+	{
+		for(i = 0;i < ALNUM_SCROLL_LIST_LEN;i++)
+		{
+			k = alnum_array[i];
+			if(i == 0)
+				choose_alnum = k;
+			dispCharAt(row,col,k);
+			row++;
+		}
+	}
+	else
+	{
+		k = 0x20;
+		for(i = 0;i < ALNUM_SCROLL_LIST_LEN;i++)
+		{
+			dispCharAt(row,col,k);
+			row++;
+		}
+	}
+}
+

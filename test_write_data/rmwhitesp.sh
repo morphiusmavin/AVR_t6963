@@ -1,0 +1,1 @@
+findw.sh | whitesp.sh

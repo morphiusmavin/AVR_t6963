@@ -2,7 +2,7 @@
 #define _MAIN_H_
 #define TIME_DELAY1 1
 #define STRING_LEN   100
-#define NUM_FPTS 15
+#define NUM_FPTS 16
 #warning "main.h"
 typedef struct prompts
 {
@@ -43,7 +43,8 @@ enum menu_order
 	MENU4A,		// 11
 	MENU4B,		// 12
 	MENU4C,		// 13
-	NUM_ENTRY	// 14
+	NUM_ENTRY,	// 14
+	ALNUM_ENTRY	// 15
 } MENU_ORDER;
 
 enum data_types
@@ -113,6 +114,12 @@ enum states
 #define NUM_ENTRY_BEGIN_COL (COLUMN - COLUMN/3)
 #define NUM_ENTRY_END_COL NUM_ENTRY_BEGIN_COL + NUM_ENTRY_SIZE
 #define NUM_ENTRY_ROW 13
+// '!' - '9' (33 - 58) + 'A' - 'Z' (26) + 'a' - 'z' (26) = 77
+#define NUM_ALNUM 77
+#define ALNUM_SCROLL_LIST_LEN 6
+#define MENU_START_ROW 13
+#define MENU_START_COL 15
+#define MENU_BLANK "          "
 
 #define RTMAINC rt_main[curr_rt_layout]
 

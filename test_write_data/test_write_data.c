@@ -273,8 +273,8 @@ int main(int argc, char *argv[])
 				wrefresh(menu_win);
 			}
 			res = read(fd,read_buff,5);
-			mvwprintw(menu_win, display_offset+13, 7, "bytes read: %d",res);
-			mvwprintw(menu_win, display_offset+14, 8, "               ");
+			mvwprintw(menu_win, display_offset+13, 4, "bytes read: %d",res);
+			mvwprintw(menu_win, display_offset+14, 4, "               ");
 			for(j = 0;j < res;j++)
 				mvwprintw(menu_win, display_offset+14, 10+(j*3), "%x",read_buff[j]);
 			if(res == 2)
@@ -282,15 +282,16 @@ int main(int argc, char *argv[])
 				rpm = read_buff[0];
 				rpm <<= 8;
 				rpm |= read_buff[1];
-				mvwprintw(menu_win, display_offset+15, 8, "rpm:  %d  ",rpm);
+				mvwprintw(menu_win, display_offset+15, 4, "rpm:  %d  ",rpm);
 			}
 			else if(res == 1)
 			{
-				mvwprintw(menu_win, display_offset+16, 8, "others:  %d  ",read_buff[0]);
+				mvwprintw(menu_win, display_offset+16, 4, "others:  %d  ",read_buff[0]);
 			}
+			mvwprintw(menu_win, display_offset+21, 4, "iterations left: %d   ",iters-i);
 			wrefresh(menu_win);
 			if(code == RT_TRIP-1)
-				usleep(tdelay*2);
+				usleep(tdelay);
 
 // see if one of the keys from the "keypad" is pressed
 
