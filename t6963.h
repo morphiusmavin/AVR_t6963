@@ -12,7 +12,7 @@
 * Hardware      : Prototype board PCB ver 2.5(home-grown), EQS Console, MCU 16F877a, 20MHz Xtal
 * Date          : Version 0.0 (20 April 2005 - 27 April 2005)
 * Date          : 3 May 2005
-*               : Routine void GDispPixFontAt(x, y, textptr, size, color) and font5x7.h added 
+*               : Routine void GDispPixFontAt(x, y, textptr, size, color) and font5x7.h added
 ***********************************************************************************************
 *                                       DESCRIPTION
 *
@@ -97,7 +97,7 @@
 *               module. Example, Powertip's PG12864-F has 4 kbyte RAM only.
 *               RAM space to handle 128x64 dots in 8 font = 128x64/8 = 1,024 byte.
 *               Thus, the LCD's actual visible screen area is 1 kbyte.
-*               For 8-font, 16 COLUMN, 
+*               For 8-font, 16 COLUMN,
 *               TEXT_HOME_ADDR  starts 0x0000 ending 0x01FF -> 512  bytes (for text use)?
 *               GRH_HOME_ADDR   starts 0x0200 ending 0x05FF -> 1,024 bytes ?
 *               CG_HOME_ADDR    starts 0x1400 ending 0x147F -> 128  bytes (custom characters) ?

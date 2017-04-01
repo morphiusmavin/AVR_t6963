@@ -17,7 +17,7 @@ char eepromString[STRING_LEN] EEMEM;
 
 PROMPT_STRUCT prompts[26];	// this must be large enough for no_prompts
 
-int main(void) 
+int main(void)
 {
 	int i;
 	uint8_t temp;
@@ -28,7 +28,7 @@ int main(void)
 	uint16_t prompt_info_offset = 0;
 
 //    size_t str_size = sizeof(PROMPT_STRUCT);
-	
+
     initUSART();
 
 	GDispInit();
@@ -37,7 +37,7 @@ int main(void)
 	_delay_us(10);
 	GDispSetMode(TEXT_ON);
 	_delay_us(10);
-	GDispClrTxt();    
+	GDispClrTxt();
 	GDispStringAt(1,1,"LCD is on!");
 
 //******************************************************************************************//
@@ -50,13 +50,13 @@ int main(void)
 #ifdef TTY_DISPLAY
 #warning "TTY_DISPLAY defined"
 		printString("reading prompt data into prompt structs\r\n");
-#endif		
+#endif
 		no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
 #ifdef TTY_DISPLAY
 		printString("no_prompts: ");
 		printHexByte(no_prompts);
 		printString("\r\n");
-#endif		
+#endif
 		prompt_info_offset = (uint16_t)eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB);
 		temp = eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_MSB);
 		temp2 = (uint16_t)temp;
@@ -66,7 +66,7 @@ int main(void)
 		printHexByte((uint8_t)prompt_info_offset);
 		printHexByte((uint8_t)(prompt_info_offset>>8));
 		printString("\r\n");
-#endif		
+#endif
 		for(i = 0;i < no_prompts;i++)
 		{
 			eeprom_read_block((void*)&prompts[i], eepromString+(prompt_info_offset+(i*sizeof(PROMPT_STRUCT))),sizeof(PROMPT_STRUCT));
@@ -103,13 +103,13 @@ int main(void)
 	_delay_ms(5000);
 	printString("\r\ndisplaying labels...");
 	display_labels();
-*/	
+*/
 	set_defaults();
 	_delay_us(10);
 //	printString("\r\ndisplaying menus...\r\n");
 	display_menus();
 	display_labels();
-    while (1) 
+    while (1)
     {
         ret_char = receiveByte();
 #ifdef TTY_DISPLAY
@@ -139,7 +139,7 @@ void display_menus(void)
 		GDispStringAt(15,0,"<back>");
 	else
 		GDispStringAt(15,0,"      ");
-	
+
 	for(i = 0;i < no_prompts;i++)
 	{
 		if(prompts[i].type == get_type())
@@ -147,7 +147,7 @@ void display_menus(void)
 			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
 			GDispStringAt(prompts[i].row,prompts[i].col,temp);
 		}
-	}	
+	}
 }
 //******************************************************************************************//
 //**************************************** display_labels **********************************//
@@ -163,7 +163,7 @@ void display_labels(void)
 		if(prompts[i].type == RT_LABEL)
 		{
 			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
-			GDispStringAt(prompts[i].row,prompts[i].col,temp);	
+			GDispStringAt(prompts[i].row,prompts[i].col,temp);
 		}
 	}
 }
@@ -204,7 +204,7 @@ void parse_PIC24(UCHAR ch)
 					break;
 				case RT_HIGH1:		// if UINT with neither bit 7 or 15 set
 					parse_state = GET_CH0;
-					break;	
+					break;
 				case RT_HIGH2:		// if a UINT is sent with bit 7 set
 					parse_state = GET_CH1;
 					break;
@@ -251,7 +251,7 @@ void parse_PIC24(UCHAR ch)
 			sprintf(param_string,"%4u",xword);
 //			printString("\r\n");
 //			printString(param_string);
-			
+
 			done = 1;
 			break;
 		case SEND_UINT1:
@@ -307,7 +307,7 @@ void parse_PIC24(UCHAR ch)
 			transmitByte(xbyte);
 //			GDispStringAt(2,4,param_string);
 #endif
-		}	
+		}
 		for(i = 0;i < no_prompts;i++)
 		{
 			if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)

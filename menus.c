@@ -15,23 +15,61 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+static void clean_disp_num(void);
+static void cursor_forward(void);
+static void cursor_backward(void);
+static void cursor_forward_stuff(char);
+static void stuff_num(char);
+static UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu1c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu1d(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu2a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu2b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu2c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu3b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu3c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 static void show_legend(char *ch0, char *ch1, char *ch2, char *ch3, char *ch4);
 static void show_legend(char *ch0, char *ch1, char *ch2, char *ch3, char *ch4)
 {
-	GDispStringAt(9,0,"              ");
-	GDispStringAt(9,0,ch0);
-	GDispStringAt(10,0,"* - ");
-	GDispStringAt(10,5,"              ");
-	GDispStringAt(10,5,ch1);
-	GDispStringAt(11,0,"0 - ");
-	GDispStringAt(11,5,"              ");
-	GDispStringAt(11,5,ch2);
-	GDispStringAt(12,0,"# - ");
-	GDispStringAt(12,5,"              ");
-	GDispStringAt(12,5,ch3);
-	GDispStringAt(13,0,"D - ");
-	GDispStringAt(13,5,"              ");
-	GDispStringAt(13,5,ch4);
+	GDispStringAt(11,0,"            ");
+	GDispStringAt(11,0,ch0);
+	GDispStringAt(12,0,"* - ");
+	GDispStringAt(12,5,"            ");
+	GDispStringAt(12,5,ch1);
+	GDispStringAt(13,0,"0 - ");
+	GDispStringAt(13,5,"            ");
+	GDispStringAt(13,5,ch2);
+	GDispStringAt(14,0,"# - ");
+	GDispStringAt(14,5,"            ");
+	GDispStringAt(14,5,ch3);
+	GDispStringAt(15,0,"D - ");
+	GDispStringAt(15,5,"            ");
+	GDispStringAt(15,5,ch4);
+}
+static void show_legend2(char *ch0, char *ch1, char *ch2, char *ch3, char *ch4);
+static void show_legend2(char *ch0, char *ch1, char *ch2, char *ch3, char *ch4)
+{
+	GDispStringAt(11,0,"            ");
+	GDispStringAt(11,0,ch0);
+	GDispStringAt(12,0,"A - ");
+	GDispStringAt(12,5,"            ");
+	GDispStringAt(12,5,ch1);
+	GDispStringAt(13,0,"B - ");
+	GDispStringAt(13,5,"            ");
+	GDispStringAt(13,5,ch2);
+	GDispStringAt(14,0,"C - ");
+	GDispStringAt(14,5,"            ");
+	GDispStringAt(14,5,ch3);
+	GDispStringAt(15,0,"D - ");
+	GDispStringAt(15,5,"            ");
+	GDispStringAt(15,5,ch4);
 }
 static int first_menu = MAIN_MENU;
 static int last_menu = NUM_ENTRY;
@@ -40,9 +78,10 @@ static int last_fptr;
 static int prev_fptr;
 static int list_size;
 static int curr_type;
+static UCHAR cur_row, cur_col;	// used by the current menu/dialog function to keep track of the current row,col
 
 #define LIST_SIZE 50
-static int prev_list(void);
+static void prev_list(void);
 static int next_list(void);
 static int reset_list(void);
 static int menu_list[LIST_SIZE];
@@ -63,9 +102,9 @@ void init_list(void)
 	memset(menu_list,0,sizeof(menu_list));
 	menu_list[0] = current_fptr;
 	curr_type = MENU1;
-}	
+}
 
-static int prev_list(void)
+static void prev_list(void)
 {
 	if(current_fptr == 0)
 		return first_menu;
@@ -73,8 +112,8 @@ static int prev_list(void)
 	{
 		menu_list[current_fptr] = 0;
 		current_fptr--;
-	}	
-	return menu_list[current_fptr];
+	}
+//	return menu_list[current_fptr];
 }
 
 static void set_list(int fptr)
@@ -84,7 +123,7 @@ static void set_list(int fptr)
 		current_fptr++;
 		menu_list[current_fptr] = fptr;
 	}
-}			
+}
 
 UCHAR get_key(UCHAR ch, UCHAR limit8, UINT limit16)
 {
@@ -92,7 +131,7 @@ UCHAR get_key(UCHAR ch, UCHAR limit8, UINT limit16)
 	wkey = (*fptr[get_curr_menu()])(ch, limit8, limit16, cur_row, cur_col);
 	return ch;
 }
-	
+
 int get_curr_fptr(void)
 {
 	return current_fptr;
@@ -120,11 +159,11 @@ int get_type(void)
 //*************************************** default_func *************************************//
 //******************************************************************************************//
 // for when no menu is shown
-UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 //	UCHAR row1,col1,k;
 	UCHAR ret_char = ch;
-//	printHexByte(ch);	
+//	printHexByte(ch);
 	curr_type = MENU1;
 
 	show_legend("main","1a","1b","1c","1d");
@@ -135,34 +174,28 @@ UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	{
 		case KP_AST:	// '*'
 			set_list(MENU1A);
-//			GDispStringAt(13,0,"goto menu1a       ");
 			break;
 		case KP_0:	// '0'
 			set_list(MENU1B);
-//			current_fptr = MENU1B;
-//			GDispStringAt(13,0,"goto menu1b       ");
 			break;
 		case KP_POUND:	// '#'
-//			current_fptr = MENU1C;
 			set_list(MENU1C);
-//			GDispStringAt(13,0,"goto menu1c       ");
 			break;
 		case KP_D:	// 'D'
 			set_list(MENU1D);
-//			GDispStringAt(13,0,"goto menu1d       ");
 			break;
 		default:
 			ret_char = ch;
 			break;
 	}
 	return ret_char;
-			
+
 }
 //******************************************************************************************//
 //****************************************** menu1a ****************************************//
 //******************************************************************************************//
 // displays the 1st choice of the main menu
-UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU2;
@@ -170,27 +203,15 @@ UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-//			GDispStringAt(12,0,"menu1a 1st choice");
-//			GDispStringAt(13,0,"go back          ");
-//			printString("going back to main menu\r\n");
-			current_fptr = prev_list();
+			prev_list();
 			break;
 		case KP_0:
-//			GDispStringAt(12,0,"menu1a 2nd choice");
-//			GDispStringAt(13,0,"displaying menu2a");
-//			printString("menu2a\r\n");
 			set_list(MENU2A);
 			break;
 		case KP_POUND:
-//			GDispStringAt(12,0,"menu1a 3rd choice");
-//			GDispStringAt(13,0,"displaying menu2b");
-//			printString("menu2b\r\n");
 			set_list(MENU2B);
 			break;
 		case KP_D:
-//			GDispStringAt(12,0,"menu1a 4th choice");
-//			GDispStringAt(13,0,"displaying menu2c");
-//			printString("menu2c\r\n");
 			set_list(MENU2C);
 			break;
 		default:
@@ -203,7 +224,7 @@ UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu1b ****************************************//
 //******************************************************************************************//
 // displays the 2nd choice of the main menu
-UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU3;
@@ -211,27 +232,15 @@ UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-//			GDispStringAt(12,0,"menu1b 1st choice");
-//			GDispStringAt(13,0,"go back          ");
-//			printString("going back to main menu\r\n");
-			current_fptr = prev_list();
+			prev_list();
 			break;
 		case KP_0:
-//			GDispStringAt(12,0,"menu1b 2nd choice");
-//			GDispStringAt(13,0,"displaying menu3a");
-//			printString("menu3a\r\n");
 			set_list(MENU3A);
 			break;
 		case KP_POUND:
-//			GDispStringAt(12,0,"menu1b 3rd choice");
-//			GDispStringAt(13,0,"displaying menu3b");
-//			printString("menu3b\r\n");
 			set_list(MENU3B);
 			break;
 		case KP_D:
-//			GDispStringAt(12,0,"menu1b 4th choice");
-//			GDispStringAt(13,0,"displaying menu3c");
-//			printString("menu3c\r\n");
 			set_list(MENU3C);
 			break;
 		default:
@@ -244,7 +253,7 @@ UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu1c ****************************************//
 //******************************************************************************************//
 // displays the 3rd choice of the main menu
-UCHAR menu1c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu1c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU3;
@@ -252,27 +261,15 @@ UCHAR menu1c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-//			GDispStringAt(12,0,"menu1c 1st choice");
-//			GDispStringAt(13,0,"go back          ");
-//			printString("going back to main menu\r\n");
-			current_fptr = prev_list();
+			prev_list();
 			break;
 		case KP_0:
-//			GDispStringAt(12,0,"menu1c 2nd choice");
-//			GDispStringAt(13,0,"displaying menu4a");
-//			printString("menu4a\r\n");
 			set_list(MENU4A);
 			break;
 		case KP_POUND:
-//			GDispStringAt(12,0,"menu1c 3rd choice");
-//			GDispStringAt(13,0,"displaying menu4b");
-//			printString("menu4b\r\n");
 			set_list(MENU4B);
 			break;
 		case KP_D:
-//			GDispStringAt(12,0,"menu1c 4th choice");
-//			GDispStringAt(13,0,"displaying menu4c");
-//			printString("menu4c\r\n");
 			set_list(MENU4C);
 			break;
 		default:
@@ -285,24 +282,24 @@ UCHAR menu1c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu1d ****************************************//
 //******************************************************************************************//
 // displays the 4th choice of the main menu
-UCHAR menu1d(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu1d(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("1d","back","main","main","main");
+	show_legend("1d","back","menu4a","menu4b","menu4c");
 	switch (ch)
 	{
 		case KP_AST:
-			current_fptr = prev_list();
+			prev_list();
 			break;
 		case KP_0:
-			init_list();
+			set_list(MENU4A);
 			break;
 		case KP_POUND:
-			init_list();
+			set_list(MENU4B);
 			break;
 		case KP_D:
-			init_list();
+			set_list(MENU4C);
 			break;
 		default:
 			ret_char = ch;
@@ -314,28 +311,30 @@ UCHAR menu1d(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu2a ****************************************//
 //******************************************************************************************//
 // displays the 1st choice of the 1st choice of the main menu
-UCHAR menu2a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu2a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
-	show_legend("2a","back","main","num entry","main");
+	show_legend("2a","back","menu1b","num entry","menu1a");
 	switch (ch)
 	{
 		case KP_AST:
-			current_fptr = prev_list();
+			prev_list();
 //			current_fptr = 0;
 			break;
 		case KP_0:
-			init_list();
+			set_list(MENU1B);
 			break;
 		case KP_POUND:
+			show_legend2("numentry","enter","cancel","forwd","backwd");
 			cur_row = NUM_ENTRY_ROW;
 			cur_col = NUM_ENTRY_BEGIN_COL;
 			memset((void*)new_global_number,0,sizeof(new_global_number));
-			current_fptr = NUM_ENTRY;
+			clean_disp_num();
+			set_list(NUM_ENTRY);
 			break;
 		case KP_D:
-			init_list();
+			set_list(MENU1A);
 			break;
 		default:
 			ret_char = ch;
@@ -347,7 +346,7 @@ UCHAR menu2a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu2b ****************************************//
 //******************************************************************************************//
 // displays the 2nd choice of the 1st choice of the main menu
-UCHAR menu2b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu2b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
@@ -355,7 +354,7 @@ UCHAR menu2b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-			current_fptr = prev_list();
+			prev_list();
 //			current_fptr = 0;
 			break;
 		case KP_0:
@@ -377,7 +376,7 @@ UCHAR menu2b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu2c ****************************************//
 //******************************************************************************************//
 // displays the 3rd choice of the 1st choice of the main menu
-UCHAR menu2c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu2c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
@@ -385,7 +384,7 @@ UCHAR menu2c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-			current_fptr--;
+			prev_list();
 			break;
 		case KP_0:
 			init_list();
@@ -406,7 +405,7 @@ UCHAR menu2c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu3a ****************************************//
 //******************************************************************************************//
 // displays the 1st choice of the 1st choice of the main menu
-UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
@@ -414,16 +413,18 @@ UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-			current_fptr--;
+			prev_list();
 			break;
 		case KP_0:
 			init_list();
 			break;
 		case KP_POUND:
+			show_legend2("num","enter","cancel","forwd","backwd");
 			cur_row = NUM_ENTRY_ROW;
 			cur_col = NUM_ENTRY_BEGIN_COL;
 			memset((void*)new_global_number,0,sizeof(new_global_number));
-			current_fptr = NUM_ENTRY;
+			clean_disp_num();
+			set_list(NUM_ENTRY);
 			break;
 		case KP_D:
 			init_list();
@@ -438,7 +439,7 @@ UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu3b ****************************************//
 //******************************************************************************************//
 // displays the 2nd choice of the 1st choice of the main menu
-UCHAR menu3b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu3b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
@@ -446,7 +447,7 @@ UCHAR menu3b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-			current_fptr--;
+			prev_list();
 			break;
 		case KP_0:
 			init_list();
@@ -467,7 +468,7 @@ UCHAR menu3b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu3c ****************************************//
 //******************************************************************************************//
 // displays the 3rd choice of the 1st choice of the main menu
-UCHAR menu3c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu3c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
@@ -475,8 +476,7 @@ UCHAR menu3c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-//			current_fptr--;
-			current_fptr = 0;
+			prev_list();
 			break;
 		case KP_0:
 			init_list();
@@ -497,7 +497,7 @@ UCHAR menu3c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu4a ****************************************//
 //******************************************************************************************//
 // displays the 1st choice of the 1st choice of the main menu
-UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
@@ -505,7 +505,7 @@ UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-			current_fptr--;
+			prev_list();
 			break;
 		case KP_0:
 			init_list();
@@ -526,7 +526,7 @@ UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu4b ****************************************//
 //******************************************************************************************//
 // displays the 2nd choice of the 1st choice of the main menu
-UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
@@ -534,7 +534,7 @@ UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-			current_fptr--;
+			prev_list();
 			break;
 		case KP_0:
 			init_list();
@@ -555,7 +555,7 @@ UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //****************************************** menu4c ****************************************//
 //******************************************************************************************//
 // displays the 3rd choice of the 1st choice of the main menu
-UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	curr_type = MENU4;
@@ -563,7 +563,7 @@ UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 	switch (ch)
 	{
 		case KP_AST:
-			current_fptr--;
+			prev_list();
 			break;
 		case KP_0:
 			init_list();
@@ -584,7 +584,7 @@ UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //*************************************** number_entry *************************************//
 //******************************************************************************************//
 // displays the 4th choice of the 1st choice of the main menu
-UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+static UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
 	switch (ch)
@@ -621,23 +621,23 @@ UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 			break;
 		case KP_A:	// copy number from cur_global_number to new_global_number
 			memcpy((void*)new_global_number,(void*)cur_global_number,sizeof(cur_global_number));
-			current_fptr--;
+			prev_list();
 			break;
 		case KP_B:	// escape - return without changing new_global_number
 			memset((void*)cur_global_number,0,sizeof(cur_global_number));
-			current_fptr--;
+			prev_list();
 			break;
 		case KP_C:
-			break;
-		case KP_D:
 			cursor_forward();
 			break;
-		case KP_POUND:
+		case KP_D:
 			cursor_backward();
+			break;
+		case KP_POUND:
 			break;
 		case KP_AST:	// cancel changes and leave menu
 			memset((void*)cur_global_number,0,sizeof(cur_global_number));
-			current_fptr--;
+			prev_list();
 			break;
 		default:
 			ret_char = ch;
@@ -648,7 +648,7 @@ UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //******************************************************************************************//
 //************************************* cursor_forward *************************************//
 //******************************************************************************************//
-void cursor_forward(void)
+static void cursor_forward(void)
 {
 	if(++cur_col > NUM_ENTRY_END_COL)
 		cur_col = NUM_ENTRY_BEGIN_COL;
@@ -657,7 +657,7 @@ void cursor_forward(void)
 //******************************************************************************************//
 //************************************* cursor_backward ************************************//
 //******************************************************************************************//
-void cursor_backward(void)
+static void cursor_backward(void)
 {
 	if(--cur_col < NUM_ENTRY_BEGIN_COL)
 		cur_col = NUM_ENTRY_END_COL;
@@ -666,7 +666,7 @@ void cursor_backward(void)
 //******************************************************************************************//
 //********************************** cursor_forward_stuff **********************************//
 //******************************************************************************************//
-void cursor_forward_stuff(char x)
+static void cursor_forward_stuff(char x)
 {
 	stuff_num(x);
 	cursor_forward();
@@ -674,11 +674,17 @@ void cursor_forward_stuff(char x)
 //******************************************************************************************//
 //*************************************** stuff_num ****************************************//
 //******************************************************************************************//
-void stuff_num(char num)
+static void stuff_num(char num)
 {
 	num += 0x30;
 	dispCharAt(cur_row,cur_col,num);
 	cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = num;
-}		
-
-
+}
+static void clean_disp_num(void)
+{
+	int i;
+	for(i = 0;i < NUM_ENTRY_SIZE+1;i++)
+	{
+		dispCharAt(cur_row,cur_col+i,0x20);
+	}
+}

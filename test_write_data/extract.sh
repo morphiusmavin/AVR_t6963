@@ -5,3 +5,4 @@ make clean
 mv menus.c main.h t6963.* USART.* sfr_helper.h ..
 make
 rm *.o
+rm *.tar

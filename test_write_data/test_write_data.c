@@ -1,5 +1,5 @@
-// test_write_data.c - used to test the data protocol between the AVR and PIC24 where the 
-// data string is sent with FF,FE,FD.. and the next 3 bytes are shifted so they don't 
+// test_write_data.c - used to test the data protocol between the AVR and PIC24 where the
+// data string is sent with FF,FE,FD.. and the next 3 bytes are shifted so they don't
 // have the high bits set - displays in ncurses window
 
 #include <stdio.h>
@@ -24,7 +24,7 @@
 #define FALSE 0
 #define TRUE 1
 #define LEN 200
-#define DISP_OFFSET 25
+#define DISP_OFFSET 18
 void set_defaults(void);
 // really cranking
 #define TIME_DELAY 2000
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	char param_string[10];
 	int display_offset;
 
-	burn_eeprom();	
+	burn_eeprom();
 	printf("no prompts: %d\n",no_prompts);
 	for(i = 0;i < no_prompts;i++)
 	{
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 		printf("%d\t",prompts[i].type);
 		printf("%s\n",prompts[i].label);
 	}
-	
+
 	memset(read_buff,0,10);
 	initscr();			/* Start curses mode 		*/
 	clear();
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 	if(argc > 1)
 		menu_win = newwin(30, 40, 0,0);
 	else
-		menu_win = newwin(50, 42, 0,0);
+		menu_win = newwin(40, 42, 0,0);
 	keypad(menu_win, TRUE);
 	nodelay(menu_win, TRUE);
 	box(menu_win,0,0);
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 	else
 	{
 		display_offset = DISP_OFFSET;
-	}	
+	}
 	mvwprintw(menu_win, display_offset+2, 2, "RT_TRIP ");
 	mvwprintw(menu_win, display_offset+3, 2,"RT_TIME ");
 	mvwprintw(menu_win, display_offset+4, 2,"RT_AIRT ");
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 	mvwprintw(menu_win, display_offset+9, 2,"RT_ENGT ");
 	mvwprintw(menu_win, display_offset+10, 2,"RT_MPH ");
 	mvwprintw(menu_win, display_offset+11, 2,"RT_RPM ");
-		
+
 	wrefresh(menu_win);
 	if(argc > 1)
 	{
@@ -149,9 +149,8 @@ int main(int argc, char *argv[])
 	memset(&newtio, 0, sizeof newtio);
 
 	fd = open (MODEMDEVICE, O_RDWR | O_NOCTTY | O_SYNC);
-	if (fd <0) {perror(MODEMDEVICE); 
+	if (fd <0) {perror(MODEMDEVICE);
 		exit(-1); }
-
 
 	if(tcgetattr(fd,&oldtio) != 0) /* save current port settings */
 	{
@@ -167,7 +166,7 @@ int main(int argc, char *argv[])
 	set_defaults();
 
 // read
-	if(type == 0) 
+	if(type == 0)
 	{
 		do_read(menu_win, fd,display_offset);
 	}	// end of else
@@ -293,9 +292,9 @@ int main(int argc, char *argv[])
 			if(code == RT_TRIP-1)
 				usleep(tdelay*2);
 
-// see if one of the keys from the "keypad" is pressed 
+// see if one of the keys from the "keypad" is pressed
 
-			key = wgetch(menu_win);	
+			key = wgetch(menu_win);
 			if(key != 0xff)
 			{
 				switch(key)
@@ -323,62 +322,62 @@ int main(int argc, char *argv[])
 					case '5':
 						mvwprintw(menu_win, display_offset+22, 8, "five  ");
 						wkey = KP_5;
-						break;	
+						break;
 					case '6':
 						mvwprintw(menu_win, display_offset+22, 8, "six   ");
 						wkey = KP_6;
-						break;	
+						break;
 					case '7':
 						mvwprintw(menu_win, display_offset+22, 8, "seven ");
 						wkey = KP_7;
-						break;	
+						break;
 					case '8':
 						mvwprintw(menu_win, display_offset+22, 8, "eight ");
 						wkey = KP_8;
-						break;	
+						break;
 					case '9':
 						mvwprintw(menu_win, display_offset+22, 8, "nine  ");
 						wkey = KP_9;
-						break;	
+						break;
 					case '*':
 						mvwprintw(menu_win, display_offset+22, 8, "ast   ");
 						wkey = KP_AST;
-						break;	
+						break;
 					case '#':
 						mvwprintw(menu_win, display_offset+22, 8, "pound ");
 						wkey = KP_POUND;
-						break;	
+						break;
 					case 'A':
 					case 'a':
 						mvwprintw(menu_win, display_offset+22, 8, "A     ");
 						wkey = KP_A;
-						break;	
+						break;
 					case 'B':
 					case 'b':
 						mvwprintw(menu_win, display_offset+22, 8, "B     ");
 						wkey = KP_B;
-						break;	
+						break;
 					case 'C':
 					case 'c':
 						mvwprintw(menu_win, display_offset+22, 8, "C     ");
 						wkey = KP_C;
-						break;	
+						break;
 					case 'D':
 					case 'd':
 						mvwprintw(menu_win, display_offset+22, 8, "D     ");
 						wkey = KP_D;
-						break;	
-// use 'z' as a shortcut to '#' and 'y' as a shcortcut to '#'						
+						break;
+// use 'z' as a shortcut to '#' and 'y' as a shcortcut to '#'
 					case 'Y':
-					case 'y':	
+					case 'y':
 						mvwprintw(menu_win, display_offset+22, 8, "pound ");
 						wkey = KP_POUND;
-						break;	
+						break;
 					case 'Z':
 					case 'z':
 						mvwprintw(menu_win, display_offset+22, 8, "ast   ");
 						wkey = KP_AST;
-						break;	
+						break;
 					default:
 						mvwprintw(menu_win, display_offset+22, 8, "?     ");
 						wkey = 0xff;
@@ -386,11 +385,11 @@ int main(int argc, char *argv[])
 				}
 				if(wkey != 0xff)
 					write(fd,&wkey,1);
-			}			
+			}
 		}	// end of for(...
 	}	// end of else
 
-//	while (STOP==FALSE) 
+//	while (STOP==FALSE)
 //	{       /* loop for input */
 //		res = read(fd,buf,20);
 //		printf("%d:%s ",res,buf);
@@ -432,7 +431,7 @@ void display_menus(void)
 //			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
 			GDispStringAt(prompts[i].row,prompts[i].col,prompts[i].label);
 		}
-	}	
+	}
 }
 //******************************************************************************************//
 //**************************************** display_labels **********************************//
@@ -465,7 +464,6 @@ void do_read(WINDOW *win, int fd, int display_offset)
 	UINT xword;
 	UCHAR txword;
 	UCHAR temp;
-	UCHAR wkey;
 	UCHAR limit8;
 	UINT limit16;
 	int i,j;
@@ -473,34 +471,14 @@ void do_read(WINDOW *win, int fd, int display_offset)
 
 	init_list();
 	display_labels();
-	display_menus();		
 
 	while(TRUE)
-	{	
+	{
 		done = 0;
 		res = read(fd,&ch,1);
 		ch = get_key(ch,limit8,limit16);
-//		mvwprintw(win, display_offset+22, 16, "%x ",ch);
 		if(curr_fptr_changed())
 		{
-			display_menus();
-
-			for(j = 0;j < 6;j++)
-				mvwprintw(win, display_offset+15+j, 10,"                         ");
-			j++;
-			
-			j = 0;
-			for(i = 0;i < no_prompts;i++)
-			{
-				if(prompts[i].type == get_curr_fptr())
-				{
-					GDispStringAt(prompts[i].row,prompts[i].col,prompts[i].label);
-//					mvwprintw(win,prompts[i].col,prompts[i].row, "%s",prompts[i].label);
-//					mvwprintw(win, display_offset+15+j, 10, "%d  %d  %d   ",get_curr_fptr(), \
-							prompts[i].row,prompts[i].col);
-					j++;
-				}
-			}
 			switch(get_curr_menu())
 			{
 				case 0:
@@ -548,9 +526,11 @@ void do_read(WINDOW *win, int fd, int display_offset)
 				default:
 				break;
 			}
-			mvwprintw(win, display_offset+15+j, 10, "%d  %s  ",get_curr_fptr(),test_str);
-		}	
-		
+			mvwprintw(win, display_offset+17, 10, "%d  %d  %s  ",get_curr_fptr(),get_curr_menu(),test_str);
+			mvwprintw(win, display_offset+18, 10,"%s    ",cur_global_number);
+			mvwprintw(win, display_offset+19, 10,"%s    ",new_global_number);
+		}
+
 		switch(parse_state)
 		{
 			case IDLE:
@@ -577,7 +557,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 						break;
 					case RT_HIGH1:		// if UINT with neither bit 7 or 15 set
 						parse_state = GET_CH0;
-						break;	
+						break;
 					case RT_HIGH2:		// if a UINT is sent with bit 7 set
 						parse_state = GET_CH1;
 						break;
@@ -681,7 +661,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 			}
 			set_defaults();
 		}	// end of done
-	}	// end of while(1)	
+	}	// end of while(1)
 }
 int burn_eeprom(void)
 {
@@ -725,7 +705,7 @@ int burn_eeprom(void)
 	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"TRIP\0");
 
 	i++;
-	// the row, col elements specify where at the bottom of the screen 
+	// the row, col elements specify where at the bottom of the screen
 	// menu choices will be
 	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU1,"MENU1a\0");
 
@@ -772,7 +752,6 @@ int burn_eeprom(void)
 	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU5,"ALNUM_ENTRY\0");
 
     no_prompts = i+1;
-    no_prompts -= 2;
     prompt_info_offset = total_strlen;
 /*
 	printString("\r\n");
@@ -795,7 +774,7 @@ int burn_eeprom(void)
 
 		eeprom_update_block(promptString,(eepromString+((i*(uint8_t)str_size))+prompt_info_offset), str_size);
     }
-*/    
+*/
 //	printString("done writing eeprom\r\n");
 	return 0;
 }

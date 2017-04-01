@@ -7,7 +7,7 @@
 typedef struct prompts
 {
 #ifdef NOAVR
-	char label[10];
+	char label[12];
 #endif
 	UCHAR pnum;
 	UCHAR row;
@@ -25,7 +25,7 @@ enum menu_types
 	MENU4,
 	MENU5,
 	RT_LABEL
-} MENU_TYPES;	
+} MENU_TYPES;
 
 enum menu_order
 {
@@ -66,7 +66,7 @@ enum rt_types
 	RT_OILP,
 	RT_ENGT,
 	RT_MPH,
-	RT_RPM	// this should be 0xFF	
+	RT_RPM	// this should be 0xFF
 } RT_TYPES;
 
 enum key_types
@@ -99,7 +99,7 @@ enum states
 {
 	IDLE,
 	CHECK_HIGHBIT,
-	SEND_UCHAR0,	// UCHAR without high bit set	
+	SEND_UCHAR0,	// UCHAR without high bit set
 	SEND_UCHAR1,	// UCHAR with high bit set
 	GET_CH0,
 	GET_CH1,
@@ -107,7 +107,7 @@ enum states
 	SEND_UINT0,		// UINT with neither bit 7 or 15 set
 	SEND_UINT1,		// UINT with bit 7 set
 	SEND_UINT2		// UINT with bit 15 set
-} STATES;	
+} STATES;
 
 #define NUM_ENTRY_SIZE 7
 #define NUM_ENTRY_BEGIN_COL (COLUMN - COLUMN/3)
@@ -125,25 +125,6 @@ enum states
 void dispRC(int row, int col);
 void CheckRC(int *row, int *col, UCHAR *k);
 void display_labels(void);
-UCHAR main_menu_func(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu1a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu1b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu1c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu1d(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu2a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu2b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu2c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu3a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu3b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu3c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu4a(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
-void cursor_forward(void);
-void cursor_backward(void);
-void cursor_forward_stuff(char);
-void stuff_num(char);
 void parse_PIC24(UCHAR);
 void display_menus(void);
 void set_defaults(void);
@@ -164,5 +145,4 @@ UCHAR no_prompts;
 
 char cur_global_number[NUM_ENTRY_SIZE];
 char new_global_number[NUM_ENTRY_SIZE];
-UCHAR cur_row, cur_col;	// used by the current menu/dialog function to keep track of the current row,col
 #endif

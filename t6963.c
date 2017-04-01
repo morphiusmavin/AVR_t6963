@@ -120,7 +120,7 @@ static void GDispCmdAddrSend (UINT Addr, UCHAR cmd)
  * Description : This function initializes the display driver
  * Arguments   : none
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 void GDispInit (void)
@@ -139,7 +139,7 @@ void GDispInit (void)
 	//Set Offset register to 0x0002, CG Ram start address = $1400 (CG_HOME_ADDR)
 	//first character code $80 for CG Ram
 	GDispCmdAddrSend (0x0002, OFFSET_REG_SET);
-#endif	
+#endif
 }
 /*
 *********************************************************************************************************
@@ -148,7 +148,7 @@ void GDispInit (void)
  * Description : This function sets mode
  * Arguments   : 'mode'  , refer to mode available in t6963.h, MODE Section, CURSOR MODE, TEXT ATTRI
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 void GDispSetMode (UCHAR mode)
@@ -164,7 +164,7 @@ void GDispSetMode (UCHAR mode)
  * Description : This function clears the text clear in font mode
  * Arguments   : none
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 void GDispClrTxt (void)
@@ -196,7 +196,7 @@ void GDispClrTxt (void)
  * Description : This function clears the graphic area pixel by pixel
  * Arguments   : none
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 /*
@@ -227,7 +227,7 @@ void GDispClrGrh (void)
  * Arguments   : 'row'   row = 0...(MAX_ROW_PIXEL/8 - 1), the cell number in 8 bits height
  *               'col'   col = 0...(COLUMN-1), is the column position in font width (6/8 font)
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 void GDispGoto (UINT row, UINT col)
@@ -265,7 +265,7 @@ void GDispChar (UCHAR c)
  *
  * Description : This function is used to display a single character on the display device, address
  *               auto increment OFF!
- * Arguments   : 'row'   row = 0...(MAX_ROW_PIXEL/8 - 1), the row pos of the cursor (MAX_ROW_PIXEL/8-1) 
+ * Arguments   : 'row'   row = 0...(MAX_ROW_PIXEL/8 - 1), the row pos of the cursor (MAX_ROW_PIXEL/8-1)
  *               'col'   col = 0...(COLUMN-1), is the column position in font width (6/8 font)
  *               'c'     is the ASCII character to write
  * Returns     : none
@@ -279,7 +279,7 @@ void GDispCharAt (UINT row, UINT col, UCHAR c)
 	GDispDataWr (c - 0x20);
 	GDispCmdSend (DATA_WR);
 #else
-	mvwaddch(win,col,row,c);
+	mvwaddch(win,row-5,col+2,c);
 #endif
 }
 
@@ -290,7 +290,6 @@ void GDispStringAt(UINT row, UINT col, char *c)
 	str = c;
 	i = 0;
 #ifndef NOAVR
-
 	while(*(str+i) != 0)
 	{
 		GDispCharAt(row,col+i,*(str+i));
@@ -315,7 +314,7 @@ void GDispStringAt(UINT row, UINT col, char *c)
  *                               TEXT_ON, without bitwise OR any cursor mode only will clear cursor
  *               'row'  is the MSB of screen address, the row position of the cursor
  *               'col'  is the LSB of the screen address, the column position of the cursor
- *               'type' is cursor type 
+ *               'type' is cursor type
  *                      type = LINE_1_CURSOR / LINE_8_CURSOR
  * Returns     : none
  * Notes       : Cursor address is not like text address pointer. Cannot use GDispGoto(row,col).
@@ -331,7 +330,7 @@ void GDispSetCursor (UCHAR mode, UINT row, UINT col, UCHAR type)
 	GDispCmdSend (CURSOR_PTR_SET); //Set cursor position
 	GDispCmdSend (mode);
 	GDispCmdSend (type); //cursor mode
-#endif	
+#endif
 }
 /*
 *********************************************************************************************************
@@ -339,10 +338,10 @@ void GDispSetCursor (UCHAR mode, UINT row, UINT col, UCHAR type)
  *
  * Description : This function sets a pixel with color = BLACK / WHITE (defined in t6963.h)
  * Arguments   : 'X'    0....MAX_COL_PIXEL is matrix position in horizontal direction
- *               'Y     0....MAX_ROW_PIXEL is matrix position in vertical direction 
+ *               'Y     0....MAX_ROW_PIXEL is matrix position in vertical direction
  *               'color'  sets BLACK / WHITE standing for pixel ON/OFF
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 /*
@@ -374,7 +373,7 @@ void GDispSetPixel (UINT X, UINT Y, UCHAR color)
  * Description : This initializes the I/O ports used by the display driver
  * Arguments   : none
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 void GDispInitPort (void)
@@ -399,7 +398,7 @@ void GDispInitPort (void)
 	_CB(PORTB,DATA7);
 
 	SET_RST();
-#endif	
+#endif
 }
 /*
 *********************************************************************************************************
@@ -457,7 +456,7 @@ void GDispAutoWrChk (void)
  * Description : This function sends a single data byte to the display device
  * Arguments   : 'data' is the BYTE to send to the display device
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 void GDispDataWr (UCHAR data)
@@ -480,10 +479,10 @@ void GDispDataWr (UCHAR data)
 *********************************************************************************************************
  *                        WRITE DATA TO LCD MODULE, SCREEN ADRESS AUTO-INCREMENTED
  *
- * Description : Send a single data byte to the screen with screen address auto'ly incremented 
+ * Description : Send a single data byte to the screen with screen address auto'ly incremented
  * Arguments   : 'data' is the BYTE to send to the display device
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 void GDispAutoDataWr (UCHAR data)
@@ -511,7 +510,7 @@ void GDispAutoDataWr (UCHAR data)
  * Description : This function sends a single byte as command to the display device
  * Arguments   : 'cmd' is the COMMAND BYTE to send to the display device
  * Returns     : none
- * Notes       : 
+ * Notes       :
  *********************************************************************************************************
  */
 void GDispCmdSend (UCHAR cmd)
@@ -534,7 +533,7 @@ void GDispCmdSend (UCHAR cmd)
  *
  * Description : This function sends a single byte as data to the display device
  * Arguments   : 'data' is the COMMAND BYTE to send to the display device
- * Returns     : 
+ * Returns     :
  * Notes       : since we can't use PORTD 0 & 1 (those are used by the serial port)
  *             : we have to shift the data over to the left 2 bits and put on PORTD
  *             : then get the 2 high bits of data and put them on the 2 low bits of PORTB
