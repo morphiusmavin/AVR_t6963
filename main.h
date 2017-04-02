@@ -110,14 +110,18 @@ enum states
 	SEND_UINT2		// UINT with bit 15 set
 } STATES;
 
-#define NUM_ENTRY_SIZE 7
-#define NUM_ENTRY_BEGIN_COL (COLUMN - COLUMN/3)
+#define NUM_ENTRY_SIZE 20
+//#define NUM_ENTRY_BEGIN_COL (COLUMN - COLUMN/2)
+#define NUM_ENTRY_BEGIN_COL 3
 #define NUM_ENTRY_END_COL NUM_ENTRY_BEGIN_COL + NUM_ENTRY_SIZE
-#define NUM_ENTRY_ROW 13
+#define NUM_ENTRY_ROW 6
+
 // '!' - '9' (33 - 58) + 'A' - 'Z' (26) + 'a' - 'z' (26) = 77
-#define NUM_ALNUM 77
-#define ALNUM_SCROLL_LIST_LEN 6
-#define MENU_START_ROW 13
+//#define NUM_ALNUM 77
+//#define NUM_ALNUM 52		// without the '!' - '9'
+#define NUM_ALNUM 84		// include all special chars
+#define ALNUM_SCROLL_LIST_LEN 13
+#define MENU_START_ROW 12
 #define MENU_START_COL 15
 #define MENU_BLANK "          "
 
@@ -145,6 +149,7 @@ int get_type(void);
 UCHAR current_param;
 UINT temp_UINT;
 UCHAR parse_state;
+UCHAR cursor_row, cursor_col;
 
 //PROMPT_STRUCT prompts[30];
 UCHAR no_prompts;

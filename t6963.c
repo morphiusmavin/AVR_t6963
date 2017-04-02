@@ -279,7 +279,7 @@ void GDispCharAt (UINT row, UINT col, UCHAR c)
 	GDispDataWr (c - 0x20);
 	GDispCmdSend (DATA_WR);
 #else
-	mvwaddch(win,row-5,col+2,c);
+	mvwaddch(win,row+3,col+5,c);
 #endif
 }
 

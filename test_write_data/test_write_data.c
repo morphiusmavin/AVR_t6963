@@ -16,7 +16,6 @@
 #include "../sfr_helper.h"
 #include "../main.h"
 #include "../t6963.h"
-#include "../main.h"
 
 #define BAUDRATE B19200
 #define MODEMDEVICE "/dev/ttyS0"
@@ -104,6 +103,7 @@ int main(int argc, char *argv[])
 	{
 		display_offset = DISP_OFFSET;
 	}
+
 	mvwprintw(menu_win, display_offset+2, 2, "RT_TRIP ");
 	mvwprintw(menu_win, display_offset+3, 2,"RT_TIME ");
 	mvwprintw(menu_win, display_offset+4, 2,"RT_AIRT ");
@@ -527,9 +527,11 @@ void do_read(WINDOW *win, int fd, int display_offset)
 				default:
 				break;
 			}
-			mvwprintw(win, display_offset+17, 10, "%d  %d  %s  ",get_curr_fptr(),get_curr_menu(),test_str);
-			mvwprintw(win, display_offset+18, 10,"%s    ",cur_global_number);
-			mvwprintw(win, display_offset+19, 10,"%s    ",new_global_number);
+			mvwprintw(win, display_offset+17, 5, "%d  %d  %s  ",get_curr_fptr(),get_curr_menu(),test_str);
+			mvwprintw(win, display_offset+18, 5,"                      ");
+			mvwprintw(win, display_offset+19, 5,"                      ");
+			mvwprintw(win, display_offset+18, 5,"current: %s",cur_global_number);
+			mvwprintw(win, display_offset+19, 5,"new:     %s",new_global_number);
 		}
 
 		switch(parse_state)
@@ -661,6 +663,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 				}
 			}
 			set_defaults();
+			mvwprintw(win, display_offset+20, 5,"cursor row: %d cursor col: %d  ",cursor_row,cursor_col);
 		}	// end of done
 	}	// end of while(1)
 }
