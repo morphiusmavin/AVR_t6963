@@ -1,3 +1,4 @@
+// menus.c
 #ifndef NOAVR
 #include <avr/io.h>
 #include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
@@ -793,6 +794,7 @@ static void scroll_alnum_list(int dir)
 		default:
 		break;
 	}
+	cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = choose_alnum;
 }
 //******************************************************************************************//
 //************************************* cursor_forward *************************************//

@@ -1,3 +1,4 @@
+// main.h
 #ifndef _MAIN_H_
 #define _MAIN_H_
 #define TIME_DELAY1 1
@@ -58,7 +59,8 @@ enum data_types
 
 enum rt_types
 {
-	RT_TRIP = 0xF6,
+	RT_AUX = 0xF5,
+	RT_TRIP,
 	RT_TIME,
 	RT_AIRT,
 	RT_O2,

@@ -1,4 +1,7 @@
-// main.c - main program that drives the t6963 LCD (32 col x 15 row) display - text only
+//******************************************************************************************//
+//*************************************** main.c  ******************************************//
+//******************************************************************************************//
+// main program that drives the t6963 LCD (32 col x 15 row) display - text only
 // see t6963_notes.txt for more details
 #include <avr/io.h>
 #include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"

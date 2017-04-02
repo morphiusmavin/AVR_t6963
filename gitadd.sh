@@ -17,11 +17,15 @@ git add macros.h
 git add binaryMacro.h
 git add t6963.h
 git add t6963.c
-git add eeprom_burn.c
+git add eeprom/eeprom_burn.c
+git add eeprom/Makefile
 git add t6963_notes.txt
 git add menus.c
 git add main.h
 git add main.c
-git add test_write_data/*
+git add test_write_data/test_write_data.c
+git add test_write_data/makefile
+git add test_write_data/copy.sh
+git add test_write_data/README.md
 clear
 git status

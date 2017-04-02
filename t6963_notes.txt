@@ -25,30 +25,6 @@ dec		hex		char
 67		43		C
 68		44		D
 
-The menu at the bottom can be any number of rows. '*' will cancel the menu at anytime.
-When the key that corrisponds to the menu is pressed, another menu or dialog will appear.
-The most common dialog is one that lets the user enter a number. The menus will be 
-handled by the main switch statement. Any dialogs will be handled by the special
-functions (using function pointers).
-
-One of the params for the number function can be the number of chars in the number dialog.
-Another can be a number limit not to exceed.
-
-Other dialogs can be ones that give the user a choice of on or off or a list of mutually-
-exculsive options, like a group of checkboxes. There can also be a dialog that sets a
-scale represented by a row of '*' or other characters. One key can move the scale to
-the right (increase the value) or to the left (decrease). There will also be a dialog
-to set the current time or the time value for something else.
-
-The normal display will show the real-time values like engine rpm, mph, engine temp and
-oil pressure. Later on, there can be different displays that show more or less real-time
-parameters that can be changed by the menus. When the menu is active, any RT params on
-the screen will continue to be displayed in real-time. They just won't over-write any-
-thing on the menu area. So the menu or dialog will consume as little as possible area
-at the bottom of the display. When 'Enter' or 'Cancel' is pressed the menu or dialog
-will cause the previous menu to appear or the user can either hit the '*' key to make
-the menu clear or the 'back' key to go back to the previous menu. 
-
 Special character codes sent by the PIC24:
 
 0xFF->0xF0 - PIC24 is sending a sequence of predetermined bytes that are shifted, scaled or 
