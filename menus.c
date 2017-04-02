@@ -49,6 +49,7 @@ static UCHAR menu4b(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 static UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 static UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 static UCHAR alnum_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
+static UCHAR check_box(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col);
 static void show_legend(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4);
 static void show_legend(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4)
 {
@@ -114,7 +115,7 @@ static UCHAR (*fptr[NUM_FPTS])(UCHAR, UCHAR, UINT, UCHAR, UCHAR) = { main_menu_f
 	 menu1c, menu1d,\
 	 menu2a, menu2b, menu2c,\
 	 menu3a, menu3b, menu3c,\
-	 menu4a, menu4b, menu4c, number_entry, alnum_entry };
+	 menu4a, menu4b, menu4c, number_entry, alnum_entry, check_box };
 
 static void blank_menu(void)
 {
@@ -203,7 +204,12 @@ int get_type(void)
 {
 	return curr_type;
 }
-
+//******************************************************************************************//
+//********************************** scroll_alnum_list *************************************//
+//******************************************************************************************//
+static UCHAR check_box(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
+{
+}
 //******************************************************************************************//
 //************************************* main_menu_func *************************************//
 //******************************************************************************************//
@@ -636,6 +642,7 @@ static UCHAR menu4c(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 //*************************************** number_entry *************************************//
 //******************************************************************************************//
 // displays the 4th choice of the 1st choice of the main menu
+// A - "forward", B - "back", C - "alpha", D - "enter", # - "cancel", * - "cancel");
 static UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
@@ -681,20 +688,26 @@ static UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR
 			memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
 			break;
 		case KP_C:
-			show_legend2(1,"alpha entry","CAPS","small","special","forward","enter","cancel");
+			show_legend2(1,"alpha entry","CAPS","small","special","next","forward","apply");
 			set_list(ALNUM_ENTRY);
 			break;
 		case KP_D:
 			memcpy((void*)new_global_number,(void*)cur_global_number,NUM_ENTRY_SIZE);
+			cur_col = NUM_ENTRY_BEGIN_COL;
 			prev_list();
+			clean_disp_num();
 			break;
 		case KP_POUND:
 			memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
+			cur_col = NUM_ENTRY_BEGIN_COL;
 			prev_list();
+			clean_disp_num();
 			break;
 		case KP_AST:	// cancel changes and leave menu
 			memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
+			cur_col = NUM_ENTRY_BEGIN_COL;
 			prev_list();
+			clean_disp_num();
 			break;
 		default:
 			ret_char = ch;
@@ -705,6 +718,7 @@ static UCHAR number_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR
 //******************************************************************************************//
 //*************************************** alnum_entry **************************************//
 //******************************************************************************************//
+//A - "CAPS", B - "small", C - "special", D - "next", # - "forward", * - "apply");
 static UCHAR alnum_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR col)
 {
 	UCHAR ret_char = ch;
@@ -720,14 +734,13 @@ static UCHAR alnum_entry(UCHAR ch, UCHAR limit8, UINT limit16, UCHAR row, UCHAR 
 			scroll_alnum_list(2);		// special
 			break;
 		case KP_D:
-			scroll_alnum_list(3);		// forward
+			scroll_alnum_list(3);		// next char in list
+			break;
+		case KP_POUND:
+			cursor_forward();			// move cursor forward
 			break;
 		case KP_AST:
 			// show the menu for the previous
-			show_legend2(1,"number entry","forward","back","alpha","enter","cancel","cancel");
-			prev_list();
-			break;
-		case KP_POUND:
 			show_legend2(1,"number entry","forward","back","alpha","enter","cancel","cancel");
 			cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = choose_alnum;
 			cursor_forward();
@@ -753,25 +766,25 @@ static void scroll_alnum_list(int dir)
 	col = NUM_ENTRY_BEGIN_COL;
 	switch (dir)
 	{
-		case 0:
+		case 0:		// start at 'A'
 			scroll_ptr = 0;
 			while(alnum_array[++scroll_ptr] != 'A');
 			choose_alnum = alnum_array[scroll_ptr];
 			dispCharAt(cur_row,cur_col,choose_alnum);
 		break;
-		case 1:
+		case 1:		// start at 'a'
 			scroll_ptr = 0;
 			while(alnum_array[++scroll_ptr] != 'a');
 			choose_alnum = alnum_array[scroll_ptr];
 			dispCharAt(cur_row,cur_col,choose_alnum);
 		break;
-		case 2:
+		case 2:		// start at '!' (very first one)
 			scroll_ptr = 0;
-//			while(alnum_array[++scroll_ptr] != '!');
+//			while(alnum_array[++scroll_ptr] != '!');	// this will crash it
 			choose_alnum = alnum_array[scroll_ptr];
 			dispCharAt(cur_row,cur_col,choose_alnum);
 		break;
-		case 3:
+		case 3:		// advance the chosen character to next one
 			if(++scroll_ptr > NUM_ALNUM-1)
 				scroll_ptr = 0;
 			choose_alnum = alnum_array[scroll_ptr];
@@ -824,7 +837,7 @@ static void clean_disp_num(void)
 	int i;
 	for(i = 0;i < NUM_ENTRY_SIZE+1;i++)
 	{
-		dispCharAt(cur_row,cur_col+i,0x20);
+		dispCharAt(NUM_ENTRY_ROW,i+NUM_ENTRY_BEGIN_COL,0x20);
 	}
 }
 

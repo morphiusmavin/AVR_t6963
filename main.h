@@ -2,7 +2,7 @@
 #define _MAIN_H_
 #define TIME_DELAY1 1
 #define STRING_LEN   100
-#define NUM_FPTS 16
+#define NUM_FPTS 17
 #warning "main.h"
 typedef struct prompts
 {

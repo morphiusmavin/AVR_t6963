@@ -1,0 +1,57 @@
+diff --git a/test_write_data/test_write_data.c b/test_write_data/test_write_data.c
+index 09b6665..04b3c23 100644
+--- a/test_write_data/test_write_data.c
++++ b/test_write_data/test_write_data.c
+@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
+ 	if(argc > 1)
+ 		menu_win = newwin(30, 40, 0,0);
+ 	else
+-		menu_win = newwin(40, 42, 0,0);
++		menu_win = newwin(42, 42, 0,0);
+ 	keypad(menu_win, TRUE);
+ 	nodelay(menu_win, TRUE);
+ 	box(menu_win,0,0);
+@@ -165,13 +165,13 @@ int main(int argc, char *argv[])
+ 	res2 = 0;
+ 	set_defaults();
+ 
+-// read
++// read	- simulate the AVR
+ 	if(type == 0)
+ 	{
+ 		do_read(menu_win, fd,display_offset);
+ 	}	// end of else
+ 
+-// write
++// write - simulate the PIC24
+ 	else if(argc > 1)
+ 	{
+ 		for(i = 0;i < iters;i++)
+@@ -528,10 +528,16 @@ void do_read(WINDOW *win, int fd, int display_offset)
+ 				break;
+ 			}
+ 			mvwprintw(win, display_offset+17, 5, "%d  %d  %s  ",get_curr_fptr(),get_curr_menu(),test_str);
+-			mvwprintw(win, display_offset+18, 5,"                      ");
+-			mvwprintw(win, display_offset+19, 5,"                      ");
++			mvwprintw(win, display_offset+18, 5,"                              ");
++			mvwprintw(win, display_offset+19, 5,"                              ");
++			mvwprintw(win, display_offset+20, 5,"                              ");
++			mvwprintw(win, display_offset+21, 5,"                              ");
+ 			mvwprintw(win, display_offset+18, 5,"current: %s",cur_global_number);
+ 			mvwprintw(win, display_offset+19, 5,"new:     %s",new_global_number);
++			for(j = 0;j < NUM_ENTRY_SIZE;j++)
++				mvwprintw(win, display_offset+20, 5+j,"%c",cur_global_number[j]);
++			for(j = 0;j < NUM_ENTRY_SIZE;j++)
++				mvwprintw(win, display_offset+21, 5+j,"%c",new_global_number[j]);
+ 		}
+ 
+ 		switch(parse_state)
+@@ -663,7 +669,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
+ 				}
+ 			}
+ 			set_defaults();
+-			mvwprintw(win, display_offset+20, 5,"cursor row: %d cursor col: %d  ",cursor_row,cursor_col);
++			mvwprintw(win, display_offset+22, 5,"cursor row: %d cursor col: %d  ",cursor_row,cursor_col);
+ 		}	// end of done
+ 	}	// end of while(1)
+ }
