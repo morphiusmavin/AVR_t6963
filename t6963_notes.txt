@@ -27,14 +27,25 @@ dec		hex		char
 
 Special character codes sent by the PIC24:
 
-0xFF->0xF0 - PIC24 is sending a sequence of predetermined bytes that are shifted, scaled or 
+0xF5->0xFF - PIC24 is sending a sequence of predetermined bytes that are shifted, scaled or 
 			bytes combined to make words and displayed at a list of predetermined 
 			row,col locations
+	RT_AUX		0xF5	- tells AVR to send a string of 20 bytes that was entered using the numentry/alnum dialog
+	RT_TRIP		0xF6	- tells the AVR to expect 1 byte to be sent preceded by either RT_LOW or RT_HIGH0
+	RT_TIME,	0xF7	-  "																		"
+	RT_AIRT,	0xF8	-  "																		"
+	RT_O2,		0xF9	-  "																		"
+	RT_MAP,		0xFA	-  "																		"
+	RT_OILT,	0xFB	-  "																		"
+	RT_OILP,	0xFC	-  "																		"
+	RT_ENGT,	0xFD	-  "																		"
+	RT_MPH,		0xFE	-  "																		"
+	RT_RPM		0xFF	- tells the AVR to expect 2 bytes to be send preceded by either RT_HIGH1/2/3
+						- RT_HIGH1 - 2 bytes make up an unsigned int with neither MSB set
+						- RT_HIGH2 - bit 7 of unsigned int is set
+						- RT_HIGH3 - bit 15 of unsigned int is set
 
-Special characters sent by AVR to the PIC24:
-0xFF - tells PIC24 to start sending a new predetermined sequence of values followed by param
-0xFE -> 0xF0 - tells PIC24 to update a certain param followed by param # and value (1 or 2 bytes)
-			the PIC24 can send that param to the TS-5500 if it applies.
+using this scheme allows the AVR to separate the RT_XXX commands from actual data						
 
 bytes sent to represent keypresses
 0xE0 - '#'
@@ -60,26 +71,6 @@ just return whatever was passed in.
 
 When the PIC24 sends a byte in the range of 0xF0 -> 0xFF that will be interpreted as
 a special command to do something like hide the menu or update the display RT values.
-
-The dispSetCursor function will set whatever row,col to a blinking cursor but
-the dispCharAt function will display the char passed to it at its row,col parameters
-regardless of where the blinking cursor is. When the a number is entered at the cursor
-and/or the cursor is moved, the main loop will have to restore the current row,col used
-by the RT display.
-
-When the PIC24 sends a keypress it will reset the ESOS delay used by the task that is currently
-sending data using the 0xFE command so that there won't be any overlapping of data. It can
-also use semaphores to wait till the current sequence is finished before sending a keypress.
-
-So the number enter dialog will use the '#' and the 'D' keys to move the cursor left or
-right (resp). The any number key pressed will put the number in the space where the cursor
-is. The current row,col used by the dialog is stored in the global variable cur_row, cur_col
-and the number is in cur_global_number[10]. The dialog updates what's in new_global_number
-and if the user cancels out, the new_global_number is reset. If the user hits 'Enter', the
-cur_global_number is updated with new_global_number providing the new number is within
-limits. 
-
-Screen Layout:
 
 typedef struct prompts
 {
@@ -110,141 +101,17 @@ has bit 7 set and RT_HIGH3 has bit 15 set. The AVR will then know by the data ty
 after the RT_TYPE how to format the data (adding the appropriate high bit back in before printing
 it to the screen. The reason for this is so it can filter out the keypresses (0xE0->0xEF).
 
-enum rt_types
-{
-	RT_TRIP = 0xF6,
-	RT_TIME,
-	RT_AIRT,
-	RT_OS,
-	RT_MAP,
-	RT_OILT,
-	RT_OILP,
-	RT_ENGT,
-	RT_MPH,
-	RT_RPM	// this should be 0xFF	
-} RT_TYPES;
 
-enum data_types
-{
-	RT_LOW,				// UCHAR without high bit set
-	RT_HIGH0,			// UCHAR with bit 7 set
-	RT_HIGH1,			// UINT with neither 7 or 15 set
-	RT_HIGH2,			// bit 7 of UINT set
-	RT_HIGH3			// bit 15 of UINT set
-} DATA_TYPES;
+test_write_data:
+The subdirectory call test_write_data has a separate makefile that compiles a program that I used
+to test some of the functionality so I didn't have to keep reflashing the AVR. I used 2 linux boxes
+connected with a crossed over serial cable. Run make, which will compile the test_write_data.c
+using menus.c, t6963.c and USART.c from the main directory, the run copy.sh which will tar up the
+files needed to compile the program on the other machines. You will have to edit the copy.sh script
+to match your machine IP addresses. Then run the extract.sh script on your other 2 machines (I use
+ssh to run the other 2 machines on my main box) and then run sudo ./test_write (for the machine that
+simulates the the AVR) and sudo ./test_write <interations*10> <starting rpm value> <other starting
+values> <time delay> to simulate the PIC24 or whatever processor is writing the data to the AVR.
 
 
-enum menu_types
-{
-	MENU1,
-	MENU2,
-	MENU3,
-	MENU4,
-	MENU5,
-	RT_LABEL
-} MENU_TYPES;	
-
-enum menu_order
-{
-	MAIN_MENU,
-	MENU1A,
-	MENU1B,
-	MENU1C,
-	MENU1D,
-	MENU2A,
-	MENU2B,
-	MENU2C,
-	MENU3A,
-	MENU3B,
-	MENU3C,
-	MENU4A,
-	MENU4B,
-	MENU4C,
-	NUM_ENTRY
-} MENU_ORDER;
-
-
-menus:
-
-The menus are managed by function pointers. The default menu is main_menu_func. If the '*'
-key is pressed the context will return to the previous menu. (the only exception to this
-is the main menu).
-
-
-UCHAR (*fptr[NUM_FPTS])(UCHAR, uint8_t, uint16_t, UCHAR, UCHAR) = { main_menu_func,\
-	 menu1a, menu1b,\
-	 menu1c, menu1d,\
-	 menu2a, menu2b, menu2c,\
-	 menu3a, menu3b, menu3c,\
-	 menu4a, menu4b, menu4c, number_entry };
-
-main_menu_func:
-1) menu1a
-	1) (go back)
-	2) menu2a
-	3) menu2b
-	4) menu2c
-2) menu1b
-	1) main_menu_func (go back to top menu for now)
-	2)	"    "    "                 "
-	3)	"    "    "                 "
-	4)	"    "    "                 "
-3) menu1c
-	1)	"    "    "                 "
-	2)	"    "    "                 "
-	3)	"    "    "                 "
-	4)	"    "    "                 "
-4) menu1d
-	1)	"    "    "                 "
-	2)	"    "    "                 "
-	3)	"    "    "                 "
-	4)	"    "    "                 "
-
-menu2a:	
-	1) number_entry
-	2) main_menu_func (go back to top menu for now)
-	3)	"    "    "                 "
-	4)	"    "    "                 "
-	
-num_entry:
-	enter keypad digits 0->9 - puts number in buffer
-	A,B - enter, cancel
-	(should present user with final number before enter
-
-alpha_entry:
-	enter alphanumeric 0x21->0x7e using a pull-down that lets user scroll thru list
-	(or enter 0->9 and/or A->D)
-	
-params in TS-5500 that can be set:
-	tasks: enable,delay,priority
-	comm port settings
-	change passcode
-	Qtraffic: record to logfile, view errors only, etc
-		Qtraffic: 
-			int type;
-			int error;
-			UCHAR param;
-			UCHAR onoff;
-			INT32U OSTime;
-			
-	blinker time
-	number of blinks
-	rt params:
-		engine temp warning
-		engine temp shutdown
-		oil pressure warning
-		oil pressure shutdown
-		battery temp on (for battery heater)
-		battery temp off	"	"	"
-		
-checkbox group dialog:
-	predefines set of on/off params to change where user can scroll cursor
-	to checkboxes and set/unset
-
-dialog for viewing TS-5500 Qtraffic logfiles
-	view latest
-	view range (date/time)
-	reset/erase
-	manage files on flash disk
-				
 

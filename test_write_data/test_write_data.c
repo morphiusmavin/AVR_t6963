@@ -51,6 +51,8 @@ int main(int argc, char *argv[])
 	int type = 0;
 	int iters;
 	int i,j;
+	UCHAR alnum_strlen = 0;
+	int write_alnum = 10;
 	UCHAR ch;
 	struct termios oldtio,newtio;
 	WINDOW *menu_win;
@@ -58,7 +60,7 @@ int main(int argc, char *argv[])
     UCHAR data = 2;
     UCHAR data1 = 0;
 	UINT data2 = 0;
-    UCHAR code = RT_AUX;
+    UCHAR code = RT_TRIP-1;
     UCHAR read_buff[10];
 	//PROMPT_STRUCT prompts[30];
 //	UCHAR no_prompts;
@@ -185,7 +187,9 @@ int main(int argc, char *argv[])
 			if(code == RT_AUX)
 			{
 				memset(aux_array,0,NUM_ENTRY_SIZE);
-				usleep(tdelay);
+				usleep(tdelay*2);
+//				read(fd,&alnum_strlen,1);
+//				usleep(tdelay/2);
 				res = read(fd,aux_array,NUM_ENTRY_SIZE);
 			}
 			else if(code == RT_RPM)
@@ -246,8 +250,13 @@ int main(int argc, char *argv[])
 				sprintf(param_string,"%4u",data2);
 				mvwprintw(menu_win, display_offset+code-0xF4, 10, param_string);
 				wrefresh(menu_win);
-				code = RT_AUX-1;
-	//				code = RT_OILP;
+				if(--write_alnum < 0)
+				{
+					write_alnum = 5;
+					code = RT_AUX-1;
+				}
+				else
+					code = RT_TRIP-1;
 			}
 			else
 			{
@@ -282,7 +291,7 @@ int main(int argc, char *argv[])
 			}
 			res = read(fd,read_buff,5);
 			mvwprintw(menu_win, display_offset+13, 4, "bytes read: %d",res);
-			mvwprintw(menu_win, display_offset+14, 4, "               ");
+			mvwprintw(menu_win, display_offset+14, 4, "                       ");
 			for(j = 0;j < res;j++)
 				mvwprintw(menu_win, display_offset+14, 10+(j*3), "%x",read_buff[j]);
 			if(res == 2)
@@ -297,10 +306,10 @@ int main(int argc, char *argv[])
 				mvwprintw(menu_win, display_offset+16, 4, "others:  %d  ",read_buff[0]);
 			}
 			mvwprintw(menu_win, display_offset+21, 4, "iterations left: %d   ",iters-i);
-
+			mvwprintw(menu_win, display_offset+23, 4,"                         ");
 			for(j = 0;j < NUM_ENTRY_SIZE;j++)
 				mvwprintw(menu_win, display_offset+23, 4+j, "%c",aux_array[j]);
-
+//			mvwprintw(menu_win, display_offset+24, 4,"alnum strlen: %d",alnum_strlen);
 			wrefresh(menu_win);
 			if(code == RT_TRIP-1)
 				usleep(tdelay);
@@ -570,6 +579,8 @@ void do_read(WINDOW *win, int fd, int display_offset)
 				}
 				else if(ch == RT_AUX)
 				{
+					ch = get_str_len();
+					write(fd,&ch,1);
 					write(fd,new_global_number,NUM_ENTRY_SIZE);
 					parse_state = IDLE;
 				}

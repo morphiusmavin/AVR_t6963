@@ -14,7 +14,7 @@ type "dump eeprom 0 0x03ff" to view the entire eeprom or use "0 512" to view wha
 use. (very end of eeprom is used to store some variable "0x03f0 16").<br />
 The flash is rated for 10,000 writes and the eeprom is rated for 100,000 writes.<br />
 I'm willing to bet these are conservative estimates. i.e. if it was made on a Monday or a Friday.<br />
-
 Also:<br />
 In the Makefile swap pound signs on lines 62 & 64 to disable/enable the TTY_DISPLAY define.<br />
 You can run "make terminal" to get into terminal mode.<br />
+(see t6963_notes.txt for more details)<br />

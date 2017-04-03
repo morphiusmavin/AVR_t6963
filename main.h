@@ -147,6 +147,7 @@ int get_curr_fptr(void);
 int curr_fptr_changed(void);
 int get_curr_menu(void);
 int get_type(void);
+int get_str_len(void);
 
 UCHAR current_param;
 UINT temp_UINT;

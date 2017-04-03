@@ -1,5 +1,4 @@
 git add README.md
-git add .gitignore
 git add atmega328p.conf
 git add avrdude.conf
 git add dobus2
@@ -27,5 +26,12 @@ git add test_write_data/test_write_data.c
 git add test_write_data/makefile
 git add test_write_data/copy.sh
 git add test_write_data/README.md
-clear
+git add test_write_data/extract.sh
+git add test_write_data/extract.sh
+git add test_write_data/findw.sh
+git add test_write_data/rmwhitesp.sh
+git add test_write_data/test_write.png
+git add test_write_data/whitesp.shclear
 git status
+
+
