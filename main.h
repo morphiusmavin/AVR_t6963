@@ -121,7 +121,7 @@ enum states
 // '!' - '9' (33 - 58) + 'A' - 'Z' (26) + 'a' - 'z' (26) = 77
 //#define NUM_ALNUM 77
 //#define NUM_ALNUM 52		// without the '!' - '9'
-#define NUM_ALNUM 84		// include all special chars
+#define NUM_ALNUM 85		// include all special chars
 #define ALNUM_SCROLL_LIST_LEN 13
 #define MENU_START_ROW 12
 #define MENU_START_COL 15

@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     UCHAR data = 2;
     UCHAR data1 = 0;
 	UINT data2 = 0;
-    UCHAR code = RT_TRIP;
+    UCHAR code = RT_AUX;
     UCHAR read_buff[10];
 	//PROMPT_STRUCT prompts[30];
 //	UCHAR no_prompts;
@@ -68,6 +68,8 @@ int main(int argc, char *argv[])
 	UCHAR wkey;
 	char param_string[10];
 	int display_offset;
+	char aux_array[NUM_ENTRY_SIZE];
+	memset(aux_array,0,NUM_ENTRY_SIZE);
 
 	burn_eeprom();
 	printf("no prompts: %d\n",no_prompts);
@@ -180,7 +182,13 @@ int main(int argc, char *argv[])
 			ch = code;
 		    write(fd,&code,1);
 //			printf("%x\n",ch);
-			if(code == RT_RPM)
+			if(code == RT_AUX)
+			{
+				memset(aux_array,0,NUM_ENTRY_SIZE);
+				usleep(tdelay);
+				res = read(fd,aux_array,NUM_ENTRY_SIZE);
+			}
+			else if(code == RT_RPM)
 			{
 				if(data2 & 0x8000)
 				{
@@ -238,7 +246,7 @@ int main(int argc, char *argv[])
 				sprintf(param_string,"%4u",data2);
 				mvwprintw(menu_win, display_offset+code-0xF4, 10, param_string);
 				wrefresh(menu_win);
-				code = RT_TRIP-1;
+				code = RT_AUX-1;
 	//				code = RT_OILP;
 			}
 			else
@@ -289,6 +297,10 @@ int main(int argc, char *argv[])
 				mvwprintw(menu_win, display_offset+16, 4, "others:  %d  ",read_buff[0]);
 			}
 			mvwprintw(menu_win, display_offset+21, 4, "iterations left: %d   ",iters-i);
+
+			for(j = 0;j < NUM_ENTRY_SIZE;j++)
+				mvwprintw(menu_win, display_offset+23, 4+j, "%c",aux_array[j]);
+
 			wrefresh(menu_win);
 			if(code == RT_TRIP-1)
 				usleep(tdelay);
@@ -455,6 +467,7 @@ void display_labels(void)
 //******************************************************************************************//
 //**************************************** do_read *****************************************//
 //******************************************************************************************//
+// do_read simulates the AVR
 void do_read(WINDOW *win, int fd, int display_offset)
 {
 	int done;
@@ -468,7 +481,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 	UCHAR limit8;
 	UINT limit16;
 	int i,j;
-	char test_str[7];
+	char test_str[20];
 
 	init_list();
 	display_labels();
@@ -524,6 +537,12 @@ void do_read(WINDOW *win, int fd, int display_offset)
 				case 13:
 				strcpy(test_str,"MAIN4C\0");
 				break;
+				case 14:
+				strcpy(test_str,"NUM_ENTRY\0");
+				break;
+				case 15:
+				strcpy(test_str,"ALNUM_ENTRY\0");
+				break;
 				default:
 				break;
 			}
@@ -548,6 +567,11 @@ void do_read(WINDOW *win, int fd, int display_offset)
 					current_param = ch;
 //						printf("current:");
 					parse_state = CHECK_HIGHBIT;
+				}
+				else if(ch == RT_AUX)
+				{
+					write(fd,new_global_number,NUM_ENTRY_SIZE);
+					parse_state = IDLE;
 				}
 				else
 				{
@@ -658,6 +682,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 			else
 				write(fd,&xbyte,1);
 
+// this displays the RT params on the screen at their positions according to the prompts struct
 			for(i = 0;i < no_prompts;i++)
 			{
 //						mvwprintw(win, display_offset+current_param-0xF4, (i*3)+10, param_string);

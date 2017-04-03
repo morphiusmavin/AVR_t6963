@@ -130,6 +130,7 @@ void init_list(void)
 {
 	int i = 0;
 	UCHAR k;
+	alnum_array[i++] = 0x20;		// first one is a space
 	for(k = 33;k < 48;k++)		// '!' - '/'	15
 		alnum_array[i++] = k;
 	for(k = 58;k < 65;k++)		// ':' - '@'	7
@@ -140,7 +141,7 @@ void init_list(void)
 		alnum_array[i++] = k;
 	for(k = 65;k < 91;k++)		// 'A' - 'Z'	26
 		alnum_array[i++] = k;
-	for(k = 97;k < 123;k++)		// 'a' - 'z'	26	total: 84
+	for(k = 97;k < 123;k++)		// 'a' - 'z'	26	total: 85
 		alnum_array[i++] = k;
 	choose_alnum = 0x30;
 	scroll_ptr = 25;		// start showing at 'a' (skip '!' - '9')

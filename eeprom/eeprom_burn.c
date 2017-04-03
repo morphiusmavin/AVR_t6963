@@ -19,7 +19,7 @@ char eepromString[STRING_LEN] EEMEM;
 
 PROMPT_STRUCT prompts[30];
 
-int main(void) 
+int main(void)
 {
     uint8_t test1;
     char ramString[STRING_LEN];
@@ -65,7 +65,7 @@ int main(void)
 	}
 */
 
-    while (1) 
+    while (1)
     {
         test1 = receiveByte();
 //        printHexByte(test1);
@@ -243,7 +243,7 @@ int main(void)
 				}
 				printString("done\r\n");
 				break;
-			case 'o':	
+			case 'o':
 				printString("tesing pattern 3 (fast)\r\n");
 				GDispClrTxt();
 				k = 0x41;
@@ -331,7 +331,7 @@ int burn_eeprom(void)
 	update_prompt_struct((UCHAR)i,(UCHAR)i-5,15,&total_strlen,RT_LABEL,"TRIP\0");
 
 	i++;
-	// the row, col elements specify where at the bottom of the screen 
+	// the row, col elements specify where at the bottom of the screen
 	// menu choices will be
 	update_prompt_struct((UCHAR)i,15,0,&total_strlen,MENU1,"MENU1a\0");
 
