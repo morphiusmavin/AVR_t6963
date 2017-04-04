@@ -24,8 +24,11 @@ menus.o : ../menus.c
 test_write_data.o : test_write_data.c ../main.h ../sfr_helper.h
 	${CC} -c  ${CFLAGS} ${SFLAGS} -o test_write_data.o test_write_data.c
 
-test_data : menus.o test_write_data.o t6963.o
-	${CC} ${CFLAGS} test_write_data.o t6963.o menus.o -o test_data -lcurses
+do_read.o : do_read.c ../main.h ../sfr_helper.h
+	${CC} -c  ${CFLAGS} ${SFLAGS} -o do_read.o do_read.c
+
+test_data : menus.o test_write_data.o do_read.o t6963.o menus.o
+	${CC} ${CFLAGS} test_write_data.o do_read.o t6963.o menus.o -o test_data -lcurses
 	
 clean :
 	rm -f *.o *~ *# core  a.out \

@@ -140,7 +140,9 @@ void CheckRC(int *row, int *col, UCHAR *k);
 void display_labels(void);
 void parse_PIC24(UCHAR);
 void set_defaults(void);
-
+#ifdef NOAVR
+void do_read(WINDOW *win, int fd, int display_offset);
+#endif
 void init_list(void);
 UCHAR get_key(UCHAR ch, UCHAR limit8, UINT limit16);
 int get_curr_fptr(void);
@@ -154,8 +156,8 @@ UINT temp_UINT;
 UCHAR parse_state;
 UCHAR cursor_row, cursor_col;
 
-//PROMPT_STRUCT prompts[30];
-UCHAR no_prompts;
+PROMPT_STRUCT prompts[26];	// this must be large enough for no_prompts
+int no_prompts;
 
 char cur_global_number[NUM_ENTRY_SIZE];
 char new_global_number[NUM_ENTRY_SIZE];

@@ -113,5 +113,29 @@ ssh to run the other 2 machines on my main box) and then run sudo ./test_write (
 simulates the the AVR) and sudo ./test_write <interations*10> <starting rpm value> <other starting
 values> <time delay> to simulate the PIC24 or whatever processor is writing the data to the AVR.
 
+TODO:
 
+PIC24 sends commands that modify the prompts array to display params in different format on screen.
+It will also send commands to tell AVR to only display certain params. For instance. we may only 
+want to see RPM, MPH and engine temp when a non-trivial dialog is on the screen. It can also send
+commands to modify a certain dialog, like different labels for checkboxes.
+
+The prompt struct can have fields that define the what keypad keys are assigned to the current
+menu function. And also the placement on the screen that applies to that menu.
+
+There can be a field that only applies to the rt types, like RT_RPM that tells the AVR to read it
+as a UINT or a UCHAR (or string?).
+
+The numentry/alnum dialog should primarily be used for entering a passcode to start the engine.
+The AVR code will handle the password retries and timeouts. e.g. three tries to enter passcode and
+passcode must be entered within 15 seconds or the system locks out totally for 1/2 hour.
+
+Other parameters to have the system offer the user to change:
+	- max rpm before rev-limiter kicks in (turn off ignition momentarily and flash warning light).
+	- engine temperature too high and oil pressure too low level warning signals (lights and buzzer).
+	- set outdoor temp at which block heater comes on. (when plugged into 110vac outlet)
+	- set time of day and length of time other heaters come on.
+	- set frequency of blinkers and how long to stay blinking (if not using the conventional switch)
+	- how long for headlights to stay on after vehicle shuts off.
+	
 

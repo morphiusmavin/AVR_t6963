@@ -29,18 +29,11 @@ void set_defaults(void);
 #define TIME_DELAY 2000
 // readable
 //#define TIME_DELAY 300000
-UCHAR current_param;
-UINT temp_int;
-UCHAR parse_state;
-
-PROMPT_STRUCT prompts[30];	// fill this in just as the eeprom read would
 
 int set_interface_attribs (int fd, int speed, int parity);
 void set_blocking (int fd, int should_block);
-void do_read(WINDOW *win, int fd, int display_offset);
 void update_prompt_struct(UCHAR pnum, UCHAR row, UCHAR col, UINT *offset, uint8_t type,char *ramstr);
 int burn_eeprom(void);
-void display_menus(void);
 void display_labels(void);
 //******************************************************************************************//
 //****************************************** main ******************************************//
@@ -62,8 +55,6 @@ int main(int argc, char *argv[])
 	UINT data2 = 0;
     UCHAR code = RT_TRIP-1;
     UCHAR read_buff[10];
-	//PROMPT_STRUCT prompts[30];
-//	UCHAR no_prompts;
 	int done;
 	UINT rpm;
 	UCHAR key;
@@ -126,7 +117,6 @@ int main(int argc, char *argv[])
 //		mvwprintw(menu_win, 2, 2,
 		iters = atoi(argv[1])*10;
 //		printf("iters: %d\n",iters);
-		burn_eeprom();
 		mvwprintw(menu_win,display_offset+17,4,"interations: %d",iters);
 		type = 1;
 		if(argc > 2)
@@ -430,30 +420,8 @@ int main(int argc, char *argv[])
 
 void set_defaults(void)
 {
-	temp_int = 0;
+	temp_UINT = 0;
 	parse_state = IDLE;
-}
-//******************************************************************************************//
-//************************************* display_menus **************************************//
-//******************************************************************************************//
-// display a different menu
-void display_menus(void)
-{
-	int i;
-
-	if(get_curr_fptr() > 0)
-		GDispStringAt(15,0,"<back>");
-	else
-		GDispStringAt(15,0,"      ");
-
-	for(i = 0;i < no_prompts;i++)
-	{
-		if(prompts[i].type == get_type())
-		{
-//			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
-			GDispStringAt(prompts[i].row,prompts[i].col,prompts[i].label);
-		}
-	}
 }
 //******************************************************************************************//
 //**************************************** display_labels **********************************//
@@ -473,6 +441,7 @@ void display_labels(void)
 	}
 }
 
+#if 0
 //******************************************************************************************//
 //**************************************** do_read *****************************************//
 //******************************************************************************************//
@@ -615,14 +584,14 @@ void do_read(WINDOW *win, int fd, int display_offset)
 				break;
 			case GET_CH0:
 				parse_state = SEND_UINT0;
-				temp_int = ch;
+				temp_UINT = ch;
 				break;
 			case GET_CH1:
-				temp_int = ch;
+				temp_UINT = ch;
 				parse_state = SEND_UINT1;
 				break;
 			case GET_CH2:
-				temp_int = ch;
+				temp_UINT = ch;
 				parse_state = SEND_UINT2;
 				break;
 			case SEND_UCHAR0:
@@ -638,33 +607,33 @@ void do_read(WINDOW *win, int fd, int display_offset)
 				done = 1;
 				break;
 			case SEND_UINT0:
-				xword = (UINT)temp_int;
-				temp_int = (UINT)ch;
-				temp_int <<= 8;
-				temp_int &= 0xff00;
-				xword |= temp_int;
+				xword = (UINT)temp_UINT;
+				temp_UINT = (UINT)ch;
+				temp_UINT <<= 8;
+				temp_UINT &= 0xff00;
+				xword |= temp_UINT;
 				sprintf(param_string,"%4u",xword);
 //					printf("uint0:%s\n",param_string);
 
 				done = 1;
 				break;
 			case SEND_UINT1:
-				xword = (UINT)temp_int;
-				temp_int = (UINT)ch;
-				temp_int <<= 8;
-				temp_int &= 0xff00;
-				xword |= temp_int;
+				xword = (UINT)temp_UINT;
+				temp_UINT = (UINT)ch;
+				temp_UINT <<= 8;
+				temp_UINT &= 0xff00;
+				xword |= temp_UINT;
 				xword |= 0x0080;
 				sprintf(param_string,"%4u",xword);
 //					printf("uint1:%s\n",param_string);
 				done = 1;
 				break;
 			case SEND_UINT2:
-				xword = (UINT)temp_int;
-				temp_int = (UINT)ch;
-				temp_int <<= 8;
-				temp_int &= 0xff00;
-				xword |= temp_int;
+				xword = (UINT)temp_UINT;
+				temp_UINT = (UINT)ch;
+				temp_UINT <<= 8;
+				temp_UINT &= 0xff00;
+				xword |= temp_UINT;
 				xword |= 0x8000;
 				sprintf(param_string,"%4u",xword);
 //					printf("uint2:%s\n",param_string);
@@ -709,6 +678,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 		}	// end of done
 	}	// end of while(1)
 }
+#endif
 int burn_eeprom(void)
 {
 	int i;
