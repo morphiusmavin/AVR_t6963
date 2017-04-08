@@ -9,6 +9,6 @@
 typedef unsigned char UCHAR;
 typedef unsigned int UINT;
 typedef unsigned char uint8_t;
-#warning "sfr_helper.h"
+//#warning "sfr_helper.h"
 //typedef unsigned int uint16_t;
 #endif /* __SFR_HELPER__ */

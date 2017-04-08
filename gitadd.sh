@@ -17,6 +17,7 @@ git add binaryMacro.h
 git add t6963.h
 git add t6963.c
 git add eeprom/eeprom_burn.c
+git add eeprom/main_burn.c
 git add eeprom/Makefile
 git add t6963_notes.txt
 git add menus.c
@@ -28,11 +29,6 @@ git add test_write_data/makefile
 git add test_write_data/copy.sh
 git add test_write_data/README.md
 git add test_write_data/extract.sh
-git add test_write_data/extract.sh
-git add test_write_data/findw.sh
-git add test_write_data/rmwhitesp.sh
-git add test_write_data/test_write.png
-git add test_write_data/whitesp.shclear
 git status
 
 

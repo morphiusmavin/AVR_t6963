@@ -1,3 +1,4 @@
+#if 1
 //******************************************************************************************//
 //*************************************** main.c  ******************************************//
 //******************************************************************************************//
@@ -19,16 +20,13 @@
 char eepromString[STRING_LEN] EEMEM;
 
 //PROMPT_STRUCT prompts[26];	// this must be large enough for no_prompts
-
+#endif
 int main(void)
 {
 	int i;
-	uint8_t temp;
+	UCHAR temp;
 	uint16_t temp2;
-	uint16_t limit16 = 0;
-	uint8_t limit8 = 0;
 	UCHAR ret_char;
-	uint16_t prompt_info_offset = 0;
 
 //    size_t str_size = sizeof(PROMPT_STRUCT);
 
@@ -46,58 +44,92 @@ int main(void)
 //******************************************************************************************//
 //******************* read all the data from eeprom into memory  ***************************//
 //******************************************************************************************//
-    no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
+	no_labels  = eeprom_read_byte((UCHAR*)NO_LABELS_EEPROM_LOCATION);
 
-	if(no_prompts != 0xff)
+	if(no_labels != 0xff)
 	{
 #ifdef TTY_DISPLAY
 #warning "TTY_DISPLAY defined"
 		printString("reading prompt data into prompt structs\r\n");
 #endif
-		no_prompts = eeprom_read_byte((uint8_t*)NO_PROMPTS_EEPROM_LOCATION);
+		no_labels  = eeprom_read_byte((UCHAR*)NO_LABELS_EEPROM_LOCATION);
+		no_rtparams  = eeprom_read_byte((UCHAR*)NO_LABELS_EEPROM_LOCATION);
+		no_menu_structs  = eeprom_read_byte((UCHAR*)NO_MENUS_EEPROM_LOCATION);
 #ifdef TTY_DISPLAY
-		printString("no_prompts: ");
-		printHexByte(no_prompts);
+		printString("no_labels: ");
+		printHexByte(no_labels);
+		printString("\r\n");
+		printString("no_rtparams: ");
+		printHexByte(no_rtparams);
+		printString("\r\n");
+		printString("no_menu_structs: ");
+		printHexByte(no_menu_structs);
 		printString("\r\n");
 #endif
-		prompt_info_offset = (uint16_t)eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_LSB);
-		temp = eeprom_read_byte((uint8_t*)PROMPT_INFO_OFFSET_EEPROM_LOCATION_MSB);
-		temp2 = (uint16_t)temp;
-		prompt_info_offset |= (temp2 << 8);		// shift msb over and bit-or with lsb
+/*
+		label_info_offset = (UINT)eeprom_read_byte((UCHAR*)LABEL_INFO_OFFSET_EEPROM_LOCATION_LSB);
+		temp = eeprom_read_byte((UCHAR*)LABEL_INFO_OFFSET_EEPROM_LOCATION_MSB);
+		temp2 = (UINT)temp;
+		label_info_offset |= (temp2 << 8);		// shift msb over and bit-or with lsb
+*/
+		rt_params_offset = (UINT)eeprom_read_byte((UCHAR*)RTPARAMS_OFFSET_EEPROM_LOCATION_LSB);
+		temp = eeprom_read_byte((UCHAR*)RTPARAMS_OFFSET_EEPROM_LOCATION_MSB);
+		temp2 = (UINT)temp;
+		rt_params_offset |= (temp2 << 8);		// shift msb over and bit-or with lsb
+
+		menu_struct_offset = (UCHAR)eeprom_read_byte((UCHAR*)MENUSTRUCT_OFFSET_EEPROM_LOCATION_LSB);
+		temp = eeprom_read_byte((UCHAR*)MENUSTRUCT_OFFSET_EEPROM_LOCATION_MSB);
+		temp2 = (UINT)temp;
+		menu_struct_offset |= (temp2 << 8);		// shift msb over and bit-or with lsb
+
 #ifdef TTY_DISPLAY
-		printString("prompt_info_offset: ");
-		printHexByte((uint8_t)prompt_info_offset);
-		printHexByte((uint8_t)(prompt_info_offset>>8));
+/*
+		printString("label_info_offset: ");
+		printHexByte((UCHAR)label_info_offset);
+		printHexByte((UCHAR)(label_info_offset>>8));
+		printString("\r\n");
+*/
+		printString("rt_params_offset: ");
+		printHexByte((UCHAR)rt_params_offset);
+		printHexByte((UCHAR)(rt_params_offset>>8));
+		printString("\r\n");
+		printString("menu_struct_offset: ");
+		printHexByte((UCHAR)menu_struct_offset);
+		printHexByte((UCHAR)(menu_struct_offset>>8));
 		printString("\r\n");
 #endif
+#if 0
 		for(i = 0;i < no_prompts;i++)
 		{
 			eeprom_read_block((void*)&prompts[i], eepromString+(prompt_info_offset+(i*sizeof(PROMPT_STRUCT))),sizeof(PROMPT_STRUCT));
 		}
+
 #ifdef TTY_DISPLAY
 		for(i = 0;i < no_prompts;i++)
 		{
-			printHexByte((uint8_t)prompts[i].pnum);
+			printHexByte((UCHAR)prompts[i].pnum);
 			transmitByte(0x20);
-			printHexByte((uint8_t)prompts[i].row);
+			printHexByte((UCHAR)prompts[i].row);
 			transmitByte(0x20);
-			printHexByte((uint8_t)prompts[i].col);
+			printHexByte((UCHAR)prompts[i].col);
 			transmitByte(0x20);
-			printHexByte((uint8_t)(prompts[i].offset>>8));
-			printHexByte((uint8_t)(prompts[i].offset));
+//			printHexByte((UCHAR)(prompts[i].offset>>8));
+//			printHexByte((UCHAR)(prompts[i].offset));
 			transmitByte(0x20);
-			printHexByte((uint8_t)prompts[i].len);
+//			printHexByte((UCHAR)prompts[i].len);
 			transmitByte(0x20);
-			printHexByte((uint8_t)prompts[i].type);
+			printHexByte((UCHAR)prompts[i].type);
 			printString("\r\n");
 		}
 		printString("\r\ndone reading eeprom\r\n");
+#endif
 #endif
 	}
 	else
 	{
 		printString("prompts not set - run eeprom_burn.c to burn eeprom\r\n");
 	}
+
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
@@ -114,7 +146,7 @@ int main(void)
 		printString("\r\n");
 #endif
 //		ret_char = (*fptr[current_fptr])(ret_char, limit8, limit16, cur_row, cur_col);
-		ret_char = get_key(ret_char,limit8,limit16);
+		ret_char = get_key(ret_char);
 //		if(current_fptr != last_fptr)
 //		if(curr_fptr_changed())
 //			display_menus();
@@ -123,49 +155,70 @@ int main(void)
 	}
     return (0);		// this should never happen
 }
+
 //******************************************************************************************//
-//************************************* display_menus **************************************//
+//********************************** get_menu_struct_type **********************************//
 //******************************************************************************************//
-// display a different menu
-#if 0
-void display_menus(void)
+#ifdef MAIN_C
+int get_menu_struct_type(int index)
 {
-	int i;
-	char temp[20];
+	MENU_STRUCT ms;
+	eeprom_read_block(&ms, eepromString+menu_struct_offset+(sizeof(MENU_STRUCT)*index),sizeof(MENU_STRUCT));
+	return ms.type;
+}
+//******************************************************************************************//
+//********************************* get_menu_struct_choice *********************************//
+//******************************************************************************************//
+int get_menu_struct_choice(int index)
+{
+	MENU_STRUCT ms;
+	eeprom_read_block(&ms, eepromString+menu_struct_offset+(sizeof(MENU_STRUCT)*index),sizeof(MENU_STRUCT));
+	return ms.menu_choice;
+}
+//******************************************************************************************//
+//********************************* get_menu_struct_choice *********************************//
+//******************************************************************************************//
+int get_menu_struct_chtype(int index)
+{
+	MENU_STRUCT ms;
+	eeprom_read_block(&ms, eepromString+menu_struct_offset+(sizeof(MENU_STRUCT)*index),sizeof(MENU_STRUCT));
+	return ms.ch_type;
+}
+//******************************************************************************************//
+//*************************************** get_label ****************************************//
+//******************************************************************************************//
+char *get_label(int index)
+{
+	int offset = 0;
+	int j;
+	char label[MAX_LABEL_LEN];
 
-	if(get_curr_fptr() > 0)
-		GDispStringAt(15,0,"<back>");
-	else
-		GDispStringAt(15,0,"      ");
-
-	for(i = 0;i < no_prompts;i++)
-	{
-		if(prompts[i].type == get_type())
-		{
-			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
-			GDispStringAt(prompts[i].row,prompts[i].col,temp);
-		}
-	}
+	for(j = 0;j < index;j++)
+		offset += label_offsets[j];
+	eeprom_read_block(label, eepromString+offset,MAX_LABEL_LEN);
+	return label;
+}
+//******************************************************************************************//
+//**************************************** get_row *****************************************//
+//******************************************************************************************//
+UCHAR get_row(int index)
+{
+	MENU_STRUCT ms;
+	int offset = (int)menu_struct_offset + index * sizeof(MENU_STRUCT);
+	eeprom_read_block(&ms,eepromString+offset,sizeof(MENU_STRUCT));
+	return ms.row;
+}
+//******************************************************************************************//
+//**************************************** get_col *****************************************//
+//******************************************************************************************//
+UCHAR get_col(int index)
+{
+	MENU_STRUCT ms;
+	int offset = (int)menu_struct_offset + index * sizeof(MENU_STRUCT);
+	eeprom_read_block(&ms,eepromString+offset,sizeof(MENU_STRUCT));
+	return ms.col;
 }
 #endif
-//******************************************************************************************//
-//**************************************** display_labels **********************************//
-//******************************************************************************************//
-// displays only the labels of the current rt_layout
-void display_labels(void)
-{
-	int i;
-	char temp[20];
-
-	for(i = 0;i < no_prompts;i++)
-	{
-		if(prompts[i].type == RT_LABEL)
-		{
-			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
-			GDispStringAt(prompts[i].row,prompts[i].col,temp);
-		}
-	}
-}
 //******************************************************************************************//
 //*************************************** parse_PIC24 **************************************//
 //******************************************************************************************//
@@ -173,9 +226,9 @@ void display_labels(void)
 void parse_PIC24(UCHAR ch)
 {
 	int i;
-	uint8_t xbyte;
+	UCHAR xbyte;
 	uint16_t xword = 0;
-	uint8_t done = 0;
+	UCHAR done = 0;
 	char param_string[10];
 	UCHAR temp;
 
@@ -307,6 +360,7 @@ void parse_PIC24(UCHAR ch)
 //			GDispStringAt(2,4,param_string);
 #endif
 		}
+/*
 		for(i = 0;i < no_prompts;i++)
 		{
 			if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)
@@ -314,6 +368,7 @@ void parse_PIC24(UCHAR ch)
 				GDispStringAt(prompts[i].row,prompts[i].col+10,param_string);
 			}
 		}
+*/
 		set_defaults();
 	}
 }

@@ -18,3 +18,4 @@ Also:<br />
 In the Makefile swap pound signs on lines 62 & 64 to disable/enable the TTY_DISPLAY define.<br />
 You can run "make terminal" to get into terminal mode.<br />
 (see t6963_notes.txt for more details)<br />
+

@@ -115,7 +115,7 @@ values> <time delay> to simulate the PIC24 or whatever processor is writing the 
 
 TODO:
 
-PIC24 sends commands that modify the prompts array to display params in different format on screen.
+PIC24 sends commands that modify the menu_struct array to display params in different format on screen.
 It will also send commands to tell AVR to only display certain params. For instance. we may only 
 want to see RPM, MPH and engine temp when a non-trivial dialog is on the screen. It can also send
 commands to modify a certain dialog, like different labels for checkboxes.
@@ -138,4 +138,7 @@ Other parameters to have the system offer the user to change:
 	- set frequency of blinkers and how long to stay blinking (if not using the conventional switch)
 	- how long for headlights to stay on after vehicle shuts off.
 	
-
+The new menu format can be loaded onto the flash disk in the TS-7200 (after turning if off) and then
+when its powered back up it can coordinate with the PIC24 and the AVR to load the new menu format
+and burn it to eeprom since there's not enough room in ram to hold the whole array of menu_struct.
+The AVR has to read it from eeprom every time it changes to a different menu.
