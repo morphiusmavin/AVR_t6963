@@ -74,37 +74,39 @@ int main(int argc, char *argv[])
 	}
 	memset(aux_array,0,NUM_ENTRY_SIZE);
 	memset(labels,0,NUM_LABELS*MAX_LABEL_LEN);
-	memset(menu_structs,0,NUM_MENU_STRUCTS*sizeof(MENU_STRUCT));
+	memset(menu_structs,0,NUM_MENU_STRUCTS*sizeof(MENU_FUNC_STRUCT));
 	memset(rt_params,0,NUM_RT_PARAMS*sizeof(RT_PARAM));
+
 #if 0
 	burn_eeprom();
 	char temp_label[MAX_LABEL_LEN];
 	for(i = 0;i < no_labels;i++)
 	{
-		printf("%s\n",labels[i]);
+		printf("%d %s\n",i,labels[i]);
 	}
 
 	printf("rt_params:\n");
 	for(i = 0;i < no_rtparams;i++)
 	{
+		printf("%d\t",i);
 		printf("%d\t",rt_params[i].row);
 		printf("%d\t",rt_params[i].col);
 		printf("%d\t",rt_params[i].shown);
 		printf("%d\n",rt_params[i].type);
 	}
 	printf("menu structs: %d\n",no_menu_structs);
-	for(i = 0;i < no_menu_structs;i++)
+	for(i = 0;i < 12;i++)
+//	for(i = 0;i < no_menu_structs;i++)
 	{
-		printf("%d\t",menu_structs[i].pnum);
-		printf("%d\t",menu_structs[i].row);
-		printf("%d\t",menu_structs[i].col);
-		printf("%x\t",menu_structs[i].menu_choice);
-		printf("%d\t",menu_structs[i].ch_type);
-		printf("%d\n",menu_structs[i].type);
+		printf("%d\t",menu_structs[i].enabled);
+		printf("%d\t",menu_structs[i].fptr);
+		printf("%d\t",menu_structs[i].menu);
+		printf("%x\n",menu_structs[i].label);
 	}
-
+	init_list();
 	return 0;
 #endif
+
 	burn_eeprom();
 	memset(read_buff,0,10);
 	initscr();			/* Start curses mode 		*/
@@ -113,7 +115,7 @@ int main(int argc, char *argv[])
 	nodelay(stdscr,TRUE);
 	raw();				/* Line buffering disabled	*/
 	cbreak();	/* Line buffering disabled. pass on everything */
-	menu_win = newwin(47, 40, 0,0);
+	menu_win = newwin(47, 43, 0,0);
 	keypad(menu_win, TRUE);
 	nodelay(menu_win, TRUE);
 	box(menu_win,0,0);
@@ -124,6 +126,7 @@ int main(int argc, char *argv[])
 
 	if(type < 2)
 	{
+
 		mvwprintw(menu_win, display_offset+2, 2,"RPM ");
 		mvwprintw(menu_win, display_offset+3, 2,"TRIP ");
 		mvwprintw(menu_win, display_offset+4, 2,"TIME ");
@@ -135,6 +138,7 @@ int main(int argc, char *argv[])
 		mvwprintw(menu_win, display_offset+10,2,"ENGT ");
 		mvwprintw(menu_win, display_offset+11,2,"MPH ");
 		wrefresh(menu_win);
+
 	}
 	if(type == 1)
 	{
@@ -185,7 +189,7 @@ int main(int argc, char *argv[])
 	{
 //		printf("read\n");
 		ret_code = do_read(menu_win, fd,display_offset);
-		printf("do_read: %d\n",ret_code);
+//		printf("do_read: %d\n",ret_code);
 	}	// end of else
 
 // write - simulate the PIC24
@@ -225,6 +229,7 @@ int main(int argc, char *argv[])
 				if(data2 & 0x8000)
 				{
 					ch = RT_HIGH3;
+					mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH3");
 					res = write(fd,&ch,1);
 //					printf("%d %x ",res,ch);
 					data1 = (UCHAR)(data2);
@@ -241,6 +246,7 @@ int main(int argc, char *argv[])
 				{
 //					printf("RT_HIGH2 ");
 					ch = RT_HIGH2;
+					mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH2");
 					res = write(fd,&ch,1);
 //					printf("%d %x ",res,ch);
 					data1 = (UCHAR)data2;
@@ -258,6 +264,7 @@ int main(int argc, char *argv[])
 				{
 //					printf("RT_HIGH1 ");
 					ch = RT_HIGH1;
+					mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH1");
 					res = write(fd,&ch,1);
 //					printf("%d %x ",res,ch);
 					data1 = (UCHAR)(data2);
@@ -284,6 +291,7 @@ int main(int argc, char *argv[])
 				{
 //					printf("RT_HIGH0 ");
 					ch = RT_HIGH0;
+					mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH0");
 					res = write(fd,&ch,1);
 //					printf("%d %x ",res,ch);
 					data1 = data & 0x7f;
@@ -296,6 +304,7 @@ int main(int argc, char *argv[])
 				{
 //					printf("RT_LOW ");
 					ch = RT_LOW;
+					mvwprintw(menu_win, display_offset+2, 18,"RT_LOW  ");
 					res = write(fd,&ch,1);
 //					printf("%d %x ",res,ch);
 					ch = data;
@@ -309,8 +318,8 @@ int main(int argc, char *argv[])
 				mvwprintw(menu_win, display_offset+code, 10, param_string);
 				wrefresh(menu_win);
 			}
+#if 0
 			res = read(fd,read_buff,5);
-#if 1
 			mvwprintw(menu_win, display_offset+13, 4, "bytes read: %d",res);
 			mvwprintw(menu_win, display_offset+14, 4, "                       ");
 			for(j = 0;j < res;j++)
@@ -328,15 +337,15 @@ int main(int argc, char *argv[])
 			}
 			mvwprintw(menu_win, display_offset+21, 4, "iterations left: %d   ",iters-i);
 			mvwprintw(menu_win, display_offset+23, 4,"                         ");
-			for(j = 0;j < NUM_ENTRY_SIZE;j++)
-				mvwprintw(menu_win, display_offset+23, 4+j, "%c",aux_array[j]);
-			mvwprintw(menu_win, display_offset+24, 4,"alnum strlen: %d",alnum_strlen);
-			wrefresh(menu_win);
+//			for(j = 0;j < NUM_ENTRY_SIZE;j++)
+//				mvwprintw(menu_win, display_offset+23, 4+j, "%c",aux_array[j]);
+//			mvwprintw(menu_win, display_offset+24, 4,"alnum strlen: %d",alnum_strlen);
+//			wrefresh(menu_win);
 
 #endif
 // see if one of the keys from the "keypad" is pressed
-#if 1
 			key = wgetch(menu_win);
+
 			if(key != 0xff)
 			{
 				switch(key)
@@ -427,7 +436,6 @@ int main(int argc, char *argv[])
 				}
 				if(wkey != 0xff)
 					write(fd,&wkey,1);
-#endif
 			}
 		}	// end of for(...
 	}	// end of else
@@ -447,26 +455,6 @@ void set_defaults(void)
 	temp_UINT = 0;
 	parse_state = IDLE;
 }
-//******************************************************************************************//
-//**************************************** display_labels **********************************//
-//******************************************************************************************//
-// displays only the labels of the current rt_layout
-#if 0
-void display_labels(void)
-{
-	int i;
-#if 0
-	for(i = 0;i < no_prompts;i++)
-	{
-		if(prompts[i].type == RT_LABEL)
-		{
-//			eeprom_read_block(temp, eepromString+prompts[i].offset,prompts[i].len+1);
-			GDispStringAt(prompts[i].row,prompts[i].col,prompts[i].label);
-		}
-	}
-#endif
-}
-#endif
 //******************************************************************************************//
 //*********************************** set_interface_attribs ********************************//
 //******************************************************************************************//

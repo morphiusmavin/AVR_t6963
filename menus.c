@@ -26,6 +26,11 @@ void dispSetCursorX(UCHAR mode, UCHAR row, UCHAR col, UCHAR type)
 	cursor_row = row;
 	cursor_col = col;
 }
+WINDOW *win;
+void set_win2(WINDOW *win)
+{
+	win = win;
+}
 #else
 extern char eepromString[STRING_LEN] EEMEM;
 #define dispSetCursorX(mode, row, col, type) dispSetCursor(mode, row, col, type)
@@ -38,93 +43,39 @@ static void cursor_forward_stuff(char);
 static void stuff_num(char);
 static void scroll_alnum_list(int dir);
 static void blank_menu(void);
-static UCHAR main_menu_func(UCHAR ch, UCHAR *array);
-static UCHAR menu1a(UCHAR ch, UCHAR *array);
-static UCHAR menu1b(UCHAR ch, UCHAR *array);
-static UCHAR menu1c(UCHAR ch, UCHAR *array);
-static UCHAR menu1d(UCHAR ch, UCHAR *array);
-static UCHAR menu2a(UCHAR ch, UCHAR *array);
-static UCHAR menu2b(UCHAR ch, UCHAR *array);
-static UCHAR menu2c(UCHAR ch, UCHAR *array);
-static UCHAR menu3a(UCHAR ch, UCHAR *array);
-static UCHAR menu3b(UCHAR ch, UCHAR *array);
-static UCHAR menu3c(UCHAR ch, UCHAR *array);
-static UCHAR menu4a(UCHAR ch, UCHAR *array);
-static UCHAR menu4b(UCHAR ch, UCHAR *array);
-static UCHAR menu4c(UCHAR ch, UCHAR *array);
-static UCHAR start_numentry(UCHAR ch, UCHAR  *array);
-static UCHAR number_entry(UCHAR ch, UCHAR *array);
-static UCHAR alnum_entry(UCHAR ch, UCHAR *array);
-static UCHAR check_box(UCHAR ch, UCHAR *array);
-static UCHAR go_back(UCHAR ch, UCHAR *array);
-static void show_legend(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4);
-static void show_legend(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4)
+static void adv_menu_label(int index, UCHAR *row, UCHAR *col);
+static void display_menus(int index);
+static UCHAR generic_menu_function(UCHAR ch, int  index);
+
+static UCHAR test_fptr1(UCHAR ch);
+static UCHAR test_fptr2(UCHAR ch);
+static UCHAR test_fptr3(UCHAR ch);
+static UCHAR start_numentry(UCHAR ch);
+static UCHAR number_entry(UCHAR ch);
+static UCHAR alnum_entry(UCHAR ch);
+static UCHAR check_box(UCHAR ch);
+static UCHAR go_back(UCHAR ch);
+//static void show_legend(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4);
 #endif
-{
-	if(!override && curr_fptr_changed() == 0)
-		return;
-	blank_menu();
-	GDispStringAt(MENU_START_ROW+1,0,ch0);
-	GDispStringAt(MENU_START_ROW+2,0,"* - ");
-	GDispStringAt(MENU_START_ROW+2,5,ch1);
-	GDispStringAt(MENU_START_ROW+2,MENU_START_COL,"0 - ");
-	GDispStringAt(MENU_START_ROW+2,MENU_START_COL+2,"");
-	GDispStringAt(MENU_START_ROW+2,MENU_START_COL+2,ch2);
-	GDispStringAt(MENU_START_ROW+3,0,"# - ");
-	GDispStringAt(MENU_START_ROW+3,5,ch3);
-	GDispStringAt(MENU_START_ROW+3,MENU_START_COL,"D - ");
-	GDispStringAt(MENU_START_ROW+3,MENU_START_COL+2,ch4);
-}
-static void show_legend2(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4,char *ch5, char *ch6);
-static void show_legend2(int override, char *ch0, char *ch1, char *ch2, char *ch3, char *ch4,char *ch5, char *ch6)
-{
-	if(!override && curr_fptr_changed() == 0)
-		return;
-	blank_menu();
-	GDispStringAt(MENU_START_ROW,0,MENU_BLANK);
-	GDispStringAt(MENU_START_ROW,0,ch0);
-	GDispStringAt(MENU_START_ROW+1,0,"A - ");
-	GDispStringAt(MENU_START_ROW+1,5,MENU_BLANK);
-	GDispStringAt(MENU_START_ROW+1,5,ch1);
-	GDispStringAt(MENU_START_ROW+1,MENU_START_COL,"B - ");
-	GDispStringAt(MENU_START_ROW+1,MENU_START_COL+2,MENU_BLANK);
-	GDispStringAt(MENU_START_ROW+1,MENU_START_COL+2,ch2);
-	GDispStringAt(MENU_START_ROW+2,0,"C - ");
-	GDispStringAt(MENU_START_ROW+2,5,MENU_BLANK);
-	GDispStringAt(MENU_START_ROW+2,5,ch3);
-	GDispStringAt(MENU_START_ROW+2,MENU_START_COL,"D - ");
-	GDispStringAt(MENU_START_ROW+2,MENU_START_COL+2,MENU_BLANK);
-	GDispStringAt(MENU_START_ROW+2,MENU_START_COL+2,ch4);
-	GDispStringAt(MENU_START_ROW+3,0,"# - ");
-	GDispStringAt(MENU_START_ROW+3,5,MENU_BLANK);
-	GDispStringAt(MENU_START_ROW+3,5,ch5);
-	GDispStringAt(MENU_START_ROW+3,MENU_START_COL,"* - ");
-	GDispStringAt(MENU_START_ROW+3,MENU_START_COL+2,MENU_BLANK);
-	GDispStringAt(MENU_START_ROW+3,MENU_START_COL+2,ch6);
-}
 #if 1
 static int first_menu = MAIN_MENU;
 static int last_menu = ALNUM_ENTRY;
-static int current_fptr;
+static int current_fptr;		// pointer into the menu_list[]
 static int last_fptr;
 static int prev_fptr;
 static int list_size;
 static int curr_type;
 static int scroll_ptr;
 static int cur_alnum_col;
+static int dirty_flag;
 static UCHAR cur_row, cur_col;	// used by the current menu/dialog function to keep track of the current row,col
 static UCHAR alnum_array[NUM_ALNUM];
 static UCHAR choose_alnum;
 #define LIST_SIZE 50
 static void prev_list(void);
-static int menu_list[LIST_SIZE];
+static int menu_list[LIST_SIZE];	// works like a stack for the how deep into the menus we go
 #endif
-static UCHAR (*fptr[NUM_FPTS])(UCHAR, UCHAR*) = { main_menu_func,\
-	 menu1a, menu1b, menu1c, menu1d,\
-	 menu2a, menu2b, menu2c, \
-	 menu3a, menu3b, menu3c, \
-	 menu4a, menu4b, menu4c, \
-	 start_numentry, number_entry, alnum_entry, check_box, go_back };
+static UCHAR (*fptr[NUM_FPTS])(UCHAR) = {test_fptr1, test_fptr2, test_fptr3, start_numentry, number_entry, alnum_entry, check_box, go_back };
 #if 1
 #ifndef MAIN_C
 //******************************************************************************************//
@@ -132,57 +83,92 @@ static UCHAR (*fptr[NUM_FPTS])(UCHAR, UCHAR*) = { main_menu_func,\
 //******************************************************************************************//
 int get_menu_struct_type(int index)
 {
-	return menu_structs[index].type;
+//	return menu_structs[index].type;
+	return 0;
 }
 int get_menu_struct_choice(int index)
 {
-	return menu_structs[index].menu_choice;
+//	return menu_structs[index].menu_choice;
+	return 0;
 }
 int get_menu_struct_chtype(int index)
 {
-	return menu_structs[index].ch_type;
+//	return menu_structs[index].ch_type;
+	return 0;
 }
 char *get_label(int index)
 {
 	return labels[index];
+//	return 0;
 }
 UCHAR get_row(int index)
 {
-	return menu_structs[index].row;
+//	return menu_structs[index].row;
+	return 0;
 }
 UCHAR get_col(int index)
 {
-	return menu_structs[index].col;
+//	return menu_structs[index].col;
+	return 0;
 }
 #endif
 #endif
+//******************************************************************************************//
+//************************************ adv_menu_label **************************************//
+//******************************************************************************************//
+void adv_menu_label(int index, UCHAR *row, UCHAR *col)
+{
+//	int menu_index = index * 6;
+	char temp[MAX_LABEL_LEN];
+	char temp2[4];
+	switch (index % 6)
+	{
+		case 0: strncpy(temp2,"A: \0",4);break;
+		case 1: strncpy(temp2,"B: \0",4);break;
+		case 2: strncpy(temp2,"C: \0",4);break;
+		case 3: strncpy(temp2,"D: \0",4);break;
+		case 4: strncpy(temp2,"#: \0",4);break;
+		case 5: strncpy(temp2,"0: \0",4);break;
+		default:strncpy(temp2,"  \0",4);break;
+	}
+
+	if(menu_structs[index].enabled)
+	{
+		strcpy(temp,labels[menu_structs[index].label+no_rtparams-1]);
+		GDispStringAt(*row,*col,temp2);
+		GDispStringAt(*row,*col+3,temp);
+
+//printf("%d %d %d %s\n",index,*row,*col,temp);
+
+		if(*col > MAX_LABEL_LEN*2-1)
+		{
+			*col = 0;
+			(*row)++;
+		}
+		else
+			*col += MAX_LABEL_LEN;
+	}
+}
 //******************************************************************************************//
 //************************************* display_menus **************************************//
 //******************************************************************************************//
 // display a different menu
 // should be able to get the label by indexing into the labels area by:
 // (no_rtparams*sizeof(int) + get_type()*sizeof(int)) * menu_struct[i].ch_type
-void display_menus(void)
+static void display_menus(int index)
 {
 	int i;
-	char temp[MAX_LABEL_LEN];
 	UCHAR row,col;
-
-	if(get_curr_fptr() > 0)
-		GDispStringAt(15,0,"<back>");
-	else
-		GDispStringAt(15,0,"      ");
-
-	for(i = 0;i < no_menu_structs;i++)
-	{
-		if(get_menu_struct_type(i) == get_type())
-		{
-			row = get_row(i);
-			col = get_col(i);
-			strcpy(temp,get_label(i));
-			GDispStringAt(row,col,temp);
-		}
-	}
+	row = MENU_START_ROW;
+	col = 0;
+	index *= 6;
+	blank_menu();
+	adv_menu_label(index,&row,&col);
+	adv_menu_label(index+1,&row,&col);
+	adv_menu_label(index+2,&row,&col);
+	adv_menu_label(index+3,&row,&col);
+	adv_menu_label(index+4,&row,&col);
+	adv_menu_label(index+5,&row,&col);
 }
 //******************************************************************************************//
 //**************************************** display_labels **********************************//
@@ -227,7 +213,7 @@ void init_list(void)
 	int i = 0;
 	UCHAR k;
 
-	GDispStringAt(5,5,"test1");
+//	GDispStringAt(5,5,"test1");
 
 	alnum_array[i++] = 0x20;		// first one is a space
 	for(k = 33;k < 48;k++)		// '!' - '/'	15
@@ -252,6 +238,8 @@ void init_list(void)
 	memset(menu_list,0,sizeof(menu_list));
 	menu_list[0] = current_fptr;
 	curr_type = MAIN_MENU;
+	dirty_flag = 0;
+	display_menus(0);
 //	show_legend(1,"main","1a","1b","1c","1d");
 }
 //******************************************************************************************//
@@ -264,7 +252,9 @@ static void prev_list(void)
 	else
 	{
 		menu_list[current_fptr] = 0;
+		last_fptr = current_fptr;
 		current_fptr--;
+		dirty_flag = 1;
 	}
 //	return menu_list[current_fptr];
 }
@@ -275,6 +265,7 @@ static void set_list(int fptr)
 {
 	if(current_fptr < list_size)
 	{
+		last_fptr = current_fptr;
 		current_fptr++;
 		menu_list[current_fptr] = fptr;
 	}
@@ -289,6 +280,7 @@ UCHAR get_key(UCHAR ch)
 	int i,j;
 	UCHAR choice_array[6];
 	j = 0;
+/*
 	for(i = 0;i < NUM_MENU_STRUCTS && j < 6;i++)
 	{
 		if(menu_structs[i].type == get_curr_menu())
@@ -300,7 +292,14 @@ UCHAR get_key(UCHAR ch)
 		choice_array[j++] = 0;
 
 	wkey = (*fptr[get_curr_menu()])(ch, choice_array);
-	return ch;
+*/
+	UCHAR ret_char = generic_menu_function(ch,get_curr_menu());
+	if(curr_fptr_changed())
+	{
+		mvwprintw(win, 40, 3, "changed %d  ",current_fptr);
+		display_menus(current_fptr);
+	}
+	return ret_char;
 }
 #else
 //******************************************************************************************//
@@ -308,22 +307,9 @@ UCHAR get_key(UCHAR ch)
 //******************************************************************************************//
 UCHAR get_key(UCHAR ch)
 {
-	UCHAR wkey;
-	int i,j;
-	UCHAR choice_array[6];
-	j = 0;
-	for(i = 0;i < NUM_MENU_STRUCTS && j < 6;i++)
-	{
-		if(get_menu_struct_type(i) == get_curr_menu())
-		{
-			choice_array[j++] = get_menu_struct_choice(i);
-		}
-	}
-	while(j < 6)
-		choice_array[j++] = 0;
-
-	wkey = (*fptr[get_curr_menu()])(ch, choice_array);
-	return ch;
+//	if(
+	UCHAR ret_char = generic_menu_function(ch,get_curr_menu());
+	return ret_char;
 }
 #endif
 //******************************************************************************************//
@@ -345,10 +331,9 @@ int get_curr_menu(void)
 //******************************************************************************************//
 int curr_fptr_changed(void)
 {
-	int ret;
-	ret = current_fptr != last_fptr;
-	last_fptr = current_fptr;
-	return ret;
+	int flag = dirty_flag;
+	dirty_flag = 0;
+	return flag;
 }
 //******************************************************************************************//
 //******************************************************************************************//
@@ -364,435 +349,115 @@ int get_str_len(void)
 //******************************************************************************************//
 //********************************** scroll_alnum_list *************************************//
 //******************************************************************************************//
-static UCHAR check_box(UCHAR ch, UCHAR *array)
+static UCHAR check_box(UCHAR ch)
 {
 	return ch;
 }
 //******************************************************************************************//
-//************************************* main_menu_func *************************************//
+//********************************* generic_menu_function **********************************//
 //******************************************************************************************//
-// for when no menu is shown
-//static UCHAR main_menu_func(UCHAR ch, *array)
-static UCHAR main_menu_func(UCHAR ch, UCHAR *array)
-{
-//	UCHAR row1,col1,k;
-	UCHAR ret_char = ch;
-//	printHexByte(ch);
-	curr_type = MAIN_MENU;
-
-	show_legend(1,"main","menu1a","menu1b","menu1c","num entry");
-//	GDispStringAt(12,0,"back to main menu   ");
-//	GDispStringAt(13,0,"                    ");
-
-	switch (ch)
-	{
-		case KP_AST:	// '*'
-			set_list(MENU1A);
-			break;
-		case KP_0:	// '0'
-			set_list(MENU1B);
-			break;
-		case KP_POUND:	// '#'
-			set_list(MENU1C);
-			break;
-		case KP_D:	// 'D'
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-
-}
-//******************************************************************************************//
-//****************************************** menu1a ****************************************//
-//******************************************************************************************//
-// displays the 1st choice of the main menu
-static UCHAR menu1a(UCHAR ch, UCHAR *array)
+static UCHAR generic_menu_function(UCHAR ch, int  index)
 {
 	UCHAR ret_char = ch;
-	curr_type = MENU1A;
-	show_legend(1,"menu1a","back","menu2a","menu2b","menu2c");
+	int menu_index = index * 6;
+	int test = 0;
+#ifdef NOAVR
 	switch (ch)
 	{
-		case KP_AST:
-			prev_list();
-			break;
 		case KP_0:
-			set_list(MENU2A);
+			menu_index += 5;
+			test = 1;
 			break;
-		case KP_POUND:
-			set_list(MENU2B);
+		case KP_1:
+			mvwprintw(win, 41, 3, "   ");
+			break;
+		case KP_2:
+		case KP_3:
+		case KP_4:
+		case KP_5:
+		case KP_6:
+		case KP_7:
+		case KP_8:
+		case KP_9:
+			break;
+		case KP_A:
+			test = 1;
+			break;
+		case KP_B:
+			menu_index++;
+			test = 1;
+			break;
+		case KP_C:
+			menu_index += 2;
+			test = 1;
 			break;
 		case KP_D:
-			set_list(MENU2C);
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu1b ****************************************//
-//******************************************************************************************//
-// displays the 2nd choice of the main menu
-static UCHAR menu1b(UCHAR ch, UCHAR *array)
-{
-	UCHAR ret_char = ch;
-	curr_type = MENU1B;
-	show_legend(1,"menu1b","back","menu3a","menu3b","menu3c");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-			break;
-		case KP_0:
-			set_list(MENU3A);
+			menu_index += 3;
+			test = 1;
 			break;
 		case KP_POUND:
-			set_list(MENU3B);
+			menu_index += 4;
+			test = 1;
 			break;
-		case KP_D:
-			set_list(MENU3C);
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu1c ****************************************//
-//******************************************************************************************//
-// displays the 3rd choice of the main menu
-static UCHAR menu1c(UCHAR ch, UCHAR *array)
-{
-	UCHAR ret_char = ch;
-	curr_type = MENU1C;
-	show_legend(1,"menu1c","back","menu4a","menu4b","menu4c");
-	switch (ch)
-	{
 		case KP_AST:
 			prev_list();
-			break;
-		case KP_0:
-			set_list(MENU4A);
-			break;
-		case KP_POUND:
-			set_list(MENU4B);
-			break;
-		case KP_D:
-			set_list(MENU4C);
+			test = 1;
+			mvwprintw(win, 41, 3, "ast");
 			break;
 		default:
-			ret_char = ch;
 			break;
 	}
+	if(test == 1)
+	{
+		if(menu_structs[menu_index].enabled)
+		{
+			if(menu_structs[menu_index].fptr == 0)
+			{
+				set_list(menu_structs[menu_index].menu);
+				dirty_flag = 1;
+			}
+			else
+			{
+				ret_char = (*fptr[menu_structs[menu_index].fptr])(ch);
+			}
+		}
+	//	mvwprintw(win, 33, 3, "menu_index: %d %d %d  ",index, menu_index,menu_structs[menu_index].fptr);
+		mvwprintw(win, 33, 3, "menu_index: %d ",menu_index);
+		mvwprintw(win, 34, 3, "index: %d ",index);
+		mvwprintw(win, 35, 3, "menu: %d ",menu_structs[menu_index].menu);
+		mvwprintw(win, 36, 3, "fptr: %d ",menu_structs[menu_index].fptr);
+		mvwprintw(win, 37, 3, "current_fptr: %d ",current_fptr);
+		mvwprintw(win, 38, 3, "menu_list:  %d ",menu_list[current_fptr]);
+		mvwprintw(win, 40, 3, "changed     ");
+	}
+#endif
 	return ret_char;
 }
-//******************************************************************************************//
-//****************************************** menu1d ****************************************//
-//******************************************************************************************//
-// displays the 4th choice of the main menu
-static UCHAR menu1d(UCHAR ch, UCHAR *array)
+static UCHAR test_fptr1(UCHAR ch)
 {
-	UCHAR ret_char = ch;
-	curr_type = MENU1D;
-	show_legend(1,"menu1d","back","menu4a","menu4b","menu4c");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-			break;
-		case KP_0:
-			set_list(MENU4A);
-			break;
-		case KP_POUND:
-			set_list(MENU4B);
-			break;
-		case KP_D:
-			set_list(MENU4C);
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
+#ifdef NOAVR
+	mvwprintw(win, 39, 3, "test1 %x  ",ch);
+#endif
+	return ch;
 }
-//******************************************************************************************//
-//****************************************** menu2a ****************************************//
-//******************************************************************************************//
-// displays the 1st choice of the 1st choice of the main menu
-static UCHAR menu2a(UCHAR ch, UCHAR *array)
+static UCHAR test_fptr2(UCHAR ch)
 {
-	UCHAR ret_char = ch;
-	curr_type = MENU2A;
-	show_legend(1,"menu2a","back","menu1b","num entry","menu1a");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-//			current_fptr = 0;
-			break;
-		case KP_0:
-			set_list(MENU1B);
-			break;
-		case KP_POUND:
-			show_legend2(1,"number entry","forward","back","alpha","enter","cancel","cancel");
-			cur_row = NUM_ENTRY_ROW;
-			cur_col = NUM_ENTRY_BEGIN_COL;
-			memset((void*)new_global_number,0,NUM_ENTRY_SIZE);
-			memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
-			clean_disp_num();
-			dispCharAt(cur_row,cur_col+NUM_ENTRY_SIZE,'/');
-			set_list(NUM_ENTRY);
-			break;
-		case KP_D:
-			set_list(MENU1A);
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
+#ifdef NOAVR
+	mvwprintw(win, 39, 3, "test2 %x  ",ch);
+#endif
+	return ch;
 }
-//******************************************************************************************//
-//****************************************** menu2b ****************************************//
-//******************************************************************************************//
-// displays the 2nd choice of the 1st choice of the main menu
-static UCHAR menu2b(UCHAR ch, UCHAR *array)
+static UCHAR test_fptr3(UCHAR ch)
 {
-	UCHAR ret_char = ch;
-	curr_type = MENU2B;
-	show_legend(1,"menu2b","back","main","main","main");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-//			current_fptr = 0;
-			break;
-		case KP_0:
-			init_list();
-			break;
-		case KP_POUND:
-			init_list();
-			break;
-		case KP_D:
-			init_list();
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu2c ****************************************//
-//******************************************************************************************//
-// displays the 3rd choice of the 1st choice of the main menu
-static UCHAR menu2c(UCHAR ch, UCHAR *array)
-{
-	UCHAR ret_char = ch;
-	curr_type = MENU2C;
-	show_legend(1,"menu2c","back","main","main","main");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-			break;
-		case KP_0:
-			init_list();
-			break;
-		case KP_POUND:
-			init_list();
-			break;
-		case KP_D:
-			init_list();
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu3a ****************************************//
-//******************************************************************************************//
-// displays the 1st choice of the 1st choice of the main menu
-static UCHAR menu3a(UCHAR ch, UCHAR *array)
-{
-	UCHAR ret_char = ch;
-	curr_type = MENU3A;
-	show_legend(1,"menu3a","back","main","num entry","main");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-			break;
-		case KP_0:
-			init_list();
-			break;
-		case KP_POUND:
-			break;
-		case KP_D:
-			init_list();
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu3b ****************************************//
-//******************************************************************************************//
-// displays the 2nd choice of the 1st choice of the main menu
-static UCHAR menu3b(UCHAR ch, UCHAR  *array)
-{
-	UCHAR ret_char = ch;
-	curr_type = MENU3B;
-	show_legend(1,"menu3b","back","main","main","main");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-			break;
-		case KP_0:
-			init_list();
-			break;
-		case KP_POUND:
-			init_list();
-			break;
-		case KP_D:
-			init_list();
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu3c ****************************************//
-//******************************************************************************************//
-// displays the 3rd choice of the 1st choice of the main menu
-static UCHAR menu3c(UCHAR ch, UCHAR  *array)
-{
-	UCHAR ret_char = ch;
-	curr_type = MENU3C;
-	show_legend(1,"menu3c","back","main","main","main");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-			break;
-		case KP_0:
-			init_list();
-			break;
-		case KP_POUND:
-			init_list();
-			break;
-		case KP_D:
-			init_list();
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu4a ****************************************//
-//******************************************************************************************//
-// displays the 1st choice of the 1st choice of the main menu
-static UCHAR menu4a(UCHAR ch, UCHAR  *array)
-{
-	UCHAR ret_char = ch;
-	curr_type = MENU4A;
-	show_legend(1,"menu4a","back","main","main","main");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-			break;
-		case KP_0:
-			init_list();
-			break;
-		case KP_POUND:
-			init_list();
-			break;
-		case KP_D:
-			init_list();
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu4b ****************************************//
-//******************************************************************************************//
-// displays the 2nd choice of the 1st choice of the main menu
-static UCHAR menu4b(UCHAR ch, UCHAR  *array)
-{
-	UCHAR ret_char = ch;
-	curr_type = MENU4B;
-	show_legend(1,"menu4b","back","main","main","main");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-			break;
-		case KP_0:
-			init_list();
-			break;
-		case KP_POUND:
-			init_list();
-			break;
-		case KP_D:
-			init_list();
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-//******************************************************************************************//
-//****************************************** menu4c ****************************************//
-//******************************************************************************************//
-// displays the 3rd choice of the 1st choice of the main menu
-static UCHAR menu4c(UCHAR ch, UCHAR  *array)
-{
-	UCHAR ret_char = ch;
-	curr_type = MENU4C;
-	show_legend(1,"menu4c","back","main","main","main");
-	switch (ch)
-	{
-		case KP_AST:
-			prev_list();
-			break;
-		case KP_0:
-			init_list();
-			break;
-		case KP_POUND:
-			init_list();
-			break;
-		case KP_D:
-			init_list();
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
+#ifdef NOAVR
+	mvwprintw(win, 39, 3, "test3 %x  ",ch);
+#endif
+	return ch;
 }
 //******************************************************************************************//
 //****************************************** go_back ***************************************//
 //******************************************************************************************//
-static UCHAR go_back(UCHAR ch, UCHAR *array)
+static UCHAR go_back(UCHAR ch)
 {
 	prev_list();
 	return ch;
@@ -800,9 +465,9 @@ static UCHAR go_back(UCHAR ch, UCHAR *array)
 //******************************************************************************************//
 //*************************************** number_entry *************************************//
 //******************************************************************************************//
-static UCHAR start_numentry(UCHAR ch, UCHAR  *array)
+static UCHAR start_numentry(UCHAR ch)
 {
-	show_legend2(1,"number entry","forward","back","alpha","enter","cancel","cancel");
+//	show_legend2(1,"number entry","forward","back","alpha","enter","cancel","cancel");
 	cur_row = NUM_ENTRY_ROW;
 	cur_col = NUM_ENTRY_BEGIN_COL;
 	memset((void*)new_global_number,0,NUM_ENTRY_SIZE);
@@ -818,7 +483,7 @@ static UCHAR start_numentry(UCHAR ch, UCHAR  *array)
 //******************************************************************************************//
 // displays the 4th choice of the 1st choice of the main menu
 // A - "forward", B - "back", C - "alpha", D - "enter", # - "cancel", * - "cancel");
-static UCHAR number_entry(UCHAR ch, UCHAR  *array)
+static UCHAR number_entry(UCHAR ch)
 {
 	UCHAR ret_char = ch;
 	switch (ch)
@@ -863,7 +528,7 @@ static UCHAR number_entry(UCHAR ch, UCHAR  *array)
 			memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
 			break;
 		case KP_C:
-			show_legend2(1,"alpha entry","CAPS","small","special","next","forward","apply");
+//			show_legend2(1,"alpha entry","CAPS","small","special","next","forward","apply");
 			set_list(ALNUM_ENTRY);
 			break;
 		case KP_D:
@@ -894,7 +559,7 @@ static UCHAR number_entry(UCHAR ch, UCHAR  *array)
 //*************************************** alnum_entry **************************************//
 //******************************************************************************************//
 //A - "CAPS", B - "small", C - "special", D - "next", # - "forward", * - "apply");
-static UCHAR alnum_entry(UCHAR ch, UCHAR  *array)
+static UCHAR alnum_entry(UCHAR ch)
 {
 	UCHAR ret_char = ch;
 	switch (ch)
@@ -916,7 +581,7 @@ static UCHAR alnum_entry(UCHAR ch, UCHAR  *array)
 			break;
 		case KP_AST:
 			// show the menu for the previous
-			show_legend2(1,"number entry","forward","back","alpha","enter","cancel","cancel");
+//			show_legend2(1,"number entry","forward","back","alpha","enter","cancel","cancel");
 			cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = choose_alnum;
 			cursor_forward();
 			prev_list();
@@ -1016,4 +681,3 @@ static void clean_disp_num(void)
 		dispCharAt(NUM_ENTRY_ROW,i+NUM_ENTRY_BEGIN_COL,0x20);
 	}
 }
-

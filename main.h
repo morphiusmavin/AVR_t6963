@@ -1,18 +1,16 @@
-// main.h
+// main.h - used by test_write_data.c, menus.c, main.c eeprom.c and burn_eeprom.c
 #ifndef _MAIN_H_
 #define _MAIN_H_
 #define TIME_DELAY1 1
 #define STRING_LEN   100
-#define NUM_FPTS 19
-#define MAX_LABEL_LEN 10
-#define NUM_LABELS 30
+#define NUM_FPTS 8
+#define MAX_LABEL_LEN 9
+#define NUM_LABELS 33
 #define NUM_MENU_CHOICES 6
-#define NUM_MENU_STRUCTS NUM_FPTS*4
+#define NUM_MENUS 17
+#define NUM_MENU_STRUCTS NUM_MENUS*NUM_MENU_CHOICES
+#define NUM_MENU_FUNCS 10
 #define NUM_RT_PARAMS 20
-//#warning "main.h"
-
-/*
-*/
 typedef struct rt_params
 {
 	UCHAR row;			// row, col tells where the param will appear on screen
@@ -21,20 +19,17 @@ typedef struct rt_params
 	UCHAR type;			// 0 - UCHAR; 1 - UINT; 2 - string
 } RT_PARAM;
 
-typedef struct menu_struct
+typedef struct menu_func
 {
-	UCHAR pnum;			// index
-//	char label[MAX_MENU_LABEL_LEN];
-	UCHAR row;			// row, col where the label will be displayed
-	UCHAR col;
-	UCHAR menu_choice;	// the type of keypress in the switch statement of the menu
-	UCHAR ch_type;		// the menu that is called by the choice
-	UCHAR type;			// index of which function pointer this menu label is associated with
-} MENU_STRUCT;
+	UCHAR enabled;		// if alt function will replace generic function
+	UCHAR fptr;			// which function to call (menu_types)
+	UCHAR menu;			// if fptr == 0 then it means goto this menu
+	UCHAR label;			// which label to display in legend (labels)
+} MENU_FUNC_STRUCT;
 
 enum menu_types
 {
-	MAIN_MENU,			// 0
+	MAIN_MENU = 1,		// 0
 	MENU1A,				// 1
 	MENU1B,				// 2
 	MENU1C,				// 3
@@ -48,6 +43,9 @@ enum menu_types
 	MENU4A,				// 11
 	MENU4B,				// 12
 	MENU4C,				// 13
+	test1,
+	test2,
+	test3,
 	START_NUM_ENTRY,	// 14
 	NUM_ENTRY,			// 15
 	ALNUM_ENTRY,		// 16
@@ -160,6 +158,7 @@ void parse_PIC24(UCHAR);
 void set_defaults(void);
 #ifdef NOAVR
 int do_read(WINDOW *win, int fd, int display_offset);
+void set_win2(WINDOW *win);
 #endif
 void init_list(void);
 UCHAR get_key(UCHAR ch);
@@ -172,7 +171,7 @@ char *get_label(int index);
 int burn_eeprom(void);
 int read_eeprom(void);
 //int update_menu_structs(int i, char *label, UCHAR row, UCHAR col, UCHAR choice, UCHAR ch_type, UCHAR type);
-int update_menu_structs(int i, UCHAR row, UCHAR col, UCHAR choice, UCHAR ch_type, UCHAR type);
+int update_menu_structs(int i, UCHAR enabled, UCHAR fptr, UCHAR menu, UCHAR label);
 int update_rtparams(int i, UCHAR row, UCHAR col, UCHAR shown, UCHAR type);
 int update_labels(int i, char *ramstr);
 
@@ -189,12 +188,11 @@ int no_menu_structs;
 UINT rt_params_offset;
 UINT menu_struct_offset;
 
-#ifndef MAIN_C
-MENU_STRUCT menu_structs[NUM_MENU_STRUCTS];
 char labels[NUM_LABELS][MAX_LABEL_LEN];
-#else
-MENU_STRUCT menu_structs;
-#endif
+
+// just have 1 copy in ram and reload from eeprom every time we change menus
+MENU_FUNC_STRUCT menu_structs[NUM_MENU_STRUCTS];
+
 int get_menu_struct_type(int index);
 int get_menu_struct_choice(int index);
 int get_menu_struct_chtype(int index);

@@ -69,39 +69,39 @@ When the PIC24 sends a byte in the range of 0xE0 -> 0xEF that will be interprete
 a keypress. The dialog will filter this out using a switch statement. The default will
 just return whatever was passed in. 
 
-When the PIC24 sends a byte in the range of 0xF0 -> 0xFF that will be interpreted as
-a special command to do something like hide the menu or update the display RT values.
+The beginning of eeprom stores all the labels used. Another table directly after the labels
+stores the offsets from the beginning of eeprom to each label. Any part of the code that uses
+the labels can just read them from eeprom as reading doesn't wear out the eeprom like writing
+does. Reading out of eeprom is slower than reading from flash which is slower than ram, but
+the code doesn't read the labels that often. 
 
-typedef struct prompts
+Right after the above tables in eeprom there is an array of rt_params structs. 
+typedef struct rt_params
 {
-	uint8_t pnum;
-	UCHAR row;
+	UINT label_offset;	// offset from beginning of eeprom
+	UCHAR row;			// row, col tells where the param will appear on screen
+	UCHAR col;	
+	UCHAR shown;		// if its shown or not
+	UCHAR type;			// 0 - UCHAR; 1 - UINT; 2 - string
+} RT_PARAM;
+
+The array of RT_PARAMS is read into an array in ram and can be changed by commands from
+the PIC24 to re-arrange the display.
+
+The next section of eeprom stores the default menu setup which is an array of the MENU_STRUCT:
+typedef menu_struct
+{
+	UCHAR pnum;			// index
+	UINT label_offset;	// offset into label section of eeprom of which label to use
+	UCHAR row,			// row, col where the label will be displayed
 	UCHAR col;
-    uint16_t offset;
-	int len;
-    uint8_t type;
-} PROMPT_STRUCT;
+	UCHAR menu_choice;	// the type of keypress in the switch statement of the menu
+	UCHAR type;			// index of which function pointer this menu label is associated with
+} MENU_STRUCT;
 
-eeprom_burn.c will record the initial 5 different types of screen layouts to eeprom and then
-later on we can add a dialog which lets the user change the screen layout to suit.
-RT_LAYOUT_STRUCT in RT_MAIN should be a pointer to a malloc'd list of RT_LAYOUT_STRUCT's.
-num_params will be the number of params used. A function called update_layouts will fill the
-ram space with all the RT_MAIN layouts and then all the RT_LAYOUT_STRUCT's. Then this function
-will record it all to eeprom with the no_layouts next to no_prompts and prompt_info_offset at
-0x03f4 in eeprom. (no_prompts is at 0x03f0 (byte) and prompt_info_offset is at 0x03f2 (word).
-
-Special chars sent by PIC24:
-
-The PIC24 sends a sequence of chars starting with one of the RT_TYPES. Each RT_TYPE is followed
-by a DATA_TYPE which tells the AVR what kind of data to expect. All the data is sent as UCHAR
-except for RT_RPM which is a UINT. If the data sent as a UCHAR is < 0x7f (127) the data type
-will be RT_LOW. If the high bit is set (> 0x7f) the data type will be RT_HIGH0. If a UINT is 
-set without the high bit for the first or second byte the data type will be RT_HIGH1. RT_HIGH2
-has bit 7 set and RT_HIGH3 has bit 15 set. The AVR will then know by the data type sent just
-after the RT_TYPE how to format the data (adding the appropriate high bit back in before printing
-it to the screen. The reason for this is so it can filter out the keypresses (0xE0->0xEF).
-
-
+This array will be read into program memory on startup and can be changed (added to ?) by
+commands from the PIC24.
+	
 test_write_data:
 The subdirectory call test_write_data has a separate makefile that compiles a program that I used
 to test some of the functionality so I didn't have to keep reflashing the AVR. I used 2 linux boxes
@@ -109,22 +109,20 @@ connected with a crossed over serial cable. Run make, which will compile the tes
 using menus.c, t6963.c and USART.c from the main directory, the run copy.sh which will tar up the
 files needed to compile the program on the other machines. You will have to edit the copy.sh script
 to match your machine IP addresses. Then run the extract.sh script on your other 2 machines (I use
-ssh to run the other 2 machines on my main box) and then run sudo ./test_write (for the machine that
-simulates the the AVR) and sudo ./test_write <interations*10> <starting rpm value> <other starting
-values> <time delay> to simulate the PIC24 or whatever processor is writing the data to the AVR.
+ssh to run the other 2 machines on my main box) and then run sudo ./test_write r (for the machine 
+that simulates the the AVR) and sudo ./test_write w <interations*10> <starting rpm value> <other 
+starting values> <time delay> to simulate the PIC24 or whatever processor is writing the data 
+to the AVR.
 
 TODO:
 
-PIC24 sends commands that modify the menu_struct array to display params in different format on screen.
-It will also send commands to tell AVR to only display certain params. For instance. we may only 
-want to see RPM, MPH and engine temp when a non-trivial dialog is on the screen. It can also send
-commands to modify a certain dialog, like different labels for checkboxes.
+PIC24 sends commands that modify the RT_PARAM and MENU_STRUCT array to display params in different 
+format on screen. It will also send commands to tell AVR to only display certain params. 
+For instance. we may only want to see RPM, MPH and engine temp when a non-trivial dialog 
+is on the screen. It can also send commands to modify a certain dialog, like different 
+labels for checkboxes.
 
-The prompt struct can have fields that define the what keypad keys are assigned to the current
-menu function. And also the placement on the screen that applies to that menu.
-
-There can be a field that only applies to the rt types, like RT_RPM that tells the AVR to read it
-as a UINT or a UCHAR (or string?).
+Each menu function that is pointed to by the array of function pointers 
 
 The numentry/alnum dialog should primarily be used for entering a passcode to start the engine.
 The AVR code will handle the password retries and timeouts. e.g. three tries to enter passcode and
@@ -137,8 +135,54 @@ Other parameters to have the system offer the user to change:
 	- set time of day and length of time other heaters come on.
 	- set frequency of blinkers and how long to stay blinking (if not using the conventional switch)
 	- how long for headlights to stay on after vehicle shuts off.
-	
-The new menu format can be loaded onto the flash disk in the TS-7200 (after turning if off) and then
-when its powered back up it can coordinate with the PIC24 and the AVR to load the new menu format
-and burn it to eeprom since there's not enough room in ram to hold the whole array of menu_struct.
-The AVR has to read it from eeprom every time it changes to a different menu.
+
+Use a generic menu function that has a switch statement where all the numbers call
+cursor_forward_stuff(n); (where n is the number 0 - 9), '*' goes back to the previous menu 
+and 'A','B','C','D' and '#' are assigned to do something by default. (display a 'not assigned' message).
+
+typedef struct menu_func
+{
+	UCHAR enabled;		// if alt function will replace generic function
+	UCHAR key;			// which keypress applies
+	UCHAR fptr;			// which function to call (menu_types)
+	UCHAR menu;			// if fptr == 0 then it means goto a this menu 
+	UCHAR label;			// which label to display in legend (labels)
+} MENU_FUNC_STRUCT;
+
+Then have a table that assigns new functions to any of of these keypresses (or at least 'A'->'D',
+'#' and '0') and the generic function will call a different function depending on what the 
+table reassigned to it. 
+
+keypad layout - since the six reassignable keys are on the outside (bottom and left) it makes
+sense to use these as special function keys.
+1 2 3 A
+4 5 6 B
+7 8 9 C
+* 0 # D
+
+First load from the eeprom the list of MENU_FUNC_STRUCT's which are in groups of 6 (6 possible
+redefined keys for each menu choice) into an array. The 6 redefinable keys are
+'A'
+'B'
+'C'
+'D'
+'#'
+'0'
+If the keypress has been reassigned, the 'enabled' field is set. That means the function for
+the fptr (index into the list of function pointers) will be called. If the fptr is 0, then 
+look up the menu specified by the menu element and just go to that menu. The function assigned 
+to '*' in generic_menu_function() will always go back to the previous menu. 
+
+This way, we have 3 possible choices:
+1) Use the 'factory default' set of menus in eeprom.
+2) Dynamically load another set of menus using a special command from the PIC24.
+3) #2 plus burn the new menu set into eeprom.
+
+Since we are trying to save ram space (which is the whole point of this exercise) then we
+will just have 1 copy of a menu_func_struct in ram and reload the new one from eeprom
+everytime we change menus.
+
+last 3 checkins:
+61ae87f did total revamp - works in test_data but menus not working yet
+1e61ba3 separated do_read function into do_read.c
+7e1a630 added scripts to remove trailing whitespace

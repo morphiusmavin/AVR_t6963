@@ -1,3 +1,4 @@
+// do_read.c - called from test_write_data.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,10 +38,15 @@ int do_read(WINDOW *win, int fd, int display_offset)
 	display_labels();
 	wrefresh(win);
 
+#ifdef NOAVR
+	set_win2(win);
+#endif
+
 	while(TRUE)
 	{
 		done = 0;
 		res = read(fd,&ch,1);
+		ch = get_key(ch);
 		mvwprintw(win, display_offset+14, 5, "parse_state = %d  ",parse_state);
 		mvwprintw(win, display_offset+15, 5, "current_param = %d  ",current_param);
 		wrefresh(win);
@@ -156,11 +162,11 @@ int do_read(WINDOW *win, int fd, int display_offset)
 		}	// end of inner switch
 		if(done)
 		{
-			mvwprintw(win, display_offset+16, 5, "param_string = %s  ",param_string);
 			mvwprintw(win, display_offset+current_param, 15, "        ");
 			mvwprintw(win, display_offset+current_param, 15, param_string);
+			mvwprintw(win, display_offset+16, 5, "param_string = %s  ",param_string);
 			wrefresh(win);
-
+/*
 			if(current_param == RT_RPM)
 			{
 				txword = (UCHAR)(xword>>8);
@@ -170,7 +176,7 @@ int do_read(WINDOW *win, int fd, int display_offset)
 			}
 			else
 				write(fd,&xbyte,1);
-
+*/
 // this displays the RT params on the screen at their positions according to the prompts struct
 //			mvwprintw(win, display_offset+17,5,"%d ",no_rtparams);
 			for(i = 0;i < no_rtparams;i++)
@@ -180,7 +186,7 @@ int do_read(WINDOW *win, int fd, int display_offset)
 
 				if(rt_params[i].type == current_param)
 				{
-					GDispStringAt(rt_params[i].row,rt_params[i].col+10,"     ");
+					GDispStringAt(rt_params[i].row,rt_params[i].col+9,"      ");
 				}
 
 				if(rt_params[i].shown && rt_params[i].type == current_param)

@@ -162,27 +162,36 @@ int main(void)
 #ifdef MAIN_C
 int get_menu_struct_type(int index)
 {
+#if 0
 	MENU_STRUCT ms;
 	eeprom_read_block(&ms, eepromString+menu_struct_offset+(sizeof(MENU_STRUCT)*index),sizeof(MENU_STRUCT));
 	return ms.type;
+#endif
+	return 0;
 }
 //******************************************************************************************//
 //********************************* get_menu_struct_choice *********************************//
 //******************************************************************************************//
 int get_menu_struct_choice(int index)
 {
+#if 0
 	MENU_STRUCT ms;
 	eeprom_read_block(&ms, eepromString+menu_struct_offset+(sizeof(MENU_STRUCT)*index),sizeof(MENU_STRUCT));
 	return ms.menu_choice;
+#endif
+	return 0;
 }
 //******************************************************************************************//
 //********************************* get_menu_struct_choice *********************************//
 //******************************************************************************************//
 int get_menu_struct_chtype(int index)
 {
+#if 0
 	MENU_STRUCT ms;
 	eeprom_read_block(&ms, eepromString+menu_struct_offset+(sizeof(MENU_STRUCT)*index),sizeof(MENU_STRUCT));
 	return ms.ch_type;
+#endif
+	return 0;
 }
 //******************************************************************************************//
 //*************************************** get_label ****************************************//
@@ -203,20 +212,24 @@ char *get_label(int index)
 //******************************************************************************************//
 UCHAR get_row(int index)
 {
+/*
 	MENU_STRUCT ms;
 	int offset = (int)menu_struct_offset + index * sizeof(MENU_STRUCT);
 	eeprom_read_block(&ms,eepromString+offset,sizeof(MENU_STRUCT));
 	return ms.row;
+*/	return 0;
 }
 //******************************************************************************************//
 //**************************************** get_col *****************************************//
 //******************************************************************************************//
 UCHAR get_col(int index)
 {
+/*
 	MENU_STRUCT ms;
 	int offset = (int)menu_struct_offset + index * sizeof(MENU_STRUCT);
 	eeprom_read_block(&ms,eepromString+offset,sizeof(MENU_STRUCT));
 	return ms.col;
+*/	return 0;
 }
 #endif
 //******************************************************************************************//
