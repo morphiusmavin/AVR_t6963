@@ -29,6 +29,7 @@ git add test_write_data/makefile
 git add test_write_data/copy.sh
 git add test_write_data/README.md
 git add test_write_data/extract.sh
+git add test2/*
 git status
 
 
