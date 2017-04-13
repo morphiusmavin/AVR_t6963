@@ -52,23 +52,24 @@ int burn_eeprom(void)
 	i = update_labels(i,"AIR TEMP\0");
 	i = update_labels(i,"TIME\0");
 	i = update_labels(i,"TRIP\0");
-	i = update_labels(i,"MAINMENU\0");
-	i = update_labels(i,"MENU__1a\0");
-	i = update_labels(i,"MENU__1b\0");
-	i = update_labels(i,"MENU__1c\0");
-	i = update_labels(i,"MENU__1d\0");
-	i = update_labels(i,"MENU__2a\0");
-	i = update_labels(i,"MENU__2b\0");
-	i = update_labels(i,"MENU__2c\0");
-	i = update_labels(i,"MENU__3a\0");
-	i = update_labels(i,"MENU__3b\0");
-	i = update_labels(i,"MENU__3c\0");
-	i = update_labels(i,"MENU__4a\0");
-	i = update_labels(i,"MENU__4b\0");
-	i = update_labels(i,"MENU__4c\0");
+	i = update_labels(i,"home\0");
+	i = update_labels(i,"MENU1a\0");
+	i = update_labels(i,"MENU1b\0");
+	i = update_labels(i,"MENU1c\0");
+	i = update_labels(i,"MENU1d\0");
+	i = update_labels(i,"MENU2a\0");
+	i = update_labels(i,"MENU2b\0");
+	i = update_labels(i,"MENU2c\0");
+	i = update_labels(i,"MENU3a\0");
+	i = update_labels(i,"MENU3b\0");
+	i = update_labels(i,"MENU3c\0");
+	i = update_labels(i,"MENU4a\0");
+	i = update_labels(i,"MENU4b\0");
+	i = update_labels(i,"MENU4c\0");
 	i = update_labels(i,"test1\0");
 	i = update_labels(i,"test2\0");
 	i = update_labels(i,"test3\0");
+	i = update_labels(i,"test4\0");
 	i = update_labels(i,"snmentry\0");
 	i = update_labels(i,"numentry\0");
 	i = update_labels(i,"aluentry\0");
@@ -134,35 +135,14 @@ int burn_eeprom(void)
 	UCHAR label;		// which label to display in legend (labels)
 */
 	UCHAR enabled, fptr, menu, label = 0;
-/*
-	MAIN_MENU = 1,		// 0
-	MENU1A,				// 1
-	MENU1B,				// 2
-	MENU1C,				// 3
-	MENU1D,				// 4
-	MENU2A,				// 5
-	MENU2B,				// 6
-	MENU2C,				// 7
-	MENU3A,				// 8
-	MENU3B,				// 9
-	MENU3C,				// 10
-	MENU4A,				// 11
-	MENU4B,				// 12
-	MENU4C,				// 13
-	test1,
-	test2,
-	test3,
-*/
 	enabled = 1;
 	// main menu
-	i = update_menu_structs(i, enabled, 0, MENU1A, MENU1A);
-	i = update_menu_structs(i, enabled, 0, MENU1B, MENU1B);
-	i = update_menu_structs(i, enabled, 0, MENU1C, MENU1C);
-	i = update_menu_structs(i, enabled, 0, MENU1D, MENU1D);
-	i = update_menu_structs(i, 0, test2, 0, test2);
-	i = update_menu_structs(i, 0, test3, 0, test3);
-
-	fptr++;
+	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
+	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
+	i = update_menu_structs(i, 1, 0,		MENU1D,		MENU1D);
+	i = update_menu_structs(i, 0, test1,	0,			test1);
+	i = update_menu_structs(i, 0, test2,	0,			test2);
 
 // load the only ram copy of menu_structs with the first one
 //	menu_structs[i].enabled = enabled;
@@ -172,41 +152,37 @@ int burn_eeprom(void)
 
 #if 1
 	// menu 1a
-	i = update_menu_structs(i, 1, 0, MAIN_MENU, MAIN_MENU);
-	i = update_menu_structs(i, 1, test1, 0, test1);
-	i = update_menu_structs(i, 1, test2, 0, test2);
-	i = update_menu_structs(i, 1, test3, 0, test3);
-	i = update_menu_structs(i, 0, test1, 0, test1);
-	i = update_menu_structs(i, 1, 0, MAIN_MENU, MAIN_MENU);
+	i = update_menu_structs(i, 1, 0, 		MAIN,	MAIN);
+	i = update_menu_structs(i, 1, test1,	0,			test1);
+	i = update_menu_structs(i, 1, test2,	0,			test2);
+	i = update_menu_structs(i, 1, test3,	0,			test3);
+	i = update_menu_structs(i, 0, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 0, 0,		MAIN,	MAIN);
 
-	fptr++;
 	// menu 1b
-	i = update_menu_structs(i, enabled, 0, MENU1A, MENU1A);
-	i = update_menu_structs(i, enabled, 0, MENU1B, MENU1B);
-	i = update_menu_structs(i, 1, test1, 0, test1);
-	i = update_menu_structs(i, 1, test2, 0, test2);
-	i = update_menu_structs(i, 1, test3, 0, test3);
-	i = update_menu_structs(i, 1, 0, MAIN_MENU, MAIN_MENU);
+	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
+	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
+	i = update_menu_structs(i, 1, test1,	0,			test1);
+	i = update_menu_structs(i, 1, test2,	0,			test2);
+	i = update_menu_structs(i, 1, 0,		MAIN,	MAIN);
 
-	fptr++;
 	// menu 1c
-	i = update_menu_structs(i, 0, 2, menu, label);
-	i = update_menu_structs(i, 0, 3, menu, label);
-	i = update_menu_structs(i, 0, 4, menu, label);
-	i = update_menu_structs(i, 0, 5, menu, label);
-	i = update_menu_structs(i, 0, 6, menu, label);
-	i = update_menu_structs(i, 0, 7, menu, label);
+	i = update_menu_structs(i, 1, test2,	0,			test2);
+	i = update_menu_structs(i, 1, test3,	0,			test3);
+	i = update_menu_structs(i, 1, test4,	0,			test4);
+	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
+	i = update_menu_structs(i, 1, 0,		MAIN,	MAIN);
 
-	fptr++;
 	// menu 1d
-	i = update_menu_structs(i, 0, 8, menu, label);
-	i = update_menu_structs(i, 0, 9, menu, label);
-	i = update_menu_structs(i, 0, 10, menu, label);
-	i = update_menu_structs(i, 0, 11, menu, label);
-	i = update_menu_structs(i, 0, 12, menu, label);
-	i = update_menu_structs(i, 0, 13, menu, label);
+	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
+	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 1, 0,		MAIN,	MAIN);
+	i = update_menu_structs(i, 1, test2,	0,			test2);
+	i = update_menu_structs(i, 1, test3,	0,			test3);
+	i = update_menu_structs(i, 1, test4,	0,			test4);
 
-	fptr++;
 	// menu 2a
 	i = update_menu_structs(i, 0, 14, menu, label);
 	i = update_menu_structs(i, 0, 15, menu, label);
@@ -215,7 +191,6 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 0, 18, menu, label);
 	i = update_menu_structs(i, 0, 19, menu, label);
 
-	fptr++;
 	// menu 2b
 	i = update_menu_structs(i, 0, 20, menu, label);
 	i = update_menu_structs(i, 0, 21, menu, label);
@@ -224,7 +199,6 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 0, 24, menu, label);
 	i = update_menu_structs(i, 0, 25, menu, label);
 
-	fptr++;
 	// menu 2c
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
@@ -233,7 +207,6 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
 
-	fptr++;
 	// menu 3a
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
@@ -242,7 +215,6 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
 
-	fptr++;
 	// menu 3b
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
@@ -251,7 +223,6 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
 
-	fptr++;
 	// menu 3c
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
@@ -259,7 +230,6 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
-	fptr++;
 	// menu 4a
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
@@ -267,8 +237,6 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
-
-	fptr++;
 	// menu 4b
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
@@ -276,8 +244,6 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);
-
-	fptr++;
 	// menu 4c
 	i = update_menu_structs(i, 0, fptr, menu, label);
 	i = update_menu_structs(i, 0, fptr, menu, label);

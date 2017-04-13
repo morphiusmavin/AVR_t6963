@@ -434,6 +434,7 @@ int main(int argc, char *argv[])
 						wkey = 0xff;
 						break;
 				}
+				mvwprintw(menu_win, display_offset+23, 8, "%d ",wkey);
 				if(wkey != 0xff)
 					write(fd,&wkey,1);
 			}

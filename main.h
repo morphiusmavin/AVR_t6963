@@ -3,7 +3,7 @@
 #define _MAIN_H_
 #define TIME_DELAY1 1
 #define STRING_LEN   100
-#define NUM_FPTS 8
+#define NUM_FPTS 9
 #define MAX_LABEL_LEN 9
 #define NUM_LABELS 33
 #define NUM_MENU_CHOICES 6
@@ -29,7 +29,7 @@ typedef struct menu_func
 
 enum menu_types
 {
-	MAIN_MENU = 1,		// 0
+	MAIN,				// 0
 	MENU1A,				// 1
 	MENU1B,				// 2
 	MENU1C,				// 3
@@ -43,14 +43,15 @@ enum menu_types
 	MENU4A,				// 11
 	MENU4B,				// 12
 	MENU4C,				// 13
-	test1,
-	test2,
-	test3,
-	START_NUM_ENTRY,	// 14
-	NUM_ENTRY,			// 15
-	ALNUM_ENTRY,		// 16
-	CHECK_BOX,			// 17
-	GO_BACK				// 18
+	test1,				// 14
+	test2,				// 15
+	test3,				// 16
+	test4,				// 17
+	START_NUM_ENTRY,	// 18
+	NUM_ENTRY,			// 19
+	ALNUM_ENTRY,		// 20
+	CHECK_BOX,			// 21
+	GO_BACK				// 22
 } MENU_TYPES;
 
 enum data_types
