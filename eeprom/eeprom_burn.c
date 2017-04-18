@@ -34,20 +34,19 @@ int burn_eeprom(void)
 #ifndef NOAVR
     printString("\r\nwriting to eeprom...\r\n");
 #endif
-
     i = 0;
 	j = 0;
 #if 1	// update labels
 	i = update_labels(i,"RPM\0");
-	i = update_labels(i,"MPH\0");
 	i = update_labels(i,"ENG TEMP\0");
-	i = update_labels(i,"OIL PRES\0");
-	i = update_labels(i,"OIL TEMP\0");
-	i = update_labels(i,"MAP\0");
-	i = update_labels(i,"O2\0");
-	i = update_labels(i,"AIR TEMP\0");
-	i = update_labels(i,"TIME\0");
 	i = update_labels(i,"TRIP\0");
+	i = update_labels(i,"TIME\0");
+	i = update_labels(i,"AIR TEMP\0");
+	i = update_labels(i,"MPH\0");
+	i = update_labels(i,"OIL PRES\0");
+	i = update_labels(i,"MAP\0");
+	i = update_labels(i,"OIL TEMP\0");
+	i = update_labels(i,"O2\0");
 	i = update_labels(i,"home\0");
 	i = update_labels(i,"MENU1a\0");
 	i = update_labels(i,"MENU1b\0");
@@ -93,15 +92,15 @@ int burn_eeprom(void)
 	printf("total_offset: %d\n",total_offset);
 #endif
 	i = update_rtparams(i, 0, 0, 1, RT_RPM);	// first label is at offset 0
-	i = update_rtparams(i, 1, 0, 1, RT_TRIP);	// first element of offset_array has offset of 2nd label
-	i = update_rtparams(i, 2, 0, 1, RT_TIME);
-	i = update_rtparams(i, 3, 0, 1, RT_AIRT);
-	i = update_rtparams(i, 4, 0, 1, RT_O2);
-	i = update_rtparams(i, 0, 15, 1, RT_MAP);
-	i = update_rtparams(i, 1, 15, 1, RT_OILT);
-	i = update_rtparams(i, 2, 15, 1, RT_OILP);
-	i = update_rtparams(i, 3, 15, 1, RT_ENGT);
-	i = update_rtparams(i, 4, 15, 1, RT_MPH);
+	i = update_rtparams(i, 1, 0, 1, RT_ENGT);
+	i = update_rtparams(i, 2, 0, 1, RT_TRIP);	// first element of offset_array has offset of 2nd label
+	i = update_rtparams(i, 3, 0, 1, RT_TIME);
+	i = update_rtparams(i, 4, 0, 1, RT_AIRT);
+	i = update_rtparams(i, 0, 15, 1, RT_MPH);
+	i = update_rtparams(i, 1, 15, 1, RT_OILP);
+	i = update_rtparams(i, 2, 15, 1, RT_MAP);
+	i = update_rtparams(i, 3, 15, 1, RT_OILT);
+	i = update_rtparams(i, 4, 15, 1, RT_O2);
 	no_rtparams = i;
 // write to the number of rt_params location in eeprom the number of rt_params
 #ifndef NOAVR

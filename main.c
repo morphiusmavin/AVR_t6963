@@ -24,10 +24,11 @@ char eepromString[STRING_LEN] EEMEM;
 int main(void)
 {
 	int i;
-	UCHAR temp;
 	uint16_t temp2;
-	UCHAR ret_char;
-
+	UCHAR ret_char, temp;
+	int done;
+	UCHAR xbyte;
+	UINT xword;
 //    size_t str_size = sizeof(PROMPT_STRUCT);
 
     initUSART();
@@ -132,6 +133,9 @@ int main(void)
 	_delay_us(10);
 	init_list();
 	display_labels();
+	done = 0;
+	char param_string[10];
+	
     while (1)
     {
         ret_char = receiveByte();
@@ -140,162 +144,49 @@ int main(void)
 		printString("\r\n");
 #endif
 		ret_char = get_key(ret_char);
-		parse_PIC24(ret_char);
-	}
-    return (0);		// this should never happen
-}
-//******************************************************************************************//
-//*************************************** parse_PIC24 **************************************//
-//******************************************************************************************//
-// get data from PIC24, convert from int to strings and place in param_string
-void parse_PIC24(UCHAR ch)
-{
-	int i;
-	UCHAR xbyte;
-	uint16_t xword = 0;
-	UCHAR done = 0;
-	char param_string[10];
-	UCHAR temp;
+		done = parse_P24(ret_char, param_string, &xbyte, &xword);
 
-	switch(parse_state)
-	{
-		case IDLE:
-			if(ch <= RT_RPM && ch >= RT_TRIP)
+		if(done)
+		{
+			if(current_param == RT_RPM)
 			{
-				current_param = ch;
-				parse_state = CHECK_HIGHBIT;
+#ifdef TTY_DISPLAY
+				printHexByte((UCHAR)(xword>>8));
+				printHexByte((UCHAR)xword);
+	//			GDispStringAt(2,2,param_string);
+#else
+				transmitByte((UCHAR)(xword>>8));
+				transmitByte((UCHAR)xword);
+	//			GDispStringAt(2,2,param_string);
+#endif
 			}
 			else
 			{
-				set_defaults();
+#ifdef TTY_DISPLAY
+				printHexByte(xbyte);
+	//			GDispStringAt(2,4,param_string);
+#else
+				transmitByte(xbyte);
+	//			GDispStringAt(2,4,param_string);
+#endif
 			}
-			break;
-		case CHECK_HIGHBIT:
-			switch(ch)
+			for(i = 0;i < no_rtparams;i++)
 			{
-				case RT_LOW:
-					parse_state = SEND_UCHAR0;
-					break;
-				case RT_HIGH0:		// if just a UCHAR is sent with high bit set
-					parse_state = SEND_UCHAR1;
-					break;
-				case RT_HIGH1:		// if UINT with neither bit 7 or 15 set
-					parse_state = GET_CH0;
-					break;
-				case RT_HIGH2:		// if a UINT is sent with bit 7 set
-					parse_state = GET_CH1;
-					break;
-				case RT_HIGH3:		// if a UINT is sent with bit 15 set
-					parse_state = GET_CH2;
-					break;
-				default:
-					set_defaults();
-					break;
-			}
-			break;
-		case GET_CH0:
-			parse_state = SEND_UINT0;
-			temp_UINT = ch;
-			break;
-		case GET_CH1:
-			temp_UINT = ch;
-			parse_state = SEND_UINT1;
-			break;
-		case GET_CH2:
-			temp_UINT = ch;
-			parse_state = SEND_UINT2;
-			break;
-		case SEND_UCHAR0:
-			xbyte = ch;
-			sprintf(param_string,"%4d",xbyte);
-//			printString("\r\n");
-//			printString(param_string);
-			done = 1;
-			break;
-		case SEND_UCHAR1:
-			xbyte = ch | 0x80;
-			sprintf(param_string,"%4d",xbyte);
-//			printString("\r\n");
-//			printString(param_string);
-			done = 1;
-			break;
-		case SEND_UINT0:
-			xword = (uint16_t)temp_UINT;
-			temp_UINT = (uint16_t)ch;
-			temp_UINT <<= 8;
-			temp_UINT &= 0xff00;
-			xword |= temp_UINT;
-			sprintf(param_string,"%4u",xword);
-//			printString("\r\n");
-//			printString(param_string);
+				if(rt_params[i].type == current_param)
+				{
+					GDispStringAt(rt_params[i].row,rt_params[i].col+9,"      ");
+				}
 
-			done = 1;
-			break;
-		case SEND_UINT1:
-			xword = (uint16_t)temp_UINT;
-			temp_UINT = (uint16_t)ch;
-			temp_UINT <<= 8;
-			temp_UINT &= 0xff00;
-			xword |= temp_UINT;
-			xword |= 0x0080;
-			sprintf(param_string,"%4u",xword);
-//			printString("\r\n");
-//			printString(param_string);
-			done = 1;
-			break;
-		case SEND_UINT2:
-			xword = (uint16_t)temp_UINT;
-			temp_UINT = (uint16_t)ch;
-			temp_UINT <<= 8;
-			temp_UINT &= 0xff00;
-			xword |= temp_UINT;
-			xword |= 0x8000;
-			sprintf(param_string,"%4u",xword);
-//			printString("\r\n");
-//			printString(param_string);
-			done = 1;
-			break;
-		default:
-			printString("default ");
-			set_defaults();
-			break;
-	}
-	if(done)
-	{
-		temp = ~current_param;
-		if(temp == 0)
-		{
-#ifdef TTY_DISPLAY
-			printHexByte((UCHAR)(xword>>8));
-			printHexByte((UCHAR)xword);
-//			GDispStringAt(2,2,param_string);
-#else
-			transmitByte((UCHAR)(xword>>8));
-			transmitByte((UCHAR)xword);
-//			GDispStringAt(2,2,param_string);
-#endif
-		}
-		else
-		{
-#ifdef TTY_DISPLAY
-			printHexByte(xbyte);
-//			GDispStringAt(2,4,param_string);
-#else
-			transmitByte(xbyte);
-//			GDispStringAt(2,4,param_string);
-#endif
-		}
-/*
-		for(i = 0;i < no_prompts;i++)
-		{
-			if(prompts[i].type == RT_LABEL && temp == prompts[i].pnum)
-			{
-				GDispStringAt(prompts[i].row,prompts[i].col+10,param_string);
+				if(rt_params[i].shown && rt_params[i].type == current_param)
+				{
+					GDispStringAt(rt_params[i].row,rt_params[i].col+10,param_string);
+				}
 			}
+			set_defaults();
 		}
-*/
-		set_defaults();
+
 	}
+    return (0);		// this should never happen
 }
 //******************************************************************************************//
 //******************************************* dispRC ***************************************//

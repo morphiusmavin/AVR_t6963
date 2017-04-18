@@ -46,6 +46,7 @@ static void blank_menu(void);
 static void adv_menu_label(int index, UCHAR *row, UCHAR *col);
 static void display_menus(int index);
 static void start_numentry(void);
+static void scale_disp(int amt);
 
 static UCHAR generic_menu_function(UCHAR ch, int  index);
 static UCHAR backspace(UCHAR ch);
@@ -170,7 +171,7 @@ void display_labels(void)
 {
 	int i,j;
 	char temp[MAX_LABEL_LEN];
-	char blank[] = "         ";
+	char blank[] = "               ";
 	char *ch;
 
 	for(i = 0;i < no_rtparams;i++)
@@ -183,8 +184,36 @@ void display_labels(void)
 		if(rt_params[i].shown == 1)
 		{
 			strcpy(temp,get_label(i));
+			GDispStringAt(rt_params[i].row,rt_params[i].col,temp);
 		}
-		GDispStringAt(rt_params[i].row,rt_params[i].col,temp);
+	}
+}
+//******************************************************************************************//
+//******************************************************************************************//
+//******************************************************************************************//
+static void scale_disp(int amt)
+{
+	int i;
+	char blank[] = "               ";
+	if(amt)
+	{
+		for(i = 0;i < no_rtparams;i++)
+			rt_params[i].shown = 1;
+		display_labels();	
+	}
+	else
+	{
+		for(i = 0;i < no_rtparams;i++)
+		{
+			if(rt_params[i].type == RT_RPM || rt_params[i].type == RT_ENGT || \
+					rt_params[i].type == RT_MPH || rt_params[i].type == RT_OILP)
+				rt_params[i].shown = 1;
+			else
+			{
+				rt_params[i].shown = 0;
+				GDispStringAt(rt_params[i].row,rt_params[i].col,blank);
+			}
+		}
 	}
 }
 //******************************************************************************************//
@@ -302,7 +331,7 @@ int get_str_len(void)
 	return cur_col-NUM_ENTRY_BEGIN_COL;
 }
 //******************************************************************************************//
-//********************************** scroll_alnum_list *************************************//
+//*************************************** check_box ****************************************//
 //******************************************************************************************//
 static UCHAR check_box(UCHAR ch)
 {
@@ -388,6 +417,7 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 			if(menu_structs[menu_index].menu == num_entry)
 			{
 				start_numentry();
+				scale_disp(0);
 //				mvwprintw(win, 45, 3,"start_num_entry");
 			}
 		}
@@ -440,6 +470,7 @@ static UCHAR escape(UCHAR ch)
 	cur_col = NUM_ENTRY_BEGIN_COL;
 	prev_list();
 	clean_disp_num();
+	scale_disp(1);
 	return ch;
 }
 //******************************************************************************************//
@@ -454,6 +485,7 @@ static UCHAR enter(UCHAR ch)
 #ifdef NOAVR	
 	mvwprintw(win, 45, 3,"num entered: %s ",new_global_number);
 #endif
+	scale_disp(1);
 	return ch;
 }
 static UCHAR call_alnum(UCHAR ch)
@@ -598,122 +630,3 @@ static void clean_disp_num(void)
 	}
 }
 #endif
-#if 0
-//******************************************************************************************//
-//*************************************** number_entry *************************************//
-//******************************************************************************************//
-// displays the 4th choice of the 1st choice of the main menu
-// A - "forward", B - "back", C - "alpha", D - "enter", # - "cancel", * - "cancel");
-static UCHAR number_entry(UCHAR ch)
-{
-	UCHAR ret_char = ch;
-	switch (ch)
-	{
-		case KP_0:
-			cursor_forward_stuff(0);
-			break;
-		case KP_1:
-			cursor_forward_stuff(1);
-			break;
-		case KP_2:
-			cursor_forward_stuff(2);
-			break;
-		case KP_3:
-			cursor_forward_stuff(3);
-			break;
-		case KP_4:
-			cursor_forward_stuff(4);
-			break;
-		case KP_5:
-			cursor_forward_stuff(5);
-			break;
-		case KP_6:
-			cursor_forward_stuff(6);
-			break;
-		case KP_7:
-			cursor_forward_stuff(7);
-			break;
-		case KP_8:
-			cursor_forward_stuff(8);
-			break;
-		case KP_9:
-			cursor_forward_stuff(9);
-			break;
-		case KP_A:
-			cursor_forward(ch);
-			break;
-		case KP_B: // replaced by 'backspace'
-			cursor_backward();
-			dispCharAt(cur_row,cur_col,0x20);
-			cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = 0x20;
-			memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
-			break;
-		case KP_C:
-//			show_legend2(1,"alpha entry","CAPS","small","special","next","forward","apply");
-			set_list(ALNUM_ENTRY);
-			break;
-		case KP_D:	// replace by 'enter'
-			memcpy((void*)new_global_number,(void*)cur_global_number,NUM_ENTRY_SIZE);
-			cur_col = NUM_ENTRY_BEGIN_COL;
-			prev_list();
-			clean_disp_num();
-			break;
-		case KP_POUND:	// replaced by 'escape'
-			memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
-			cur_col = NUM_ENTRY_BEGIN_COL;
-			prev_list();
-			clean_disp_num();
-			break;
-		case KP_AST:	// cancel changes and leave menu
-			memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
-			cur_col = NUM_ENTRY_BEGIN_COL;
-			prev_list();
-			clean_disp_num();
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-#endif
-#if 0
-//******************************************************************************************//
-//*************************************** alnum_entry **************************************//
-//******************************************************************************************//
-//A - "CAPS", B - "small", C - "special", D - "next", # - "forward", * - "apply");
-static UCHAR alnum_entry(UCHAR ch)
-{
-	UCHAR ret_char = ch;
-	switch (ch)
-	{
-		case KP_A:
-			scroll_alnum_list(0);		// CAPS
-			break;
-		case KP_B:
-			scroll_alnum_list(1);		// small
-			break;
-		case KP_C:
-			scroll_alnum_list(2);		// special
-			break;
-		case KP_D:
-			scroll_alnum_list(3);		// next char in list
-			break;
-		case KP_POUND:
-			cursor_forward(ch);			// move cursor forward
-			break;
-		case KP_AST:
-			// show the menu for the previous
-//			show_legend2(1,"number entry","forward","back","alpha","enter","cancel","cancel");
-			cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = choose_alnum;
-			cursor_forward(ch);
-			prev_list();
-			break;
-		default:
-			ret_char = ch;
-			break;
-	}
-	return ret_char;
-}
-#endif
-

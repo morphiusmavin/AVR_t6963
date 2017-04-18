@@ -136,53 +136,20 @@ Other parameters to have the system offer the user to change:
 	- set frequency of blinkers and how long to stay blinking (if not using the conventional switch)
 	- how long for headlights to stay on after vehicle shuts off.
 
-Use a generic menu function that has a switch statement where all the numbers call
-cursor_forward_stuff(n); (where n is the number 0 - 9), '*' goes back to the previous menu 
-and 'A','B','C','D' and '#' are assigned to do something by default. (display a 'not assigned' message).
+checkboxes:
 
-typedef struct menu_func
-{
-	UCHAR enabled;		// if alt function will replace generic function
-	UCHAR key;			// which keypress applies
-	UCHAR fptr;			// which function to call (menu_types)
-	UCHAR menu;			// if fptr == 0 then it means goto a this menu 
-	UCHAR label;			// which label to display in legend (labels)
-} MENU_FUNC_STRUCT;
+menu fptr sends a command to the PIC24 to tell it to send an array of structs:
+- int index
+- char *label_str
+- UCHAR checked
 
-Then have a table that assigns new functions to any of of these keypresses (or at least 'A'->'D',
-'#' and '0') and the generic function will call a different function depending on what the 
-table reassigned to it. 
-
-keypad layout - since the six reassignable keys are on the outside (bottom and left) it makes
-sense to use these as special function keys.
-1 2 3 A
-4 5 6 B
-7 8 9 C
-* 0 # D
-
-First load from the eeprom the list of MENU_FUNC_STRUCT's which are in groups of 6 (6 possible
-redefined keys for each menu choice) into an array. The 6 redefinable keys are
-'A'
-'B'
-'C'
-'D'
-'#'
-'0'
-If the keypress has been reassigned, the 'enabled' field is set. That means the function for
-the fptr (index into the list of function pointers) will be called. If the fptr is 0, then 
-look up the menu specified by the menu element and just go to that menu. The function assigned 
-to '*' in generic_menu_function() will always go back to the previous menu. 
-
-This way, we have 3 possible choices:
-1) Use the 'factory default' set of menus in eeprom.
-2) Dynamically load another set of menus using a special command from the PIC24.
-3) #2 plus burn the new menu set into eeprom.
-
-Since we are trying to save ram space (which is the whole point of this exercise) then we
-will just have 1 copy of a menu_func_struct in ram and reload the new one from eeprom
-everytime we change menus.
+The index can start anywhere in a huge list of all possible binary settings (on/off). The label describes
+the setting and checked tells if it was previously set. All the AVR does is display so many on the list
+and use the A/B keys to scroll up and down and the C key to check/uncheck the current checkbox.
 
 last 3 checkins:
 61ae87f did total revamp - works in test_data but menus not working yet
 1e61ba3 separated do_read function into do_read.c
 7e1a630 added scripts to remove trailing whitespace
+
+

@@ -128,15 +128,15 @@ int main(int argc, char *argv[])
 	{
 
 		mvwprintw(menu_win, display_offset+2, 2,"RPM ");
+		mvwprintw(menu_win, display_offset+11,2,"MPH ");
+		mvwprintw(menu_win, display_offset+10,2,"ENGT ");
+		mvwprintw(menu_win, display_offset+9, 2,"OILP ");
 		mvwprintw(menu_win, display_offset+3, 2,"TRIP ");
 		mvwprintw(menu_win, display_offset+4, 2,"TIME ");
 		mvwprintw(menu_win, display_offset+5, 2,"AIRT ");
 		mvwprintw(menu_win, display_offset+6, 2,"O2 ");
 		mvwprintw(menu_win, display_offset+7, 2,"MAP ");
 		mvwprintw(menu_win, display_offset+8, 2,"OILT ");
-		mvwprintw(menu_win, display_offset+9, 2,"OILP ");
-		mvwprintw(menu_win, display_offset+10,2,"ENGT ");
-		mvwprintw(menu_win, display_offset+11,2,"MPH ");
 		wrefresh(menu_win);
 
 	}
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
 	if(type == 0)
 	{
 //		printf("read\n");
-		ret_code = do_read(menu_win, fd,display_offset);
+		do_read(menu_win, fd,display_offset);
 //		printf("do_read: %d\n",ret_code);
 	}	// end of else
 
@@ -197,16 +197,16 @@ int main(int argc, char *argv[])
 	{
 		for(i = 0;i < iters;i++)
 		{
-			if(++code > RT_MPH)
+			if(++code > RT_AUX)
 			{
-
+/*
 				if(--write_alnum < 1)
 				{
 					write_alnum = 5;
 					code = RT_AUX;
 				}
 				else
-
+*/
 				code = RT_RPM;
 			}
 			ch = code;
@@ -215,15 +215,12 @@ int main(int argc, char *argv[])
 
 			if(code == RT_AUX)
 			{
-
 				memset(aux_array,0,NUM_ENTRY_SIZE);
 				usleep(tdelay*2);
 				read(fd,&alnum_strlen,1);
 				usleep(tdelay/2);
 				res = read(fd,aux_array,NUM_ENTRY_SIZE);
-
 			}
-
 			if(code == RT_RPM)
 			{
 				if(data2 & 0x8000)
@@ -450,7 +447,6 @@ int main(int argc, char *argv[])
 	close(fd);
 	exit(0);
 }
-
 void set_defaults(void)
 {
 	temp_UINT = 0;

@@ -16,7 +16,7 @@ typedef struct rt_params
 	UCHAR row;			// row, col tells where the param will appear on screen
 	UCHAR col;
 	UCHAR shown;		// if its shown or not
-	UCHAR type;			// 0 - UCHAR; 1 - UINT; 2 - string
+	UCHAR type;			// rt_types
 } RT_PARAM;
 
 typedef struct menu_func
@@ -29,32 +29,32 @@ typedef struct menu_func
 
 enum menu_types
 {
-	MAIN,				// 0
-	MENU1A,				// 1
-	MENU1B,				// 2
-	MENU1C,				// 3
-	MENU1D,				// 4
-	num_entry,			// 5
-	alnum_entry,		// 6
-	MENU2A,				// 5
-	MENU2B,				// 6
-	MENU2C,				// 7
-	MENU3A,				// 8
-	MENU3B,				// 9
-	MENU3C,				// 10
-	MENU4A,				// 11
-	MENU4B,				// 12
-	MENU4C,				// 13	 - last_menu
-	entr,				// 14
-	back,				// 15
-	esc,				// 16
-	caps,				// 17
-	small,				// 18
-	spec,				// 19
-	next,				// 20
-	cur_for,			// 21
-	alnum_ent,			// 22
-	CHECK_BOX			// 23
+	MAIN,
+	MENU1A,
+	MENU1B,
+	MENU1C,
+	MENU1D,
+	num_entry,
+	alnum_entry,
+	MENU2A,
+	MENU2B,
+	MENU2C,
+	MENU3A,
+	MENU3B,
+	MENU3C,
+	MENU4A,
+	MENU4B,
+	MENU4C,
+	entr,
+	back,
+	esc,
+	caps,
+	small,
+	spec,
+	next,
+	cur_for,
+	alnum_ent,
+	CHECK_BOX
 } MENU_TYPES;
 
 enum data_types
@@ -68,15 +68,15 @@ enum data_types
 enum rt_types
 {
 	RT_RPM = 2,
+	RT_ENGT,
 	RT_TRIP,
 	RT_TIME,
 	RT_AIRT,
-	RT_O2,
+	RT_MPH,
+	RT_OILP,
 	RT_MAP,
 	RT_OILT,
-	RT_OILP,
-	RT_ENGT,
-	RT_MPH,
+	RT_O2,
 	RT_AUX
 } RT_TYPES;
 enum key_types
@@ -136,10 +136,9 @@ enum states
 void dispRC(int row, int col);
 void CheckRC(int *row, int *col, UCHAR *k);
 void display_labels(void);
-void parse_PIC24(UCHAR);
 void set_defaults(void);
 #ifdef NOAVR
-int do_read(WINDOW *win, int fd, int display_offset);
+void do_read(WINDOW *win, int fd, int display_offset);
 void set_win2(WINDOW *win);
 #endif
 void init_list(void);
@@ -149,6 +148,11 @@ int get_curr_menu(void);
 int get_str_len(void);
 int burn_eeprom(void);
 int read_eeprom(void);
+#ifdef MAIN_C
+int parse_P24(UCHAR ch, char *param_string, UCHAR *xbyte, UINT *xword);
+#else
+int parse_P24(int fd, UCHAR ch, char *param_string);
+#endif
 //int update_menu_structs(int i, char *label, UCHAR row, UCHAR col, UCHAR choice, UCHAR ch_type, UCHAR type);
 int update_menu_structs(int i, UCHAR enabled, UCHAR fptr, UCHAR menu, UCHAR label);
 int update_rtparams(int i, UCHAR row, UCHAR col, UCHAR shown, UCHAR type);
