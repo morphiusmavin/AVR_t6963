@@ -2,12 +2,12 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 #define TIME_DELAY1 1
-#define STRING_LEN   100
-#define NUM_FPTS 9
+#define STRING_LEN 100
+#define NUM_FPTS 14
 #define MAX_LABEL_LEN 9
-#define NUM_LABELS 33
+#define NUM_LABELS 39
 #define NUM_MENU_CHOICES 6
-#define NUM_MENUS 17
+#define NUM_MENUS 15
 #define NUM_MENU_STRUCTS NUM_MENUS*NUM_MENU_CHOICES
 #define NUM_MENU_FUNCS 10
 #define NUM_RT_PARAMS 20
@@ -24,7 +24,7 @@ typedef struct menu_func
 	UCHAR enabled;		// if alt function will replace generic function
 	UCHAR fptr;			// which function to call (menu_types)
 	UCHAR menu;			// if fptr == 0 then it means goto this menu
-	UCHAR label;			// which label to display in legend (labels)
+	UCHAR label;		// which label to display in legend (labels)
 } MENU_FUNC_STRUCT;
 
 enum menu_types
@@ -34,6 +34,8 @@ enum menu_types
 	MENU1B,				// 2
 	MENU1C,				// 3
 	MENU1D,				// 4
+	num_entry,			// 5
+	alnum_entry,		// 6
 	MENU2A,				// 5
 	MENU2B,				// 6
 	MENU2C,				// 7
@@ -42,16 +44,17 @@ enum menu_types
 	MENU3C,				// 10
 	MENU4A,				// 11
 	MENU4B,				// 12
-	MENU4C,				// 13
-	test1,				// 14
-	test2,				// 15
-	test3,				// 16
-	test4,				// 17
-	START_NUM_ENTRY,	// 18
-	NUM_ENTRY,			// 19
-	ALNUM_ENTRY,		// 20
-	CHECK_BOX,			// 21
-	GO_BACK				// 22
+	MENU4C,				// 13	 - last_menu
+	entr,				// 14
+	back,				// 15
+	esc,				// 16
+	caps,				// 17
+	small,				// 18
+	spec,				// 19
+	next,				// 20
+	cur_for,			// 21
+	alnum_ent,			// 22
+	CHECK_BOX			// 23
 } MENU_TYPES;
 
 enum data_types
@@ -62,7 +65,6 @@ enum data_types
 	RT_HIGH2,			// bit 7 of UINT set
 	RT_HIGH3			// bit 15 of UINT set
 } DATA_TYPES;
-
 enum rt_types
 {
 	RT_RPM = 2,
@@ -77,7 +79,6 @@ enum rt_types
 	RT_MPH,
 	RT_AUX
 } RT_TYPES;
-
 enum key_types
 {
 	KP_POUND = 0xE0, // '#'
@@ -97,14 +98,6 @@ enum key_types
 	KP_C, // 'C'
 	KP_D // 'D'
 } KEY_TYPES;
-
-
-
-#define MSG_0 0xD0	// message types sent from AVR to PIC24
-#define MSG_1 0xD1
-#define MSG_2 0xD2
-#define MSG_3 0xD3
-
 enum states
 {
 	IDLE = 1,
@@ -118,13 +111,11 @@ enum states
 	SEND_UINT1,		// UINT with bit 7 set
 	SEND_UINT2		// UINT with bit 15 set
 } STATES;
-
 #define NUM_ENTRY_SIZE 20
 //#define NUM_ENTRY_BEGIN_COL (COLUMN - COLUMN/2)
 #define NUM_ENTRY_BEGIN_COL 3
 #define NUM_ENTRY_END_COL NUM_ENTRY_BEGIN_COL + NUM_ENTRY_SIZE
 #define NUM_ENTRY_ROW 6
-
 // '!' - '9' (33 - 58) + 'A' - 'Z' (26) + 'a' - 'z' (26) = 77
 //#define NUM_ALNUM 77
 //#define NUM_ALNUM 52		// without the '!' - '9'
@@ -133,25 +124,15 @@ enum states
 #define MENU_START_ROW 12
 #define MENU_START_COL 15
 #define MENU_BLANK "          "
-
-#define RTMAINC rt_main[curr_rt_layout]
-
 #define NO_LABELS_EEPROM_LOCATION 0x03e0
 #define NO_RTPARAMS_EEPROM_LOCATION 0x03e1
 #define NO_MENUS_EEPROM_LOCATION 0x3e2
-
-//#define LABEL_INFO_OFFSET_EEPROM_LOCATION_LSB 0x03e3	// points to just after all the labels - stores the offsets of each label
-//#define LABEL_INFO_OFFSET_EEPROM_LOCATION_MSB 0x03e4
-
 #define RTPARAMS_OFFSET_EEPROM_LOCATION_LSB 0x03e5	// points to just after all the labels (prompt_info)
 #define RTPARAMS_OFFSET_EEPROM_LOCATION_MSB 0x03e6
-
 #define MENUSTRUCT_OFFSET_EEPROM_LOCATION_LSB 0x03e7	// points to just after all the labels (prompt_info)
 #define MENUSTRUCT_OFFSET_EEPROM_LOCATION_MSB 0x03e8
-
 #define dispCharAt(_row,_col,_char) GDispCharAt((UINT)_row,(UINT)_col,(UCHAR)_char)
 #define dispSetCursor(_mode,_row,_col,_type) GDispSetCursor ((UCHAR)_mode, (UINT)_row, (UINT)_col, (UCHAR)_type)
-
 void dispRC(int row, int col);
 void CheckRC(int *row, int *col, UCHAR *k);
 void display_labels(void);
@@ -163,40 +144,28 @@ void set_win2(WINDOW *win);
 #endif
 void init_list(void);
 UCHAR get_key(UCHAR ch);
-int get_curr_fptr(void);
 int curr_fptr_changed(void);
 int get_curr_menu(void);
-int get_type(void);
 int get_str_len(void);
-char *get_label(int index);
 int burn_eeprom(void);
 int read_eeprom(void);
 //int update_menu_structs(int i, char *label, UCHAR row, UCHAR col, UCHAR choice, UCHAR ch_type, UCHAR type);
 int update_menu_structs(int i, UCHAR enabled, UCHAR fptr, UCHAR menu, UCHAR label);
 int update_rtparams(int i, UCHAR row, UCHAR col, UCHAR shown, UCHAR type);
 int update_labels(int i, char *ramstr);
-
 UCHAR current_param;
 UINT temp_UINT;
 UCHAR parse_state;
 UCHAR cursor_row, cursor_col;
-
 int no_labels;
 int no_rtparams;
 int no_menu_structs;
-
 //UINT label_info_offset;
 UINT rt_params_offset;
 UINT menu_struct_offset;
-
 char labels[NUM_LABELS][MAX_LABEL_LEN];
-
 // just have 1 copy in ram and reload from eeprom every time we change menus
 MENU_FUNC_STRUCT menu_structs[NUM_MENU_STRUCTS];
-
-int get_menu_struct_type(int index);
-int get_menu_struct_choice(int index);
-int get_menu_struct_chtype(int index);
 char *get_label(int index);
 UCHAR get_row(int index);
 UCHAR get_col(int index);

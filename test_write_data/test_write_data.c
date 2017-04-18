@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 	int iters;
 	int i,j;
 	UCHAR alnum_strlen = 0;
-	int write_alnum = 10;
+	int write_alnum = 5;
 	UCHAR ch;
 	struct termios oldtio,newtio;
 	WINDOW *menu_win;
@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
 		printf("%d\n",rt_params[i].type);
 	}
 	printf("menu structs: %d\n",no_menu_structs);
-	for(i = 0;i < 12;i++)
-//	for(i = 0;i < no_menu_structs;i++)
+	for(i = 0;i < no_menu_structs;i++)
+//	for(i = 0;i < 2;i++)
 	{
 		printf("%d\t",menu_structs[i].enabled);
 		printf("%d\t",menu_structs[i].fptr);
@@ -199,20 +199,20 @@ int main(int argc, char *argv[])
 		{
 			if(++code > RT_MPH)
 			{
-/*
+
 				if(--write_alnum < 1)
 				{
-					write_alnum = 10;
+					write_alnum = 5;
 					code = RT_AUX;
 				}
 				else
-*/
+
 				code = RT_RPM;
 			}
 			ch = code;
 		    write(fd,&code,1);
 //			printf("%x\n",ch);
-/*
+
 			if(code == RT_AUX)
 			{
 
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 				res = read(fd,aux_array,NUM_ENTRY_SIZE);
 
 			}
-*/
+
 			if(code == RT_RPM)
 			{
 				if(data2 & 0x8000)
@@ -335,14 +335,14 @@ int main(int argc, char *argv[])
 			{
 				mvwprintw(menu_win, display_offset+16, 4, "others:  %d  ",read_buff[0]);
 			}
+#endif
 			mvwprintw(menu_win, display_offset+21, 4, "iterations left: %d   ",iters-i);
 			mvwprintw(menu_win, display_offset+23, 4,"                         ");
-//			for(j = 0;j < NUM_ENTRY_SIZE;j++)
-//				mvwprintw(menu_win, display_offset+23, 4+j, "%c",aux_array[j]);
-//			mvwprintw(menu_win, display_offset+24, 4,"alnum strlen: %d",alnum_strlen);
-//			wrefresh(menu_win);
+			for(j = 0;j < NUM_ENTRY_SIZE;j++)
+				mvwprintw(menu_win, display_offset+23, 4+j, "%c",aux_array[j]);
+			mvwprintw(menu_win, display_offset+24, 4,"alnum strlen: %d",alnum_strlen);
+			wrefresh(menu_win);
 
-#endif
 // see if one of the keys from the "keypad" is pressed
 			key = wgetch(menu_win);
 

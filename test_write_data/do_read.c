@@ -47,9 +47,9 @@ int do_read(WINDOW *win, int fd, int display_offset)
 		done = 0;
 		res = read(fd,&ch,1);
 		ch = get_key(ch);
-		mvwprintw(win, display_offset+14, 5, "parse_state = %d  ",parse_state);
-		mvwprintw(win, display_offset+15, 5, "current_param = %d  ",current_param);
-		wrefresh(win);
+//		mvwprintw(win, display_offset+14, 5, "parse_state = %d  ",parse_state);
+//		mvwprintw(win, display_offset+15, 5, "current_param = %d  ",current_param);
+//		wrefresh(win);
 		switch(parse_state)
 		{
 			case IDLE:
@@ -60,12 +60,12 @@ int do_read(WINDOW *win, int fd, int display_offset)
 				}
 				else if(ch == RT_AUX)
 				{
-/*
+
 					ch = get_str_len();
 					write(fd,&ch,1);
 					write(fd,new_global_number,NUM_ENTRY_SIZE);
 					parse_state = IDLE;
-*/
+
 				}
 				else
 				{
@@ -164,7 +164,7 @@ int do_read(WINDOW *win, int fd, int display_offset)
 		{
 			mvwprintw(win, display_offset+current_param, 15, "        ");
 			mvwprintw(win, display_offset+current_param, 15, param_string);
-			mvwprintw(win, display_offset+16, 5, "param_string = %s  ",param_string);
+//			mvwprintw(win, display_offset+16, 5, "param_string = %s  ",param_string);
 			wrefresh(win);
 /*
 			if(current_param == RT_RPM)

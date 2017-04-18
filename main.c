@@ -53,7 +53,7 @@ int main(void)
 		printString("reading prompt data into prompt structs\r\n");
 #endif
 		no_labels  = eeprom_read_byte((UCHAR*)NO_LABELS_EEPROM_LOCATION);
-		no_rtparams  = eeprom_read_byte((UCHAR*)NO_LABELS_EEPROM_LOCATION);
+		no_rtparams  = eeprom_read_byte((UCHAR*)NO_RTPARAMS_EEPROM_LOCATION);
 		no_menu_structs  = eeprom_read_byte((UCHAR*)NO_MENUS_EEPROM_LOCATION);
 #ifdef TTY_DISPLAY
 		printString("no_labels: ");
@@ -66,12 +66,6 @@ int main(void)
 		printHexByte(no_menu_structs);
 		printString("\r\n");
 #endif
-/*
-		label_info_offset = (UINT)eeprom_read_byte((UCHAR*)LABEL_INFO_OFFSET_EEPROM_LOCATION_LSB);
-		temp = eeprom_read_byte((UCHAR*)LABEL_INFO_OFFSET_EEPROM_LOCATION_MSB);
-		temp2 = (UINT)temp;
-		label_info_offset |= (temp2 << 8);		// shift msb over and bit-or with lsb
-*/
 		rt_params_offset = (UINT)eeprom_read_byte((UCHAR*)RTPARAMS_OFFSET_EEPROM_LOCATION_LSB);
 		temp = eeprom_read_byte((UCHAR*)RTPARAMS_OFFSET_EEPROM_LOCATION_MSB);
 		temp2 = (UINT)temp;
@@ -145,93 +139,11 @@ int main(void)
 		printHexByte(current_fptr);
 		printString("\r\n");
 #endif
-//		ret_char = (*fptr[current_fptr])(ret_char, limit8, limit16, cur_row, cur_col);
 		ret_char = get_key(ret_char);
-//		if(current_fptr != last_fptr)
-//		if(curr_fptr_changed())
-//			display_menus();
-//		last_fptr = current_fptr;
 		parse_PIC24(ret_char);
 	}
     return (0);		// this should never happen
 }
-
-//******************************************************************************************//
-//********************************** get_menu_struct_type **********************************//
-//******************************************************************************************//
-#ifdef MAIN_C
-int get_menu_struct_type(int index)
-{
-#if 0
-	MENU_STRUCT ms;
-	eeprom_read_block(&ms, eepromString+menu_struct_offset+(sizeof(MENU_STRUCT)*index),sizeof(MENU_STRUCT));
-	return ms.type;
-#endif
-	return 0;
-}
-//******************************************************************************************//
-//********************************* get_menu_struct_choice *********************************//
-//******************************************************************************************//
-int get_menu_struct_choice(int index)
-{
-#if 0
-	MENU_STRUCT ms;
-	eeprom_read_block(&ms, eepromString+menu_struct_offset+(sizeof(MENU_STRUCT)*index),sizeof(MENU_STRUCT));
-	return ms.menu_choice;
-#endif
-	return 0;
-}
-//******************************************************************************************//
-//********************************* get_menu_struct_choice *********************************//
-//******************************************************************************************//
-int get_menu_struct_chtype(int index)
-{
-#if 0
-	MENU_STRUCT ms;
-	eeprom_read_block(&ms, eepromString+menu_struct_offset+(sizeof(MENU_STRUCT)*index),sizeof(MENU_STRUCT));
-	return ms.ch_type;
-#endif
-	return 0;
-}
-//******************************************************************************************//
-//*************************************** get_label ****************************************//
-//******************************************************************************************//
-char *get_label(int index)
-{
-	int offset = 0;
-	int j;
-	char label[MAX_LABEL_LEN];
-
-	for(j = 0;j < index;j++)
-		offset += label_offsets[j];
-	eeprom_read_block(label, eepromString+offset,MAX_LABEL_LEN);
-	return label;
-}
-//******************************************************************************************//
-//**************************************** get_row *****************************************//
-//******************************************************************************************//
-UCHAR get_row(int index)
-{
-/*
-	MENU_STRUCT ms;
-	int offset = (int)menu_struct_offset + index * sizeof(MENU_STRUCT);
-	eeprom_read_block(&ms,eepromString+offset,sizeof(MENU_STRUCT));
-	return ms.row;
-*/	return 0;
-}
-//******************************************************************************************//
-//**************************************** get_col *****************************************//
-//******************************************************************************************//
-UCHAR get_col(int index)
-{
-/*
-	MENU_STRUCT ms;
-	int offset = (int)menu_struct_offset + index * sizeof(MENU_STRUCT);
-	eeprom_read_block(&ms,eepromString+offset,sizeof(MENU_STRUCT));
-	return ms.col;
-*/	return 0;
-}
-#endif
 //******************************************************************************************//
 //*************************************** parse_PIC24 **************************************//
 //******************************************************************************************//

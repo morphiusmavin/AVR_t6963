@@ -16,11 +16,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
 #ifndef NOAVR
 extern char eepromString[STRING_LEN] EEMEM;
 #endif
-
 //******************************************************************************************//
 //***************************************** burn_eeprom ************************************//
 //******************************************************************************************//
@@ -39,9 +37,7 @@ int burn_eeprom(void)
 
     i = 0;
 	j = 0;
-    // the row,col elements don't really apply for the RT params
-    // because the are displayed according to the row,col elements of the rt_layout
-#if 1
+#if 1	// update labels
 	i = update_labels(i,"RPM\0");
 	i = update_labels(i,"MPH\0");
 	i = update_labels(i,"ENG TEMP\0");
@@ -57,6 +53,8 @@ int burn_eeprom(void)
 	i = update_labels(i,"MENU1b\0");
 	i = update_labels(i,"MENU1c\0");
 	i = update_labels(i,"MENU1d\0");
+	i = update_labels(i,"nument\0");
+	i = update_labels(i,"alnum\0");
 	i = update_labels(i,"MENU2a\0");
 	i = update_labels(i,"MENU2b\0");
 	i = update_labels(i,"MENU2c\0");
@@ -66,15 +64,16 @@ int burn_eeprom(void)
 	i = update_labels(i,"MENU4a\0");
 	i = update_labels(i,"MENU4b\0");
 	i = update_labels(i,"MENU4c\0");
-	i = update_labels(i,"test1\0");
-	i = update_labels(i,"test2\0");
-	i = update_labels(i,"test3\0");
-	i = update_labels(i,"test4\0");
-	i = update_labels(i,"snmentry\0");
-	i = update_labels(i,"numentry\0");
-	i = update_labels(i,"aluentry\0");
+	i = update_labels(i,"enter\0");
+	i = update_labels(i,"back\0");
+	i = update_labels(i,"esc\0");
+	i = update_labels(i,"caps\0");
+	i = update_labels(i,"small\0");
+	i = update_labels(i,"spec\0");
+	i = update_labels(i,"next\0");
+	i = update_labels(i,"forward\0");
+	i = update_labels(i,"enter\0");
 	i = update_labels(i,"checkbox\0");
-	i = update_labels(i,"<back>\0");
 	no_labels = i;
 #endif
 	i = 0;
@@ -104,7 +103,6 @@ int burn_eeprom(void)
 	i = update_rtparams(i, 3, 15, 1, RT_ENGT);
 	i = update_rtparams(i, 4, 15, 1, RT_MPH);
 	no_rtparams = i;
-
 // write to the number of rt_params location in eeprom the number of rt_params
 #ifndef NOAVR
 	eeprom_update_word((UINT *)NO_RTPARAMS_EEPROM_LOCATION,no_rtparams);
@@ -121,137 +119,140 @@ int burn_eeprom(void)
 	printf("no_rtparams: %d\n",no_rtparams);
 	printf("total_offset: %d\n",total_offset);
 #endif
-#if 1
 	i = 0;
-// still need to put the titles of each menu up somehow - prolly have another array of strings and index on pnum/4
-	// main menu
-//	i = update_menu_structs(int i, UCHAR enabled, UCHAR key, UCHAR fptr, UCHAR menu, UCHAR label);
-
-// TODO: make these do something!
-/*
-	UCHAR enabled;		// if alt function will replace generic function
-	UCHAR fptr;			// which function to call (menu_types)
-	UCHAR menu;			// if fptr == 0 then it means goto this menu
-	UCHAR label;		// which label to display in legend (labels)
-*/
 	UCHAR enabled, fptr, menu, label = 0;
 	enabled = 1;
-	// main menu
-	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
-	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
-	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
-	i = update_menu_structs(i, 1, 0,		MENU1D,		MENU1D);
-	i = update_menu_structs(i, 0, test1,	0,			test1);
-	i = update_menu_structs(i, 0, test2,	0,			test2);
-
-// load the only ram copy of menu_structs with the first one
 //	menu_structs[i].enabled = enabled;
 //	menu_structs[i].fptr = fptr;
 //	menu_structs[i].menu = menu;
 //	menu_structs[i].label = label;
+// A,B,C,D,#,0
+	// main menu	0
+	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
+	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
+	i = update_menu_structs(i, 1, 0,		MENU1D,		MENU1D);
+	i = update_menu_structs(i, 1, 0,		MENU2A,		MENU2A);
+	i = update_menu_structs(i, 1, 0,		MENU2B,		MENU2B);
+	// menu 1a		6
+	i = update_menu_structs(i, 1, 0, 		MAIN,		MAIN);
+	i = update_menu_structs(i, 1, 0,		num_entry,	num_entry);
+	i = update_menu_structs(i, 1, 0,		MENU2A,		MENU2A);
+	i = update_menu_structs(i, 0, 0,		MAIN,		MAIN);
+	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
+	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
 
+	// menu 1b		12
+	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
+	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
+	i = update_menu_structs(i, 1, 0,		MAIN,		MAIN);
+	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
+	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
+
+	// menu 1c		18
+	i = update_menu_structs(i, 1, 0,		num_entry,	num_entry);
+	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
+	i = update_menu_structs(i, 1, 0,		MAIN,		MAIN);
+	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
+	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
+
+	// menu 1d		24
+	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
+	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 1, 0,		MAIN,		MAIN);
+	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
+	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
+	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
+
+	// num_entry	30
+	i = update_menu_structs(i, 1, entr, 0, entr);
+	i = update_menu_structs(i, 1, back, 0,  back);
+	i = update_menu_structs(i, 1, esc, 0, 	esc);
+	i = update_menu_structs(i, 1, 0, alnum_entry, alnum_entry);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
+
+	// alnum entry	36
+	i = update_menu_structs(i, 1, alnum_ent, 0, alnum_ent);	// A
+	i = update_menu_structs(i, 1, cur_for, 0, cur_for);		// B
+	i = update_menu_structs(i, 1, next, 0, next);			// C
+	i = update_menu_structs(i, 1, caps, 0,  caps);			// D
+	i = update_menu_structs(i, 1, spec, 0, spec);			// #
+	i = update_menu_structs(i, 1, small, 0,	small);			// 0
+
+	// menu 2a		42
+	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
+	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
 #if 1
-	// menu 1a
-	i = update_menu_structs(i, 1, 0, 		MAIN,	MAIN);
-	i = update_menu_structs(i, 1, test1,	0,			test1);
-	i = update_menu_structs(i, 1, test2,	0,			test2);
-	i = update_menu_structs(i, 1, test3,	0,			test3);
-	i = update_menu_structs(i, 0, 0,		MENU1B,		MENU1B);
-	i = update_menu_structs(i, 0, 0,		MAIN,	MAIN);
-
-	// menu 1b
+	// 2b			48
 	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
 	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
-	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
-	i = update_menu_structs(i, 1, test1,	0,			test1);
-	i = update_menu_structs(i, 1, test2,	0,			test2);
-	i = update_menu_structs(i, 1, 0,		MAIN,	MAIN);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
 
-	// menu 1c
-	i = update_menu_structs(i, 1, test2,	0,			test2);
-	i = update_menu_structs(i, 1, test3,	0,			test3);
-	i = update_menu_structs(i, 1, test4,	0,			test4);
-	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
-	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
-	i = update_menu_structs(i, 1, 0,		MAIN,	MAIN);
+	// 2c			54
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
 
-	// menu 1d
-	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
-	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
-	i = update_menu_structs(i, 1, 0,		MAIN,	MAIN);
-	i = update_menu_structs(i, 1, test2,	0,			test2);
-	i = update_menu_structs(i, 1, test3,	0,			test3);
-	i = update_menu_structs(i, 1, test4,	0,			test4);
+	// 3a
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
 
-	// menu 2a
-	i = update_menu_structs(i, 0, 14, menu, label);
-	i = update_menu_structs(i, 0, 15, menu, label);
-	i = update_menu_structs(i, 0, 16, menu, label);
-	i = update_menu_structs(i, 0, 17, menu, label);
-	i = update_menu_structs(i, 0, 18, menu, label);
-	i = update_menu_structs(i, 0, 19, menu, label);
+	// 3b
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
 
-	// menu 2b
-	i = update_menu_structs(i, 0, 20, menu, label);
-	i = update_menu_structs(i, 0, 21, menu, label);
-	i = update_menu_structs(i, 0, 22, menu, label);
-	i = update_menu_structs(i, 0, 23, menu, label);
-	i = update_menu_structs(i, 0, 24, menu, label);
-	i = update_menu_structs(i, 0, 25, menu, label);
+	// 3c
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
 
-	// menu 2c
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
+	// 4a
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
 
-	// menu 3a
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
+	// 4b
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
 
-	// menu 3b
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-
-	// menu 3c
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	// menu 4a
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	// menu 4b
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	// menu 4c
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-	i = update_menu_structs(i, 0, fptr, menu, label);
-#endif
+	// 4c
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
+	i = update_menu_structs(i, 0, 0, 0, 0);
 #endif
 	no_menu_structs = i;
 	// now we can write to the NO_MENUS_EEPROM_LOCATION in eeprom
@@ -282,6 +283,7 @@ int update_labels(int index, char *ramstr)
 	len++;
 	label_offsets[index] = len;
 	total_offset += len;
+//	printf("len = %d total_offset = %d\n",len,total_offset);
 //	printf("len=%d i= %d\n",len,index);
 // if NOAVR then just copy to array of strings
 #ifndef NOAVR
@@ -304,6 +306,7 @@ int update_rtparams(int i, UCHAR row, UCHAR col, UCHAR shown, UCHAR type)
     eeprom_update_block(&rt_params[i], eepromString+total_offset, sizeof(RT_PARAM));
 #endif
 	total_offset += sizeof(RT_PARAM);
+//	printf("total_offset = %d\n",total_offset);
 	i++;
 	return i;
 }
@@ -338,6 +341,7 @@ int update_menu_structs(int i, UCHAR enabled, UCHAR fptr, UCHAR menu, UCHAR labe
     eeprom_update_block(&menu_structs, eepromString+total_offset, sizeof(MENU_FUNC_STRUCT));
 #endif
 	total_offset += sizeof(MENU_FUNC_STRUCT);
+//	printf("total_offset = %d\n",total_offset);
 	i++;
 	return i;
 }
