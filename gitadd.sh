@@ -23,6 +23,7 @@ git add t6963_notes.txt
 git add menus.c
 git add main.h
 git add main.c
+git add parse_P24.c
 git add test_write_data/test_write_data.c
 git add test_write_data/do_read.c
 git add test_write_data/makefile
