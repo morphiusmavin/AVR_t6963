@@ -139,12 +139,11 @@ int main(void)
     while (1)
     {
         ret_char = receiveByte();
-#ifdef TTY_DISPLAY
-		printHexByte(current_fptr);
-		printString("\r\n");
-#endif
 		ret_char = get_key(ret_char);
 		done = parse_P24(ret_char, param_string, &xbyte, &xword);
+
+// try this, just to be a little more cryptic:
+//		done = parse_P24(get_key(receiveByte()), param_string, &xbyte, &xword);
 
 		if(done)
 		{
@@ -230,5 +229,5 @@ void set_defaults(void)
 {
 	temp_UINT = 0;
 	parse_state = IDLE;
-}
+ }
 

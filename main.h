@@ -3,14 +3,17 @@
 #define _MAIN_H_
 #define TIME_DELAY1 1
 #define STRING_LEN 100
-#define NUM_FPTS 14
+#define NUM_FPTS 13
 #define MAX_LABEL_LEN 9
 #define NUM_LABELS 39
 #define NUM_MENU_CHOICES 6
-#define NUM_MENUS 15
+#define NUM_MENUS 17
 #define NUM_MENU_STRUCTS NUM_MENUS*NUM_MENU_CHOICES
 #define NUM_MENU_FUNCS 10
 #define NUM_RT_PARAMS 20
+#define DISP_OFFSET 18
+#define NUM_CHECKBOXES 10
+
 typedef struct rt_params
 {
 	UCHAR row;			// row, col tells where the param will appear on screen
@@ -27,6 +30,13 @@ typedef struct menu_func
 	UCHAR label;		// which label to display in legend (labels)
 } MENU_FUNC_STRUCT;
 
+typedef struct checkboxes
+{
+	UCHAR index;
+	UCHAR checked;
+	char string[20];
+} CHECKBOXES;
+
 enum menu_types
 {
 	MAIN,
@@ -36,6 +46,7 @@ enum menu_types
 	MENU1D,
 	num_entry,
 	alnum_entry,
+	chkboxes,
 	MENU2A,
 	MENU2B,
 	MENU2C,
@@ -44,7 +55,16 @@ enum menu_types
 	MENU3C,
 	MENU4A,
 	MENU4B,
-	MENU4C,
+	MENU4C,		// total of 17 menus
+/*
+functions start here - these are indexes into the array of function pointers (in menus.c)
+
+static UCHAR (*fptr[NUM_FPTS])(UCHAR) = {enter, backspace, escape, scr_alnum0, \
+		 scr_alnum1, scr_alnum2, scr_alnum3, cursor_forward, alnum_enter, scrollup_checkboxes, \
+			scrolldown_checkboxes, toggle_checkboxes, enter_checkboxes };
+			
+use these when calling update_menu_structs() in eeprom_burn.c
+*/
 	entr,
 	back,
 	esc,
@@ -54,7 +74,10 @@ enum menu_types
 	next,
 	cur_for,
 	alnum_ent,
-	CHECK_BOX
+	ckup,
+	ckdown,
+	cktoggle,
+	ckenter
 } MENU_TYPES;
 
 enum data_types
@@ -67,7 +90,7 @@ enum data_types
 } DATA_TYPES;
 enum rt_types
 {
-	RT_RPM = 2,
+	RT_RPM,
 	RT_ENGT,
 	RT_TRIP,
 	RT_TIME,
@@ -111,7 +134,60 @@ enum states
 	SEND_UINT1,		// UINT with bit 7 set
 	SEND_UINT2		// UINT with bit 15 set
 } STATES;
-#define NUM_ENTRY_SIZE 20
+
+enum AUX_cmd_types
+{
+	PIC24_GET_DATA = 1,
+	PIC24_DATA_READY,
+	AVR_RTC,
+	KEEP_IDLE,
+	EXTRA
+} AUX_CMDS;
+
+enum AUX_param_types
+{
+	TYPE_1 = 1,
+	TYPE_2,
+	TYPE_3,
+	TYPE_4
+} AUX_PARAMS;
+
+/*
+1) AVR sends a REQ_DATA command along with param to tell what value it wants (if parse_P24 is done)
+2) PIC24 reads the byte - if 0 then doesn't do anything; if > 0 then it goes out and gets the value(s)
+3) on the next round, the AVR reads a byte sent by the PIC24 saying the data is ready
+4) if its not ready, go another round (or go so many rounds and then send another command)
+5) AVR reads the ready flag
+6) AVR then reads data
+7) AVR sets a flag showing value has been received
+8) AVR will put value in checkbox dialog (if its a binary) or in num entry dialog (if UCHAR or UINT) (?word)
+9) AVR will send a command telling the PIC24 that it can read the changed value(s) back
+10) AVR will send data
+
+each one of the following states is one whole cycle in the rt_params
+*/
+enum PIC24_aux_states
+{
+	P24_IDLE = 1,
+	GET_DATA,			// when PIC24 gets a REQ_DATA then go out and get it
+	SEND_DATA_READY,	// tell AVR data is ready to send
+	SEND_DATA,			// send data (how much is predefined)
+	WAIT_ACQ,			// wait for AVR to say valid data was received (if NAQ then go to prev state)
+	P24_WAIT_NEW_DATA,		// wait for AVR to send the updated value(s)
+} PIC24_AUX;
+
+enum AVR_aux_states
+{
+	AVR_IDLE = 1,
+	REQ_DATA,			//  when menu choice is get certain data (this one starts everything)
+	WAIT_DATA_READY,	// wait for SEND_DATA_READY from PIC24 (keep making rounds until data is ready to read)
+	READ_DATA,			// read data (how much is predefined)
+	SEND_ACQ,			// send acq telling PIC24 we have received the data (or send NAQ saying we did not received valid data)
+	AVR_WAIT_NEW_DATA,		// wait for stupid user to finish editing new data
+	SEND_NEW_DATA
+} AVR_AUX;
+#define NUM_ENTRY_SIZE 10
+#define AUX_DATA_SIZE 8
 //#define NUM_ENTRY_BEGIN_COL (COLUMN - COLUMN/2)
 #define NUM_ENTRY_BEGIN_COL 3
 #define NUM_ENTRY_END_COL NUM_ENTRY_BEGIN_COL + NUM_ENTRY_SIZE
@@ -151,7 +227,7 @@ int read_eeprom(void);
 #ifdef MAIN_C
 int parse_P24(UCHAR ch, char *param_string, UCHAR *xbyte, UINT *xword);
 #else
-int parse_P24(int fd, UCHAR ch, char *param_string);
+int parse_P24(WINDOW *win, int fd, UCHAR ch, char *param_string);
 #endif
 //int update_menu_structs(int i, char *label, UCHAR row, UCHAR col, UCHAR choice, UCHAR ch_type, UCHAR type);
 int update_menu_structs(int i, UCHAR enabled, UCHAR fptr, UCHAR menu, UCHAR label);
@@ -185,4 +261,12 @@ int total_offset;
 //#endif
 char cur_global_number[NUM_ENTRY_SIZE];
 char new_global_number[NUM_ENTRY_SIZE];
+UCHAR aux_type;	// tells PIC24 what to send when code = RT_AUX
+UCHAR paux_state;
+UCHAR aaux_state;
+UCHAR aux_data[AUX_DATA_SIZE];
+void set_state_defaults(void);
+CHECKBOXES check_boxes[NUM_CHECKBOXES];
+int curr_checkbox;
+int last_checkbox;
 #endif

@@ -10,7 +10,7 @@
 #include "../macros.h"
 #else
 #include <ncurses.h>
-#warning "NOAVR defined"
+//#warning "NOAVR defined"
 #endif
 #include "../main.h"
 #include <string.h>
@@ -54,6 +54,7 @@ int burn_eeprom(void)
 	i = update_labels(i,"MENU1d\0");
 	i = update_labels(i,"nument\0");
 	i = update_labels(i,"alnum\0");
+	i = update_labels(i,"checkbox\0");
 	i = update_labels(i,"MENU2a\0");
 	i = update_labels(i,"MENU2b\0");
 	i = update_labels(i,"MENU2c\0");
@@ -72,7 +73,6 @@ int burn_eeprom(void)
 	i = update_labels(i,"next\0");
 	i = update_labels(i,"forward\0");
 	i = update_labels(i,"enter\0");
-	i = update_labels(i,"checkbox\0");
 	no_labels = i;
 #endif
 	i = 0;
@@ -134,12 +134,12 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 1, 0,		MENU2A,		MENU2A);
 	i = update_menu_structs(i, 1, 0,		MENU2B,		MENU2B);
 	// menu 1a		6
-	i = update_menu_structs(i, 1, 0, 		MAIN,		MAIN);
 	i = update_menu_structs(i, 1, 0,		num_entry,	num_entry);
-	i = update_menu_structs(i, 1, 0,		MENU2A,		MENU2A);
-	i = update_menu_structs(i, 0, 0,		MAIN,		MAIN);
-	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
-	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN);
+	i = update_menu_structs(i, 1, 0,		chkboxes,	chkboxes);
+	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
+	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
+	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
+	i = update_menu_structs(i, 1, 0,		MENU1D,		MENU1D);
 
 	// menu 1b		12
 	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
@@ -181,7 +181,15 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 1, spec, 0, spec);			// #
 	i = update_menu_structs(i, 1, small, 0,	small);			// 0
 
-	// menu 2a		42
+	// checkboxes	42
+	i = update_menu_structs(i, 1, ckup, 0, ckup);			// A
+	i = update_menu_structs(i, 1, ckdown, 0, ckdown);		// B
+	i = update_menu_structs(i, 1, cktoggle, 0, cktoggle);	// C
+	i = update_menu_structs(i, 1, ckenter, 0,  ckenter);	// D
+	i = update_menu_structs(i, 0, 0, 0, 0);					// #
+	i = update_menu_structs(i, 0, 0, 0, 0);					// 0
+
+	// menu 2a		48
 	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
 	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
 	i = update_menu_structs(i, 0, 0, 0, 0);
@@ -189,7 +197,7 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 0, 0, 0, 0);
 	i = update_menu_structs(i, 0, 0, 0, 0);
 #if 1
-	// 2b			48
+	// 2b			54
 	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
 	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
 	i = update_menu_structs(i, 0, 0, 0, 0);
@@ -197,7 +205,7 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 0, 0, 0, 0);
 	i = update_menu_structs(i, 0, 0, 0, 0);
 
-	// 2c			54
+	// 2c			60
 	i = update_menu_structs(i, 0, 0, 0, 0);
 	i = update_menu_structs(i, 0, 0, 0, 0);
 	i = update_menu_structs(i, 0, 0, 0, 0);

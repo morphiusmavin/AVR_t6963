@@ -82,47 +82,93 @@ typedef struct rt_params
 	UCHAR row;			// row, col tells where the param will appear on screen
 	UCHAR col;	
 	UCHAR shown;		// if its shown or not
-	UCHAR type;			// 0 - UCHAR; 1 - UINT; 2 - string
+	UCHAR type;			// rt_types
 } RT_PARAM;
 
 The array of RT_PARAMS is read into an array in ram and can be changed by commands from
 the PIC24 to re-arrange the display.
 
 The next section of eeprom stores the default menu setup which is an array of the MENU_STRUCT:
-typedef menu_struct
+typedef struct menu_func
 {
-	UCHAR pnum;			// index
-	UINT label_offset;	// offset into label section of eeprom of which label to use
-	UCHAR row,			// row, col where the label will be displayed
-	UCHAR col;
-	UCHAR menu_choice;	// the type of keypress in the switch statement of the menu
-	UCHAR type;			// index of which function pointer this menu label is associated with
-} MENU_STRUCT;
+	UCHAR enabled;		// if alt function will replace generic function
+	UCHAR fptr;			// which function to call (menu_types)
+	UCHAR menu;			// if fptr == 0 then it means goto this menu
+	UCHAR label;		// which label to display in legend (labels)
+} MENU_FUNC_STRUCT;
 
 This array will be read into program memory on startup and can be changed (added to ?) by
 commands from the PIC24.
 	
 test_write_data:
-The subdirectory call test_write_data has a separate makefile that compiles a program that I used
+The subdirectory called test_write_data has a separate makefile that compiles a program that I used
 to test some of the functionality so I didn't have to keep reflashing the AVR. I used 2 linux boxes
-connected with a crossed over serial cable. Run make, which will compile the test_write_data.c
-using menus.c, t6963.c and USART.c from the main directory, the run copy.sh which will tar up the
-files needed to compile the program on the other machines. You will have to edit the copy.sh script
-to match your machine IP addresses. Then run the extract.sh script on your other 2 machines (I use
-ssh to run the other 2 machines on my main box) and then run sudo ./test_write r (for the machine 
-that simulates the the AVR) and sudo ./test_write w <interations*10> <starting rpm value> <other 
+connected with a crossed over serial cable. The makefile will compile the test_write_data.c
+using menus.c, t6963.c, parse_P24 and USART.c from the main directory, the run copy.sh which will
+tar up the files needed to compile the program on the other machines. You will have to edit the
+copy.sh script to match your machine IP addresses. Then run the extract.sh script on your other
+2 machines (I use ssh to run the other 2 machines on my main box).
+Then run:
+sudo ./test_write r (for the machine that simulates the the AVR) 
+and
+sudo ./test_write w <interations*10> <starting rpm value> <other 
 starting values> <time delay> to simulate the PIC24 or whatever processor is writing the data 
 to the AVR.
 
-TODO:
-
-PIC24 sends commands that modify the RT_PARAM and MENU_STRUCT array to display params in different 
-format on screen. It will also send commands to tell AVR to only display certain params. 
+PIC24 sends commands that modify the RT_PARAM and MENU_FUNC_STRUCT array to display 
+params in different format on screen. It will also send commands to tell AVR to only
+display certain params. 
 For instance. we may only want to see RPM, MPH and engine temp when a non-trivial dialog 
 is on the screen. It can also send commands to modify a certain dialog, like different 
 labels for checkboxes.
 
 Each menu function that is pointed to by the array of function pointers 
+
+keypad layout - since the six reassignable keys are on the outside (bottom and left) it makes
+sense to use these as special function keys.
+1 2 3 A
+4 5 6 B
+7 8 9 C
+* 0 # D
+
+First load from the eeprom the list of MENU_FUNC_STRUCT's which are in groups of 6 (6 possible
+redefined keys for each menu choice) into an array. The 6 redefinable keys are
+'A'
+'B'
+'C'
+'D'
+'#'
+'0'
+If the keypress has been reassigned, the 'enabled' field is set. That means the function for
+the fptr (index into the list of function pointers) will be called. If the fptr is 0, then 
+look up the menu specified by the menu element and just go to that menu. The function assigned 
+to '*' in generic_menu_function() will always go back to the previous menu. 
+
+This way, we have 3 possible choices:
+1) Use the 'factory default' set of menus in eeprom.
+2) Dynamically load another set of menus using a special command from the PIC24.
+3) #2 plus burn the new menu set into eeprom.
+
+TODO:
+
+When a menu choice that changes a binary (on/off), UCHAR or UINT setting is chosen, the AVR
+will send a command to the PIC24 telling it to send the current setting. If the setting is a
+UCHAR or UINT, use the number entry dialog. If its a binary setting, then send one or more
+settings and display as a checkbox dialog.
+
+1) AVR sends a command to tell what value it wants (if parse_P24 is done)
+2) PIC24 reads the byte - if 0 then doesn't do anything; if > 0 then it goes out and gets the value(s)
+3) on the next round, the AVR reads a byte sent by the PIC24 saying the data is ready
+4) if its not ready, go another round (or go so many rounds and then send another command)
+5) AVR reads the ready flag
+6) AVR then reads data
+7) AVR sets a flag showing value has been received
+8) AVR will put value in checkbox dialog (if its a binary) or in num entry dialog (if UCHAR or UINT) (?word)
+9) AVR will send a command telling the PIC24 that it can read the changed value(s) back
+
+		
+? - should the AVR reduce the polling by using scale_display - and if so, then how
+	does the PIC24 know it doesn't need the extra data
 
 The numentry/alnum dialog should primarily be used for entering a passcode to start the engine.
 The AVR code will handle the password retries and timeouts. e.g. three tries to enter passcode and
@@ -136,20 +182,86 @@ Other parameters to have the system offer the user to change:
 	- set frequency of blinkers and how long to stay blinking (if not using the conventional switch)
 	- how long for headlights to stay on after vehicle shuts off.
 
+? do we really need label_offset[]
+if scale_display is called to reduce the display to just rpm, mph, eng temp & oil press then
+the PIC24 should not send those values
+
+state tables for RT_AUX:
+
+1) AVR sends a REQ_DATA command along with param to tell what value it wants (if parse_P24 is done)
+2) PIC24 reads the byte - if 0 then doesn't do anything; if > 0 then it goes out and gets the value(s)
+3) on the next round, the AVR reads a byte sent by the PIC24 saying the data is ready
+4) if its not ready, go another round (or go so many rounds and then send another command)
+5) AVR reads the ready flag
+6) AVR then reads data
+7) AVR sets a flag showing value has been received
+8) AVR will put value in checkbox dialog (if its a binary) or in num entry dialog (if UCHAR or UINT) (?word)
+9) AVR will send a command telling the PIC24 that it can read the changed value(s) back
+10) AVR will send data
+
+each one of the following states is one whole cycle in the rt_params
+
+enum PIC24_aux_states
+{
+	P24_IDLE = 1,
+	GET_DATA,			// when PIC24 gets a REQ_DATA then go out and get it
+	SEND_DATA_READY,	// tell AVR data is ready to send
+	SEND_DATA,			// send data (how much is predefined)
+	WAIT_ACQ,			// wait for AVR to say valid data was received (if NAQ then go to prev state)
+	P24_WAIT_NEW_DATA,		// wait for AVR to send the updated value(s)
+} PIC24_AUX;
+
+enum AVR_aux_states
+{
+	AVR_IDLE = 1,
+	REQ_DATA,			//  when menu choice is get certain data (this one starts everything)
+	WAIT_DATA_READY,	// wait for SEND_DATA_READY from PIC24 (keep making rounds until data is ready to read)
+	READ_DATA,			// read data (how much is predefined)
+	SEND_ACQ,			// send acq telling PIC24 we have received the data (or send NAQ saying we did not received valid data)
+	AVR_WAIT_NEW_DATA,		// wait for stupid user to finish editing new data
+	SEND_NEW_DATA
+} AVR_AUX;
+
 checkboxes:
 
-menu fptr sends a command to the PIC24 to tell it to send an array of structs:
-- int index
-- char *label_str
-- UCHAR checked
+The checkboxes are loaded using the RT_AUX state machine:
+	- a menu choice sends a command to the AVR state machine that tells the PIC24
+		to send either a UCHAR or UINT to modify or a list of binary values that
+		will be listed in the checkboxes
+	- the list of checkboxes will fill an array of structs: checkboxes[NUM_CHECKBOXES]
+	- the list will be displayed on the screen and the user will have the choice
+		of scrolling threw the list (blinking cursor is moved), checking/unchecking
+		the choice and entering the changes
+	- the AVR state machine will tell the PIC24 state machine that the list is ready
+		to be sent back to the PIC24
 
-The index can start anywhere in a huge list of all possible binary settings (on/off). The label describes
-the setting and checked tells if it was previously set. All the AVR does is display so many on the list
-and use the A/B keys to scroll up and down and the C key to check/uncheck the current checkbox.
+typedef struct checkboxes
+{
+	UCHAR index;
+	UCHAR checked;
+	char string[20];
+} CHECKBOXES;
+	
+The array of structs will just be enough to display on the screen (or there could be more if
+the scrolling function can move the choices in and out)
+
+menu choices for checkboxes:
+A - up
+B - down
+C - set/clear
+D - enter
+
+when using the simulation (test_write_data) the data is sent in aux_data 8 bytes at a time
+because of the fact that the serial port is set to non-blocking, there's a problem sending
+a variable number of bytes at a time so when it comes time to use it on the actual hardware,
+some things may have to be changed...
 
 last 3 checkins:
-61ae87f did total revamp - works in test_data but menus not working yet
-1e61ba3 separated do_read function into do_read.c
-7e1a630 added scripts to remove trailing whitespace
+959ead8 forgot to add parse_P24.c
+7aa3c40 put parse function in sep file (parse_P24.c) - used by both do_read.c and main.c
+691bad1 alnum entry is working along with num entry
 
-
+this checkin: put state machines in RT_AUX for both test_write_data.c (simulates PIC24)
+and in parse_P24.c (simulates AVR). PIC24 sends sample data to AVR - must have time delay:
+usleep(5000) (and no less than 5000us) at line 131 in parse_P24.c or else it will only
+read 7 bytes at line 134 and not 8 - works when test_data w time delay is 10.

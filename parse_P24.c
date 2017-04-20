@@ -2,9 +2,6 @@
 #include <avr/io.h>
 #include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
 #include "sfr_helper.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #else
 #include <unistd.h>
 #include <errno.h>
@@ -15,44 +12,166 @@
 #include <sys/time.h>
 #include <ncurses.h>
 #endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "sfr_helper.h"
 #include "main.h"
 #include "t6963.h"
+
+static void disp_astate(UCHAR state, char *str);
+static int break_out_loop(int loop,UCHAR curr_state);
+static int loop;
 
 //******************************************************************************************//
 //************************************** parse_P24 *****************************************//
 //******************************************************************************************//
 #ifdef MAIN_C
-int parse_P24(UCHAR ch, char *param_string, UCHAR *pxbyte, UINT *pxword)
+int parse_P24(UCHAR inch, char *param_string, UCHAR *pxbyte, UINT *pxword)
 #else
-int parse_P24(int fd, UCHAR ch, char *param_string)
+int parse_P24(WINDOW *win, int fd, UCHAR inch, char *param_string)
 #endif
 {
 	int done = 0;
 	UCHAR xbyte;
 	UINT xword;
+	int i,j;
+	UCHAR tempch;
+	char tempx[20];
+	UCHAR auxcmd;
+	UCHAR auxparam;
+	int res;
 
 	switch(parse_state)
 	{
 		case IDLE:
-			if(ch <= RT_O2 && ch >= RT_RPM)
+			if(inch <= RT_O2 && inch >= RT_RPM)
 			{
-				current_param = ch;
+				current_param = inch;
 				parse_state = CHECK_HIGHBIT;
 			}
-// 
-// if PIC24 sends an RT_AUX command then
-// 
-			else if(ch == RT_AUX)
+/*
+1) AVR sends a REQ_DATA command along with param to tell what value it wants (if parse_P24 is done)
+2) PIC24 reads the byte - if 0 then doesn't do anything; if > 0 then it goes out and gets the value(s)
+3) on the next round, the AVR reads a byte sent by the PIC24 saying the data is ready
+4) if its not ready, go another round (or go so many rounds and then send another command)
+5) AVR reads the ready flag
+6) AVR then reads data
+7) AVR sets a flag showing value has been received
+8) AVR will put value in checkbox dialog (if its a binary) or in num entry dialog (if UCHAR or UINT) (?word)
+9) AVR will send a command telling the PIC24 that it can read the changed value(s) back
+10) AVR will send data
+
+each one of the following states is one whole cycle in the rt_params
+
+enum PIC24_aux_states
+{
+	P24_IDLE = 1,
+	GET_DATA,			// when PIC24 gets a REQ_DATA then go out and get it
+	SEND_DATA_READY,	// tell AVR data is ready to send
+	SEND_DATA,			// send data (how much is predefined)
+	WAIT_ACQ,			// wait for AVR to say valid data was received (if NAQ then go to prev state)
+	P24_WAIT_NEW_DATA,		// wait for AVR to send the updated value(s)
+} PIC24_AUX;
+
+enum AVR_aux_states
+{
+	AVR_IDLE = 1,
+	REQ_DATA,			//  when menu choice is get certain data (this one starts everything)
+	WAIT_DATA_READY,	// wait for SEND_DATA_READY from PIC24 (keep making rounds until data is ready to read)
+	READ_DATA,			// read data (how much is predefined)
+	SEND_ACQ,			// send acq telling PIC24 we have received the data (or send NAQ saying we did not received valid data)
+	AVR_WAIT_NEW_DATA,		// wait for stupid user to finish editing new data
+	SEND_NEW_DATA
+} AVR_AUX;
+*/
+			else if(inch == RT_AUX)
 			{
 
-				ch = get_str_len();
-#ifndef MAIN_C
-				write(fd,&ch,1);
-				write(fd,new_global_number,NUM_ENTRY_SIZE);
+#ifdef MAIN_C
+				transmitByte(aux_type);
+#else
+//				memset(aux_data,0x20,AUX_DATA_SIZE);
+				disp_astate(aaux_state,tempx);
+				mvwprintw(win, DISP_OFFSET+22, 2, "state: %d %s          ",aaux_state, tempx);
+				switch(aaux_state)
+				{
+					case AVR_IDLE:
+						auxcmd = KEEP_IDLE;
+						write(fd, &auxcmd,1);
+						aaux_state = REQ_DATA;
+						break;
+					case REQ_DATA:
+						auxcmd = PIC24_GET_DATA;
+						auxparam = TYPE_1;
+						write(fd, &auxcmd,1);
+//						write(fd, &auxparam,1);	// tell the PIC24 what kind of data we want to modify
+						aaux_state = WAIT_DATA_READY;
+						break;
+					case WAIT_DATA_READY:
+						read(fd, &auxcmd, 1);
+						if(auxcmd == PIC24_DATA_READY)
+						{
+							mvwprintw(win, DISP_OFFSET+19, 2, "auxcmd: %d  PIC24_DATA_READY",auxcmd);
+//							auxcmd = AVR_RTC;
+//							write(fd,&auxcmd,1);
+							aaux_state = READ_DATA;
+							loop = 0;
+						}
+						else
+						{
+							aaux_state = WAIT_DATA_READY;
+							mvwprintw(win, DISP_OFFSET+19, 2, "loop = %d                    ",loop);
+							loop = break_out_loop(loop,aaux_state);
+						}
+						break;
+					case READ_DATA:
+						mvwprintw(win, DISP_OFFSET+19, 2, "auxcmd: %d                  ",auxcmd);
+//						usleep(10000);	// this works
+						usleep(5000);	// so does this
+//						usleep(3000);	// anything less than 5000 causes: res = 7 or 1
+										// unless time delay param for write is set to 10
+						res = read(fd,&aux_data,AUX_DATA_SIZE);
+						if(res != 8)
+							mvwprintw(win, DISP_OFFSET+20, 2, "read: %d   ",res);
+						else	
+							mvwprintw(win, DISP_OFFSET+20, 2, "           ");
+//						for(i = 0;i < AUX_DATA_SIZE;i++)
+						for(i = 0;i < res;i++)
+							mvwprintw(win, DISP_OFFSET+21, 2+i*3, "%x",aux_data[i]);
+//						aaux_state = SEND_ACQ;
+						aaux_state = AVR_IDLE;	// jump back to top
+						break;
+					case SEND_ACQ:
+						aaux_state = AVR_WAIT_NEW_DATA;
+						break;
+					case AVR_WAIT_NEW_DATA:
+						aaux_state = SEND_NEW_DATA;
+						break;	
+					case SEND_NEW_DATA:
+						memset(aux_data,0,AUX_DATA_SIZE);
+						aaux_state = AVR_IDLE;
+						mvwprintw(win, DISP_OFFSET+23, 2, "             ");
+						break;
+					default:
+						mvwprintw(win, DISP_OFFSET+23, 2, "off the rails");
+						aaux_state = AVR_IDLE;
+						break;
+				}
+/*
+				for(i = 0;i < aux_type;i++)
+				{
+					aux_data[i] = i + 0x30;
+//					tempx[i] &= 0x7f;
+				}
+*/
+//				usleep(1000);
+//				write(fd,aux_data,AUX_DATA_SIZE);
+//				mvwprintw(win, DISP_OFFSET+19, 2, "aux_type: %d  ",aux_type);
+				wrefresh(win);
+
 #endif
 				parse_state = IDLE;
-
 			}
 			else
 			{
@@ -61,7 +180,7 @@ int parse_P24(int fd, UCHAR ch, char *param_string)
 			}
 			break;
 		case CHECK_HIGHBIT:
-			switch(ch)
+			switch(inch)
 			{
 				case RT_LOW:
 					parse_state = SEND_UCHAR0;
@@ -85,31 +204,31 @@ int parse_P24(int fd, UCHAR ch, char *param_string)
 			break;
 		case GET_CH0:
 			parse_state = SEND_UINT0;
-			temp_UINT = ch;
+			temp_UINT = inch;
 			break;
 		case GET_CH1:
-			temp_UINT = ch;
+			temp_UINT = inch;
 			parse_state = SEND_UINT1;
 			break;
 		case GET_CH2:
-			temp_UINT = ch;
+			temp_UINT = inch;
 			parse_state = SEND_UINT2;
 			break;
 		case SEND_UCHAR0:
-			xbyte = ch;
+			xbyte = inch;
 			sprintf(param_string,"%4d",xbyte);
 //				printf("uchar0:%s\n",param_string);
 			done = 1;
 			break;
 		case SEND_UCHAR1:
-			xbyte = ch | 0x80;
+			xbyte = inch | 0x80;
 			sprintf(param_string,"%4d",xbyte);
 //				printf("uchar1:%s\n",param_string);
 			done = 1;
 			break;
 		case SEND_UINT0:
 			xword = (UINT)temp_UINT;
-			temp_UINT = (UINT)ch;
+			temp_UINT = (UINT)inch;
 			temp_UINT <<= 8;
 			temp_UINT &= 0xff00;
 			xword |= temp_UINT;
@@ -120,7 +239,7 @@ int parse_P24(int fd, UCHAR ch, char *param_string)
 			break;
 		case SEND_UINT1:
 			xword = (UINT)temp_UINT;
-			temp_UINT = (UINT)ch;
+			temp_UINT = (UINT)inch;
 			temp_UINT <<= 8;
 			temp_UINT &= 0xff00;
 			xword |= temp_UINT;
@@ -131,7 +250,7 @@ int parse_P24(int fd, UCHAR ch, char *param_string)
 			break;
 		case SEND_UINT2:
 			xword = (UINT)temp_UINT;
-			temp_UINT = (UINT)ch;
+			temp_UINT = (UINT)inch;
 			temp_UINT <<= 8;
 			temp_UINT &= 0xff00;
 			xword |= temp_UINT;
@@ -150,5 +269,48 @@ int parse_P24(int fd, UCHAR ch, char *param_string)
 	*pxword = &xword;
 #endif
 	return done;
-}	
+}
 
+static int break_out_loop(int loop,UCHAR curr_state)
+{
+	if(++loop > 5)
+	{
+		aaux_state = AVR_IDLE;
+		return 0;
+	}
+	else
+	{
+		aaux_state = curr_state;
+		return loop;
+	}
+}
+
+static void disp_astate(UCHAR state, char *str)
+{
+	switch (state)
+	{
+		case AVR_IDLE:
+		strcpy(str,"AVR_IDLE\0");
+		break;
+		case REQ_DATA:
+		strcpy(str,"REQ_DATA\0");
+		break;
+		case WAIT_DATA_READY:
+		strcpy(str,"WAIT_DATA_READY\0");
+		break;
+		case READ_DATA:
+		strcpy(str,"READ_DATA\0");
+		break;
+		case SEND_ACQ:
+		strcpy(str,"SEND_ACQ\0");
+		break;
+		case AVR_WAIT_NEW_DATA:
+		strcpy(str,"AVR_WAIT_NEW_DATA\0");
+		break;
+		case SEND_NEW_DATA:
+		strcpy(str,"SEND_NEW_DATA\0");
+		break;
+		default:
+		break;
+	}
+}

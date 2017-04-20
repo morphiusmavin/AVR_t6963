@@ -47,18 +47,23 @@ static void adv_menu_label(int index, UCHAR *row, UCHAR *col);
 static void display_menus(int index);
 static void start_numentry(void);
 static void scale_disp(int amt);
+static void init_checkboxes(void);
+static void scroll_checkboxes(void);
+static void finish_checkboxes(void);
 
 static UCHAR generic_menu_function(UCHAR ch, int  index);
 static UCHAR backspace(UCHAR ch);
 static UCHAR enter(UCHAR ch);
 static UCHAR escape(UCHAR ch);
-static UCHAR call_alnum(UCHAR ch);
 static UCHAR scr_alnum0(UCHAR ch);
 static UCHAR scr_alnum1(UCHAR ch);
 static UCHAR scr_alnum2(UCHAR ch);
 static UCHAR scr_alnum3(UCHAR ch);
 static UCHAR alnum_enter(UCHAR ch);
-static UCHAR check_box(UCHAR ch);
+static UCHAR scrollup_checkboxes(UCHAR ch);
+static UCHAR scrolldown_checkboxes(UCHAR ch);
+static UCHAR toggle_checkboxes(UCHAR ch);
+static UCHAR enter_checkboxes(UCHAR ch);
 #endif
 #if 1
 static int first_menu = MAIN;
@@ -71,7 +76,7 @@ static int scroll_ptr;
 static int cur_alnum_col;
 static int dirty_flag;
 static UCHAR cur_row, cur_col;	// used by the current menu/dialog function to keep track of the current row,col
-static UCHAR alnum_array[NUM_ALNUM];
+static UCHAR alnum_array[NUM_ALNUM+1];
 static UCHAR choose_alnum;
 static int no_setlist;
 #define LIST_SIZE 50
@@ -79,7 +84,8 @@ static void prev_list(void);
 static int menu_list[LIST_SIZE];	// works like a stack for the how deep into the menus we go
 #endif
 static UCHAR (*fptr[NUM_FPTS])(UCHAR) = {enter, backspace, escape, scr_alnum0, \
-		 scr_alnum1, scr_alnum2, scr_alnum3, cursor_forward, alnum_enter};
+		 scr_alnum1, scr_alnum2, scr_alnum3, cursor_forward, alnum_enter, scrollup_checkboxes, \
+			scrolldown_checkboxes, toggle_checkboxes, enter_checkboxes };
 #if 1
 //#ifndef MAIN_C
 //******************************************************************************************//
@@ -191,6 +197,9 @@ void display_labels(void)
 //******************************************************************************************//
 //******************************************************************************************//
 //******************************************************************************************//
+// reduce output to show just rpm, mph, engine temp and oil pressure at the top
+// amt = 1 - display all rt_params
+// amt = 0 - display limited rt_params
 static void scale_disp(int amt)
 {
 	int i;
@@ -199,7 +208,7 @@ static void scale_disp(int amt)
 	{
 		for(i = 0;i < no_rtparams;i++)
 			rt_params[i].shown = 1;
-		display_labels();	
+		display_labels();
 	}
 	else
 	{
@@ -236,9 +245,10 @@ void init_list(void)
 
 //	GDispStringAt(5,5,"test1");
 
-	alnum_array[i++] = 0x20;		// first one is a space
-	for(k = 33;k < 48;k++)		// '!' - '/'	15
+	alnum_array[i++] = 33;		// first one is a '!'
+	for(k = 34;k < 48;k++)		// '"' - '/'	14
 		alnum_array[i++] = k;
+	alnum_array[i++] = 32;		// 'space'		1
 	for(k = 58;k < 65;k++)		// ':' - '@'	7
 		alnum_array[i++] = k;
 	for(k = 91;k < 97;k++)		// '[' - '`'	6
@@ -247,7 +257,7 @@ void init_list(void)
 		alnum_array[i++] = k;
 	for(k = 65;k < 91;k++)		// 'A' - 'Z'	26
 		alnum_array[i++] = k;
-	for(k = 97;k < 123;k++)		// 'a' - 'z'	26	total: 85
+	for(k = 97;k < 123;k++)		// 'a' - 'z'	26	total: 85 (NUM_ALNUM)
 		alnum_array[i++] = k;
 	choose_alnum = 0x30;
 	scroll_ptr = 25;		// start showing at 'a' (skip '!' - '9')
@@ -261,7 +271,9 @@ void init_list(void)
 	dirty_flag = 0;
 	display_menus(0);
 	no_setlist = 1;
-//	show_legend(1,"main","1a","1b","1c","1d");
+	aux_type = 0;
+	curr_checkbox = 0;
+	last_checkbox = NUM_CHECKBOXES-1;
 }
 //******************************************************************************************//
 //******************************************************************************************//
@@ -272,6 +284,9 @@ static void prev_list(void)
 		return;
 	else
 	{
+#ifdef NOAVR
+		mvwprintw(win, DISP_OFFSET+12+current_fptr, 2,"          ");
+#endif
 		menu_list[current_fptr] = 0;
 		current_fptr--;
 		dirty_flag = 1;
@@ -331,13 +346,6 @@ int get_str_len(void)
 	return cur_col-NUM_ENTRY_BEGIN_COL;
 }
 //******************************************************************************************//
-//*************************************** check_box ****************************************//
-//******************************************************************************************//
-static UCHAR check_box(UCHAR ch)
-{
-	return ch;
-}
-//******************************************************************************************//
 //********************************* generic_menu_function **********************************//
 //******************************************************************************************//
 static UCHAR generic_menu_function(UCHAR ch, int  index)
@@ -345,7 +353,7 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 	UCHAR ret_char = ch;
 	int menu_index = index * 6;
 	int i;
-	
+
 	switch (ch)
 	{
 		case KP_0:
@@ -415,11 +423,9 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 		{
 			set_list(menu_structs[menu_index].menu);
 			if(menu_structs[menu_index].menu == num_entry)
-			{
 				start_numentry();
-				scale_disp(0);
-//				mvwprintw(win, 45, 3,"start_num_entry");
-			}
+			if(menu_structs[menu_index].menu == chkboxes)
+				init_checkboxes();
 		}
 		else
 		{
@@ -430,7 +436,7 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 	if(no_setlist == 1)
 	{
 #ifdef NOAVR
-
+/*
 		mvwprintw(win, 27, 2,"index: %d\n",index);
 		mvwprintw(win, 28, 2,"menu_index: %d\n",menu_index);
 		mvwprintw(win, 29, 2,"menu in ms: %d\n",menu_structs[menu_index].menu);
@@ -442,9 +448,13 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 			mvwprintw(win, 34+i, 2,"                ");
 		for(i = 0;i < current_fptr;i++)
 			mvwprintw(win, 34+i, 2," -> %s  ",labels[menu_list[i]+no_rtparams]);
-	
-		mvwprintw(win, 34+i, 2," -> %s  ",labels[get_curr_menu()+no_rtparams]);
 
+		mvwprintw(win, 34+i, 2," -> %s  ",labels[get_curr_menu()+no_rtparams]);
+*/
+		for(i = 0;i < current_fptr;i++)
+			mvwprintw(win, DISP_OFFSET+12+i, 2," -> %s  ",labels[menu_list[i]+no_rtparams]);
+
+		mvwprintw(win, DISP_OFFSET+12+i, 2," -> %s  ",labels[get_curr_menu()+no_rtparams]);
 #endif
 	}
 	no_setlist = 1;
@@ -482,17 +492,10 @@ static UCHAR enter(UCHAR ch)
 	cur_col = NUM_ENTRY_BEGIN_COL;
 	prev_list();
 	clean_disp_num();
-#ifdef NOAVR	
+#ifdef NOAVR
 	mvwprintw(win, 45, 3,"num entered: %s ",new_global_number);
 #endif
 	scale_disp(1);
-	return ch;
-}
-static UCHAR call_alnum(UCHAR ch)
-{
-#ifdef NOAVR
-	mvwprintw(win, 45, 3, "call_alnum %x  ",ch);
-#endif
 	return ch;
 }
 //******************************************************************************************//
@@ -500,7 +503,7 @@ static UCHAR call_alnum(UCHAR ch)
 //******************************************************************************************//
 static void start_numentry(void)
 {
-//	show_legend2(1,"number entry","forward","back","alpha","enter","cancel","cancel");
+	scale_disp(0);
 	cur_row = NUM_ENTRY_ROW;
 	cur_col = NUM_ENTRY_BEGIN_COL;
 	memset((void*)new_global_number,0,NUM_ENTRY_SIZE);
@@ -589,6 +592,7 @@ static void stuff_num(char num)
 	dispCharAt(cur_row,cur_col,num);
 	cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = num;
 }
+#if 1
 static UCHAR scr_alnum0(UCHAR ch)
 {
 	scroll_alnum_list(0);		// CAPS
@@ -614,10 +618,8 @@ static UCHAR alnum_enter(UCHAR ch)
 	cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = choose_alnum;
 	cursor_forward(ch);
 	prev_list();
-//	mvwprintw(win, 45, 3,"alnum enter    ");
 	return ch;
 }
-#if 1
 //******************************************************************************************//
 //************************************ clean_disp_num **************************************//
 //******************************************************************************************//
@@ -628,5 +630,67 @@ static void clean_disp_num(void)
 	{
 		dispCharAt(NUM_ENTRY_ROW,i+NUM_ENTRY_BEGIN_COL,0x20);
 	}
+}
+static void init_checkboxes(void)
+{
+	int i;
+	UCHAR row, col;
+	scale_disp(0);
+	row = 3;
+	col = 3;
+	curr_checkbox = 0;
+	memset(check_boxes,0,sizeof(CHECKBOXES)*NUM_CHECKBOXES);
+	
+	strcpy(check_boxes[0].string,"choice 1\0");
+	strcpy(check_boxes[1].string,"choice 2\0");
+	strcpy(check_boxes[2].string,"choice 3\0");
+	strcpy(check_boxes[3].string,"choice 4\0");
+	strcpy(check_boxes[4].string,"choice 5\0");
+	strcpy(check_boxes[5].string,"choice 6\0");
+	strcpy(check_boxes[6].string,"choice 7\0");
+	strcpy(check_boxes[7].string,"choice 8\0");
+	strcpy(check_boxes[8].string,"choice 9\0");
+	strcpy(check_boxes[9].string,"choice 10\0");
+	
+	for(i = 0;i < NUM_CHECKBOXES;i++)
+	{
+		GDispStringAt(row,col,check_boxes[i].string);
+		row++;
+	}
+}
+static UCHAR scrollup_checkboxes(UCHAR ch)
+{
+	if(--curr_checkbox < 0)
+		curr_checkbox = last_checkbox;
+	// move cursor to 3 + check_boxes[curr_checkbox]
+	return ch;
+}
+
+static UCHAR scrolldown_checkboxes(UCHAR ch)
+{
+	if(++curr_checkbox > last_checkbox)
+		curr_checkbox = 0;
+	// move cursor
+	return ch;
+}
+
+static UCHAR toggle_checkboxes(UCHAR ch)
+{
+	if(check_boxes[curr_checkbox].checked == 1)
+	{
+		check_boxes[curr_checkbox].checked = 0;
+		dispCharAt(3+check_boxes[curr_checkbox].index,0,0x20);	// display 'blank'
+	}
+	else
+	{
+		check_boxes[curr_checkbox].checked = 1;
+		dispCharAt(3+check_boxes[curr_checkbox].index,0,120);	// display 'x'
+	}
+	return ch;
+}
+
+static UCHAR enter_checkboxes(UCHAR ch)
+{
+		scale_disp(1);
 }
 #endif

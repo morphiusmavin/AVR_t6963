@@ -29,7 +29,6 @@ void do_read(WINDOW *win, int fd, int display_offset)
 	UINT limit16;
 	int i,j;
 	char test_str[20];
-
 	init_list();
 	display_labels();
 	wrefresh(win);
@@ -46,9 +45,12 @@ void do_read(WINDOW *win, int fd, int display_offset)
 //		mvwprintw(win, display_offset+14, 5, "parse_state = %d  ",parse_state);
 //		mvwprintw(win, display_offset+15, 5, "current_param = %d  ",current_param);
 //		wrefresh(win);
-		done = parse_P24(fd, ch, param_string);
+		done = parse_P24(win, fd, ch, param_string);
+//		could just do this:
+//		done = parse_P24(fd, get_key(read(fd,&ch,1)));
 		if(done)
 		{
+			mvwprintw(win, display_offset-1, 3, "current param: %d  %s  ",current_param,param_string);
 			mvwprintw(win, display_offset+current_param, 15, "        ");
 			mvwprintw(win, display_offset+current_param, 15, param_string);
 //			mvwprintw(win, display_offset+16, 5, "param_string = %s  ",param_string);
@@ -68,9 +70,10 @@ void do_read(WINDOW *win, int fd, int display_offset)
 //			mvwprintw(win, display_offset+17,5,"%d ",no_rtparams);
 			for(i = 0;i < no_rtparams;i++)
 			{
-//				mvwprintw(win, display_offset+18+i,5,"rt_params: %d  %d  %d  %d  ",rt_params[i].row,rt_params[i].col, \
-						rt_params[i].shown,rt_params[i].type);
-
+/*
+				mvwprintw(win, display_offset+18+i,5,"rt_params: %d  %d  %d  %d  ", \
+				rt_params[i].row,rt_params[i].col, rt_params[i].shown,rt_params[i].type);
+*/
 				if(rt_params[i].shown == 1)
 				{
 					if(rt_params[i].type == current_param)
