@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 
 		fflush(stdin);
 		key = getc(stdin);
-				
+
 //		printf("key=%c **************************\n",key);
 		if(key != 0xff)
 		{
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
 					break;
 				case 'X':
 				case 'x':
-					return 0;	
+					return 0;
 				default:
 //					mvwprintw(menu_win, display_offset+22, 8, "?     ");
 					printf("?\n");

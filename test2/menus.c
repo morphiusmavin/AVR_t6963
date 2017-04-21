@@ -257,7 +257,7 @@ static void prev_list(void)
 	{
 		printf("returning from prev_list");
 		return;
-	}	
+	}
 	else
 	{
 		menu_list[current_fptr] = 0;
@@ -445,8 +445,8 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 		printf("menu_list:  %d\n",menu_list[current_fptr]);
 		for(i = 0;i < current_fptr;i++)
 			printf(" -> %s",labels[menu_list[i]+no_rtparams]);
-		printf("\n");	
-		printf("no_labels: %d\n",no_labels);		
+		printf("\n");
+		printf("no_labels: %d\n",no_labels);
 	}
 #endif
 	return ret_char;

@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
 #endif
 //				set_blocking (fd, 1);	// not a good idea!
 				disp_pstate(paux_state,tempx);
-				mvwprintw(menu_win, display_offset+26, 4,"state: %s          ",tempx);
+				mvwprintw(menu_win, display_offset+29, 4,"state: %s          ",tempx);
 				switch(paux_state)
 				{
 					case P24_IDLE:
@@ -248,64 +248,71 @@ int main(int argc, char *argv[])
 							mvwprintw(menu_win, display_offset+23, 4,"auxcmd = %x GET_DATA",auxcmd);
 							paux_state = GET_DATA;
 							loop = 0;
-						}	
+						}
 						else
 						{
 							paux_state = P24_IDLE;
-//							mvwprintw(menu_win, display_offset+23, 4,"loop = %x            ",loop); 
-//							loop = break_out_loop(loop,aaux_state);							
-						}	
+//							mvwprintw(menu_win, display_offset+23, 4,"loop = %x            ",loop);
+//							loop = break_out_loop(loop,aaux_state);
+						}
 						break;
 					case GET_DATA:
-						aux_data[0]++;
-						aux_data[1]++;
-						aux_data[2]++;
-						aux_data[3]++;
-						aux_data[4]++;
-						aux_data[5]++;
-						aux_data[6]++;
-						aux_data[7]++;
-						mvwprintw(menu_win, display_offset+23, 4,"auxcmd = %x         ",auxcmd); 
-						for(j = 0;j < AUX_DATA_SIZE;j++)
-							mvwprintw(menu_win, display_offset+24, 4+j*3, "%x",aux_data[j]);
-						
-						auxcmd = PIC24_DATA_READY;
-						write(fd,&auxcmd,1);
+						if(++loop > 5)		// loop here to test the possibility that the PIC24
+						{					// has to go somewhere else to get the data
+							aux_data[0]++;
+							aux_data[1]++;
+							aux_data[2]++;
+							aux_data[3]++;
+							aux_data[4]++;
+							aux_data[5]++;
+							aux_data[6]++;
+							aux_data[7]++;
+							mvwprintw(menu_win, display_offset+23, 4,"auxcmd = %x         ",auxcmd);
+							for(j = 0;j < AUX_DATA_SIZE;j++)
+								mvwprintw(menu_win, display_offset+24, 4+j*3, "%x",aux_data[j]);
+							loop = 0;
+							auxcmd = PIC24_DATA_READY;
+							write(fd,&auxcmd,1);
+							paux_state = SEND_DATA_READY;
+						}
+						else
+						{
+							mvwprintw(menu_win, display_offset+25,4,"loop = %d  ",loop);
+							paux_state = GET_DATA;
+						}
 //						usleep(tdelay);
-						paux_state = SEND_DATA_READY;
 						break;
 					case SEND_DATA_READY:
-#if 0
-						read(fd,&auxcmd,1);
-						if(auxcmd == AVR_RTC)
-							paux_state = SEND_DATA;
-						else
-							paux_state = SEND_DATA_READY;
-#endif
 						res = write(fd,&aux_data,AUX_DATA_SIZE);
-						mvwprintw(menu_win, display_offset+25, 4,"res = %d ",res);
-						paux_state = P24_IDLE;	// jump back to top
-
-//						paux_state = SEND_DATA;
+						mvwprintw(menu_win, display_offset+26, 4,"res = %d ",res);
+						paux_state = SEND_DATA;
 						break;
 					case SEND_DATA:
-//						usleep(1000000);	this doesn't help
-						res = write(fd,&aux_data,AUX_DATA_SIZE);
-						mvwprintw(menu_win, display_offset+25, 4,"res = %d ",res);
-						paux_state = P24_IDLE;	// jump back to top
-//						paux_state = WAIT_ACQ;
-						break;
-					case WAIT_ACQ:
 						paux_state = P24_WAIT_NEW_DATA;
 						break;
 					case P24_WAIT_NEW_DATA:
+						read(fd,&auxcmd,1);
+						if(auxcmd == AVR_HAS_NEW_DATA)
+							paux_state = P24_STORE_NEW_DATA;
+						else paux_state = P24_WAIT_NEW_DATA;
+						break;
+					case P24_STORE_NEW_DATA:
+						res = read(fd,&aux_data,AUX_DATA_SIZE);
+						if(res != 8)
+							mvwprintw(menu_win, display_offset+27, 4, "read: %d   ",res);
+						else
+							mvwprintw(menu_win, display_offset+27, 4, "           ");
+//						for(i = 0;i < AUX_DATA_SIZE;i++)
+						for(i = 0;i < res;i++)
+							mvwprintw(menu_win, display_offset+28, 4+i*3, "%x",aux_data[i]);
+
 						paux_state = P24_IDLE;
 						break;
 					default:
 						paux_state = P24_IDLE;
 						break;
 				}
-					wrefresh(menu_win);
+				wrefresh(menu_win);
 			}
 			else if(code == RT_RPM)
 			{
@@ -568,6 +575,9 @@ void set_state_defaults(void)
 	paux_state = P24_IDLE;
 	aaux_state = AVR_IDLE;
 }
+//******************************************************************************************//
+//**************************************** disp_pstate *************************************//
+//******************************************************************************************//
 static void disp_pstate(UCHAR state, char *str)
 {
 	switch (state)
@@ -584,11 +594,11 @@ static void disp_pstate(UCHAR state, char *str)
 		case SEND_DATA:
 			strcpy(str,"SEND_DATA\0");
 			break;
-		case WAIT_ACQ:
-			strcpy(str,"WAIT_ACQ\0");
-			break;
 		case P24_WAIT_NEW_DATA:
 			strcpy(str,"P24_WAIT_NEW_DATA\0");
+			break;
+		case P24_STORE_NEW_DATA:
+			strcpy(str,"P24_STORE_NEW_DATA\0");
 			break;
 		default:
 			break;

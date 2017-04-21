@@ -18,11 +18,12 @@
 #include "sfr_helper.h"
 #include "main.h"
 #include "t6963.h"
-
+                           
 static void disp_astate(UCHAR state, char *str);
 static int break_out_loop(int loop,UCHAR curr_state);
 static int loop;
-
+static int loop2;
+			
 //******************************************************************************************//
 //************************************** parse_P24 *****************************************//
 //******************************************************************************************//
@@ -80,7 +81,6 @@ enum AVR_aux_states
 	REQ_DATA,			//  when menu choice is get certain data (this one starts everything)
 	WAIT_DATA_READY,	// wait for SEND_DATA_READY from PIC24 (keep making rounds until data is ready to read)
 	READ_DATA,			// read data (how much is predefined)
-	SEND_ACQ,			// send acq telling PIC24 we have received the data (or send NAQ saying we did not received valid data)
 	AVR_WAIT_NEW_DATA,		// wait for stupid user to finish editing new data
 	SEND_NEW_DATA
 } AVR_AUX;
@@ -93,13 +93,14 @@ enum AVR_aux_states
 #else
 //				memset(aux_data,0x20,AUX_DATA_SIZE);
 				disp_astate(aaux_state,tempx);
-				mvwprintw(win, DISP_OFFSET+22, 2, "state: %d %s          ",aaux_state, tempx);
+				mvwprintw(win, DISP_OFFSET+24, 2, "state: %d %s          ",aaux_state, tempx);
 				switch(aaux_state)
 				{
 					case AVR_IDLE:
 						auxcmd = KEEP_IDLE;
 						write(fd, &auxcmd,1);
 						aaux_state = REQ_DATA;
+						loop2 = 0;
 						break;
 					case REQ_DATA:
 						auxcmd = PIC24_GET_DATA;
@@ -132,26 +133,40 @@ enum AVR_aux_states
 //						usleep(3000);	// anything less than 5000 causes: res = 7 or 1
 										// unless time delay param for write is set to 10
 						res = read(fd,&aux_data,AUX_DATA_SIZE);
-						if(res != 8)
-							mvwprintw(win, DISP_OFFSET+20, 2, "read: %d   ",res);
-						else	
-							mvwprintw(win, DISP_OFFSET+20, 2, "           ");
+						mvwprintw(win, DISP_OFFSET+20, 2, "read: %d   ",res);
 //						for(i = 0;i < AUX_DATA_SIZE;i++)
 						for(i = 0;i < res;i++)
 							mvwprintw(win, DISP_OFFSET+21, 2+i*3, "%x",aux_data[i]);
 //						aaux_state = SEND_ACQ;
-						aaux_state = AVR_IDLE;	// jump back to top
-						break;
-					case SEND_ACQ:
 						aaux_state = AVR_WAIT_NEW_DATA;
 						break;
 					case AVR_WAIT_NEW_DATA:
-						aaux_state = SEND_NEW_DATA;
-						break;	
+						if(++loop2 > 5)		// loop here to test the possibility that
+						{						// the user takes a while to enter the new data
+							loop2 = 0;
+							auxcmd = AVR_HAS_NEW_DATA;
+							write(fd,&auxcmd,1);
+							aaux_state = SEND_NEW_DATA;
+							aux_data[0] = ~aux_data[0];
+							aux_data[1] = ~aux_data[1];
+							aux_data[2] = ~aux_data[2];
+							aux_data[3] = ~aux_data[3];
+							aux_data[4] = ~aux_data[4];
+							aux_data[5] = ~aux_data[5];
+							aux_data[6] = ~aux_data[6];
+							aux_data[7] = ~aux_data[7];
+						}
+						else
+						{
+							mvwprintw(win, DISP_OFFSET+22, 2, "loop2 = %d ",loop2);
+							aaux_state = AVR_WAIT_NEW_DATA;
+						}
+						break;
 					case SEND_NEW_DATA:
+						res = write(fd,&aux_data,AUX_DATA_SIZE);
 						memset(aux_data,0,AUX_DATA_SIZE);
 						aaux_state = AVR_IDLE;
-						mvwprintw(win, DISP_OFFSET+23, 2, "             ");
+   						mvwprintw(win, DISP_OFFSET+23, 2, "             ");
 						break;
 					default:
 						mvwprintw(win, DISP_OFFSET+23, 2, "off the rails");
@@ -273,7 +288,7 @@ enum AVR_aux_states
 
 static int break_out_loop(int loop,UCHAR curr_state)
 {
-	if(++loop > 5)
+	if(++loop > 10)
 	{
 		aaux_state = AVR_IDLE;
 		return 0;
@@ -300,9 +315,6 @@ static void disp_astate(UCHAR state, char *str)
 		break;
 		case READ_DATA:
 		strcpy(str,"READ_DATA\0");
-		break;
-		case SEND_ACQ:
-		strcpy(str,"SEND_ACQ\0");
 		break;
 		case AVR_WAIT_NEW_DATA:
 		strcpy(str,"AVR_WAIT_NEW_DATA\0");

@@ -62,7 +62,7 @@ functions start here - these are indexes into the array of function pointers (in
 static UCHAR (*fptr[NUM_FPTS])(UCHAR) = {enter, backspace, escape, scr_alnum0, \
 		 scr_alnum1, scr_alnum2, scr_alnum3, cursor_forward, alnum_enter, scrollup_checkboxes, \
 			scrolldown_checkboxes, toggle_checkboxes, enter_checkboxes };
-			
+
 use these when calling update_menu_structs() in eeprom_burn.c
 */
 	entr,
@@ -139,7 +139,7 @@ enum AUX_cmd_types
 {
 	PIC24_GET_DATA = 1,
 	PIC24_DATA_READY,
-	AVR_RTC,
+	AVR_HAS_NEW_DATA,
 	KEEP_IDLE,
 	EXTRA
 } AUX_CMDS;
@@ -172,8 +172,8 @@ enum PIC24_aux_states
 	GET_DATA,			// when PIC24 gets a REQ_DATA then go out and get it
 	SEND_DATA_READY,	// tell AVR data is ready to send
 	SEND_DATA,			// send data (how much is predefined)
-	WAIT_ACQ,			// wait for AVR to say valid data was received (if NAQ then go to prev state)
 	P24_WAIT_NEW_DATA,		// wait for AVR to send the updated value(s)
+	P24_STORE_NEW_DATA
 } PIC24_AUX;
 
 enum AVR_aux_states
@@ -182,7 +182,6 @@ enum AVR_aux_states
 	REQ_DATA,			//  when menu choice is get certain data (this one starts everything)
 	WAIT_DATA_READY,	// wait for SEND_DATA_READY from PIC24 (keep making rounds until data is ready to read)
 	READ_DATA,			// read data (how much is predefined)
-	SEND_ACQ,			// send acq telling PIC24 we have received the data (or send NAQ saying we did not received valid data)
 	AVR_WAIT_NEW_DATA,		// wait for stupid user to finish editing new data
 	SEND_NEW_DATA
 } AVR_AUX;

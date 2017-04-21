@@ -250,18 +250,30 @@ A - up
 B - down
 C - set/clear
 D - enter
+# - esc
 
 when using the simulation (test_write_data) the data is sent in aux_data 8 bytes at a time
 because of the fact that the serial port is set to non-blocking, there's a problem sending
 a variable number of bytes at a time so when it comes time to use it on the actual hardware,
 some things may have to be changed...
 
-last 3 checkins:
-959ead8 forgot to add parse_P24.c
-7aa3c40 put parse function in sep file (parse_P24.c) - used by both do_read.c and main.c
-691bad1 alnum entry is working along with num entry
+In git start a branch called no_rt_menu:
+When in RT_AUX the PIC24 will check for a command that tells the PIC24 to stop sending all 
+the rt_params except RT_AUX. Then both the PIC24 and AVR start doing the aux state machines.
+But that brings up a bigger question: what to do if some event occurs like oil pressure gets
+too low or engine temp too high and the user is setting some value. 
 
-this checkin: put state machines in RT_AUX for both test_write_data.c (simulates PIC24)
-and in parse_P24.c (simulates AVR). PIC24 sends sample data to AVR - must have time delay:
-usleep(5000) (and no less than 5000us) at line 131 in parse_P24.c or else it will only
-read 7 bytes at line 134 and not 8 - works when test_data w time delay is 10.
+global variable in main.h - scale_type is either:
+SCALE_DISP_ALL	- PIC24 sends all rt_params
+SCALE_DISP_SOME - PIC24 sends only rpm, mph, eng temp & oil pressure
+SCALE_DISP_NONE - PIC24 sends no rt_params
+
+In the RT_AUX state, a switch statement checkes the scale_type and sends a command to the
+PIC24 with a scale_type as a param so it knows to switch to sending all, some or none.
+
+
+
+last 3 checkins:
+61ae87f did total revamp - works in test_data but menus not working yet
+1e61ba3 separated do_read function into do_read.c
+7e1a630 added scripts to remove trailing whitespace

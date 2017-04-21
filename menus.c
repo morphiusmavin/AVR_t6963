@@ -640,7 +640,7 @@ static void init_checkboxes(void)
 	col = 3;
 	curr_checkbox = 0;
 	memset(check_boxes,0,sizeof(CHECKBOXES)*NUM_CHECKBOXES);
-	
+
 	strcpy(check_boxes[0].string,"choice 1\0");
 	strcpy(check_boxes[1].string,"choice 2\0");
 	strcpy(check_boxes[2].string,"choice 3\0");
@@ -651,7 +651,7 @@ static void init_checkboxes(void)
 	strcpy(check_boxes[7].string,"choice 8\0");
 	strcpy(check_boxes[8].string,"choice 9\0");
 	strcpy(check_boxes[9].string,"choice 10\0");
-	
+
 	for(i = 0;i < NUM_CHECKBOXES;i++)
 	{
 		GDispStringAt(row,col,check_boxes[i].string);

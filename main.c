@@ -135,7 +135,7 @@ int main(void)
 	display_labels();
 	done = 0;
 	char param_string[10];
-	
+
     while (1)
     {
         ret_char = receiveByte();
