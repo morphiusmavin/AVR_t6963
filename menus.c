@@ -27,10 +27,6 @@ void dispSetCursorX(UCHAR mode, UCHAR row, UCHAR col, UCHAR type)
 	cursor_col = col;
 }
 WINDOW *win;
-void set_win2(WINDOW *win)
-{
-	win = win;
-}
 #else
 extern char eepromString[STRING_LEN] EEMEM;
 #define dispSetCursorX(mode, row, col, type) dispSetCursor(mode, row, col, type)
@@ -50,6 +46,8 @@ static void scale_disp(int amt);
 static void init_checkboxes(void);
 static void scroll_checkboxes(void);
 static void finish_checkboxes(void);
+static void stop_rtdisplay(void);
+static void blank_choices(void);
 
 static UCHAR generic_menu_function(UCHAR ch, int  index);
 static UCHAR backspace(UCHAR ch);
@@ -64,6 +62,7 @@ static UCHAR scrollup_checkboxes(UCHAR ch);
 static UCHAR scrolldown_checkboxes(UCHAR ch);
 static UCHAR toggle_checkboxes(UCHAR ch);
 static UCHAR enter_checkboxes(UCHAR ch);
+static UCHAR escape_checkboxes(UCHAR ch);
 #endif
 #if 1
 static int first_menu = MAIN;
@@ -85,7 +84,7 @@ static int menu_list[LIST_SIZE];	// works like a stack for the how deep into the
 #endif
 static UCHAR (*fptr[NUM_FPTS])(UCHAR) = {enter, backspace, escape, scr_alnum0, \
 		 scr_alnum1, scr_alnum2, scr_alnum3, cursor_forward, alnum_enter, scrollup_checkboxes, \
-			scrolldown_checkboxes, toggle_checkboxes, enter_checkboxes };
+			scrolldown_checkboxes, toggle_checkboxes, enter_checkboxes, escape_checkboxes };
 #if 1
 //#ifndef MAIN_C
 //******************************************************************************************//
@@ -151,7 +150,6 @@ void adv_menu_label(int index, UCHAR *row, UCHAR *col)
 // (no_rtparams*sizeof(int) + get_type()*sizeof(int)) * menu_struct[i].ch_type
 static void display_menus(int index)
 {
-	int i;
 	UCHAR row,col;
 	row = MENU_START_ROW;
 	col = 0;
@@ -178,7 +176,6 @@ void display_labels(void)
 	int i,j;
 	char temp[MAX_LABEL_LEN];
 	char blank[] = "               ";
-	char *ch;
 
 	for(i = 0;i < no_rtparams;i++)
 	{
@@ -198,31 +195,44 @@ void display_labels(void)
 //******************************************************************************************//
 //******************************************************************************************//
 // reduce output to show just rpm, mph, engine temp and oil pressure at the top
-// amt = 1 - display all rt_params
-// amt = 0 - display limited rt_params
+// amt = SCALE_DISP_ALL - display all rt_params
+// amt = SCALE_DISP_SOME - display limited rt_params
+// amt = SCALE_DISP_NONE - don't display any rt_params
 static void scale_disp(int amt)
 {
 	int i;
 	char blank[] = "               ";
-	if(amt)
+
+	scale_type = amt;
+	switch (amt)
 	{
-		for(i = 0;i < no_rtparams;i++)
-			rt_params[i].shown = 1;
-		display_labels();
-	}
-	else
-	{
-		for(i = 0;i < no_rtparams;i++)
-		{
-			if(rt_params[i].type == RT_RPM || rt_params[i].type == RT_ENGT || \
-					rt_params[i].type == RT_MPH || rt_params[i].type == RT_OILP)
+		case SCALE_DISP_ALL:
+			for(i = 0;i < no_rtparams;i++)
 				rt_params[i].shown = 1;
-			else
+			display_labels();
+			break;
+		case SCALE_DISP_SOME:
+			for(i = 0;i < no_rtparams;i++)
+			{
+				if(rt_params[i].type == RT_RPM || rt_params[i].type == RT_ENGT || \
+						rt_params[i].type == RT_MPH || rt_params[i].type == RT_OILP)
+					rt_params[i].shown = 1;
+				else
+				{
+					rt_params[i].shown = 0;
+					GDispStringAt(rt_params[i].row,rt_params[i].col,blank);
+				}
+			}
+			break;
+		case SCALE_DISP_NONE:
+			for(i = 0;i < no_rtparams;i++)
 			{
 				rt_params[i].shown = 0;
 				GDispStringAt(rt_params[i].row,rt_params[i].col,blank);
 			}
-		}
+			break;
+		default:
+			break;
 	}
 }
 //******************************************************************************************//
@@ -234,6 +244,21 @@ static void blank_menu(void)
 	for(row = MENU_START_ROW-1;row < 15;row++)
 		for(col = 0;col < COLUMN+1;col++)
 			dispCharAt(row,col,0x20);
+}
+//******************************************************************************************//
+//******************************************************************************************//
+//******************************************************************************************//
+static void blank_choices(void)
+{
+	int row,col,i;
+	row = 3;
+	col = 3;
+	char blank[] = "                     ";
+	for(i = 0;i < NUM_CHECKBOXES;i++)
+	{
+		GDispStringAt(row,col,blank);
+		row++;
+	}
 }
 //******************************************************************************************//
 //******************************************************************************************//
@@ -274,6 +299,12 @@ void init_list(void)
 	aux_type = 0;
 	curr_checkbox = 0;
 	last_checkbox = NUM_CHECKBOXES-1;
+	scale_type = 0;
+	prev_scale_type = 1;
+	ask_data_ready = 1;
+	new_data_ready = 1;
+	cur_row = NUM_ENTRY_ROW;
+	cur_col = NUM_ENTRY_BEGIN_COL;
 }
 //******************************************************************************************//
 //******************************************************************************************//
@@ -284,9 +315,6 @@ static void prev_list(void)
 		return;
 	else
 	{
-#ifdef NOAVR
-		mvwprintw(win, DISP_OFFSET+12+current_fptr, 2,"          ");
-#endif
 		menu_list[current_fptr] = 0;
 		current_fptr--;
 		dirty_flag = 1;
@@ -344,6 +372,9 @@ int curr_fptr_changed(void)
 int get_str_len(void)
 {
 	return cur_col-NUM_ENTRY_BEGIN_COL;
+}
+static void stop_rtdisplay(void)
+{
 }
 //******************************************************************************************//
 //********************************* generic_menu_function **********************************//
@@ -423,9 +454,15 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 		{
 			set_list(menu_structs[menu_index].menu);
 			if(menu_structs[menu_index].menu == num_entry)
+			{
 				start_numentry();
+				stop_rtdisplay();
+			}
 			if(menu_structs[menu_index].menu == chkboxes)
+			{
 				init_checkboxes();
+				stop_rtdisplay();
+			}
 		}
 		else
 		{
@@ -452,9 +489,10 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 		mvwprintw(win, 34+i, 2," -> %s  ",labels[get_curr_menu()+no_rtparams]);
 */
 		for(i = 0;i < current_fptr;i++)
-			mvwprintw(win, DISP_OFFSET+12+i, 2," -> %s  ",labels[menu_list[i]+no_rtparams]);
+			mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",labels[menu_list[i]+no_rtparams]);
 
-		mvwprintw(win, DISP_OFFSET+12+i, 2," -> %s  ",labels[get_curr_menu()+no_rtparams]);
+		mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",labels[get_curr_menu()+no_rtparams]);
+		mvwprintw(win, DISP_OFFSET+20+i+1, 2,"                                  ");
 #endif
 	}
 	no_setlist = 1;
@@ -480,7 +518,7 @@ static UCHAR escape(UCHAR ch)
 	cur_col = NUM_ENTRY_BEGIN_COL;
 	prev_list();
 	clean_disp_num();
-	scale_disp(1);
+	scale_disp(SCALE_DISP_ALL);
 	return ch;
 }
 //******************************************************************************************//
@@ -495,7 +533,7 @@ static UCHAR enter(UCHAR ch)
 #ifdef NOAVR
 	mvwprintw(win, 45, 3,"num entered: %s ",new_global_number);
 #endif
-	scale_disp(1);
+	scale_disp(SCALE_DISP_ALL);
 	return ch;
 }
 //******************************************************************************************//
@@ -503,7 +541,10 @@ static UCHAR enter(UCHAR ch)
 //******************************************************************************************//
 static void start_numentry(void)
 {
-	scale_disp(0);
+#ifdef NOAVR
+	mvwprintw(win, 45, 3,"                                   ");
+#endif
+	scale_disp(SCALE_DISP_SOME);
 	cur_row = NUM_ENTRY_ROW;
 	cur_col = NUM_ENTRY_BEGIN_COL;
 	memset((void*)new_global_number,0,NUM_ENTRY_SIZE);
@@ -592,7 +633,7 @@ static void stuff_num(char num)
 	dispCharAt(cur_row,cur_col,num);
 	cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = num;
 }
-#if 1
+#if 1	// scroll functions
 static UCHAR scr_alnum0(UCHAR ch)
 {
 	scroll_alnum_list(0);		// CAPS
@@ -620,6 +661,7 @@ static UCHAR alnum_enter(UCHAR ch)
 	prev_list();
 	return ch;
 }
+#endif
 //******************************************************************************************//
 //************************************ clean_disp_num **************************************//
 //******************************************************************************************//
@@ -635,12 +677,12 @@ static void init_checkboxes(void)
 {
 	int i;
 	UCHAR row, col;
-	scale_disp(0);
+	scale_disp(SCALE_DISP_SOME);
 	row = 3;
 	col = 3;
 	curr_checkbox = 0;
 	memset(check_boxes,0,sizeof(CHECKBOXES)*NUM_CHECKBOXES);
-
+	
 	strcpy(check_boxes[0].string,"choice 1\0");
 	strcpy(check_boxes[1].string,"choice 2\0");
 	strcpy(check_boxes[2].string,"choice 3\0");
@@ -651,7 +693,7 @@ static void init_checkboxes(void)
 	strcpy(check_boxes[7].string,"choice 8\0");
 	strcpy(check_boxes[8].string,"choice 9\0");
 	strcpy(check_boxes[9].string,"choice 10\0");
-
+	
 	for(i = 0;i < NUM_CHECKBOXES;i++)
 	{
 		GDispStringAt(row,col,check_boxes[i].string);
@@ -663,6 +705,7 @@ static UCHAR scrollup_checkboxes(UCHAR ch)
 	if(--curr_checkbox < 0)
 		curr_checkbox = last_checkbox;
 	// move cursor to 3 + check_boxes[curr_checkbox]
+//	dispCharAt(1+check_boxes[curr_checkbox].index,0,0x21);
 	return ch;
 }
 
@@ -691,6 +734,14 @@ static UCHAR toggle_checkboxes(UCHAR ch)
 
 static UCHAR enter_checkboxes(UCHAR ch)
 {
-		scale_disp(1);
+	scale_disp(SCALE_DISP_ALL);
+	prev_list();
+	return ch;
 }
-#endif
+static UCHAR escape_checkboxes(UCHAR ch)
+{
+	blank_choices();
+	scale_disp(SCALE_DISP_ALL);
+	prev_list();
+	return ch;
+}

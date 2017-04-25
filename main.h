@@ -3,22 +3,25 @@
 #define _MAIN_H_
 #define TIME_DELAY1 1
 #define STRING_LEN 100
-#define NUM_FPTS 13
+#define NUM_FPTS 14
 #define MAX_LABEL_LEN 9
-#define NUM_LABELS 39
+#define NUM_LABELS 38
 #define NUM_MENU_CHOICES 6
-#define NUM_MENUS 17
+#define NUM_MENUS 9
 #define NUM_MENU_STRUCTS NUM_MENUS*NUM_MENU_CHOICES
-#define NUM_MENU_FUNCS 10
-#define NUM_RT_PARAMS 20
+#define NUM_RT_PARAMS 11
 #define DISP_OFFSET 18
 #define NUM_CHECKBOXES 10
+#define SCALE_DISP_ALL 0
+#define SCALE_DISP_SOME 1
+#define SCALE_DISP_NONE 2
 
 typedef struct rt_params
 {
 	UCHAR row;			// row, col tells where the param will appear on screen
 	UCHAR col;
 	UCHAR shown;		// if its shown or not
+	UCHAR dtype;		// 0 = UCHAR; 1 = UINT; 2 = dword?
 	UCHAR type;			// rt_types
 } RT_PARAM;
 
@@ -62,7 +65,7 @@ functions start here - these are indexes into the array of function pointers (in
 static UCHAR (*fptr[NUM_FPTS])(UCHAR) = {enter, backspace, escape, scr_alnum0, \
 		 scr_alnum1, scr_alnum2, scr_alnum3, cursor_forward, alnum_enter, scrollup_checkboxes, \
 			scrolldown_checkboxes, toggle_checkboxes, enter_checkboxes };
-
+			
 use these when calling update_menu_structs() in eeprom_burn.c
 */
 	entr,
@@ -77,7 +80,8 @@ use these when calling update_menu_structs() in eeprom_burn.c
 	ckup,
 	ckdown,
 	cktoggle,
-	ckenter
+	ckenter,
+	ckesc
 } MENU_TYPES;
 
 enum data_types
@@ -119,7 +123,7 @@ enum key_types
 	KP_A, // 'A'
 	KP_B, // 'B'
 	KP_C, // 'C'
-	KP_D // 'D'
+	KP_D // 'D'	(0xEF)
 } KEY_TYPES;
 enum states
 {
@@ -137,11 +141,11 @@ enum states
 
 enum AUX_cmd_types
 {
-	PIC24_GET_DATA = 1,
-	PIC24_DATA_READY,
-	AVR_HAS_NEW_DATA,
-	KEEP_IDLE,
-	EXTRA
+	PRE_START = 0xD2, 	// these must not conflct with the keypresses
+	START_AVR,
+	DATA_READY,
+	NEW_DATA_READY,
+	NONE
 } AUX_CMDS;
 
 enum AUX_param_types
@@ -152,39 +156,23 @@ enum AUX_param_types
 	TYPE_4
 } AUX_PARAMS;
 
-/*
-1) AVR sends a REQ_DATA command along with param to tell what value it wants (if parse_P24 is done)
-2) PIC24 reads the byte - if 0 then doesn't do anything; if > 0 then it goes out and gets the value(s)
-3) on the next round, the AVR reads a byte sent by the PIC24 saying the data is ready
-4) if its not ready, go another round (or go so many rounds and then send another command)
-5) AVR reads the ready flag
-6) AVR then reads data
-7) AVR sets a flag showing value has been received
-8) AVR will put value in checkbox dialog (if its a binary) or in num entry dialog (if UCHAR or UINT) (?word)
-9) AVR will send a command telling the PIC24 that it can read the changed value(s) back
-10) AVR will send data
-
-each one of the following states is one whole cycle in the rt_params
-*/
 enum PIC24_aux_states
 {
-	P24_IDLE = 1,
-	GET_DATA,			// when PIC24 gets a REQ_DATA then go out and get it
-	SEND_DATA_READY,	// tell AVR data is ready to send
-	SEND_DATA,			// send data (how much is predefined)
-	P24_WAIT_NEW_DATA,		// wait for AVR to send the updated value(s)
-	P24_STORE_NEW_DATA
-} PIC24_AUX;
-
+	P24_START = 1,
+	P24_IDLE,
+	P24_WAITGVAL,
+	WRITE_VALUES,
+	WAIT_NEW_DATA
+} PIC24_AUX;	
+	
 enum AVR_aux_states
 {
-	AVR_IDLE = 1,
-	REQ_DATA,			//  when menu choice is get certain data (this one starts everything)
-	WAIT_DATA_READY,	// wait for SEND_DATA_READY from PIC24 (keep making rounds until data is ready to read)
-	READ_DATA,			// read data (how much is predefined)
-	AVR_WAIT_NEW_DATA,		// wait for stupid user to finish editing new data
-	SEND_NEW_DATA
+	AVR_START = 10,
+	AVR_IDLE,
+	WAIT_DATA,
+	WAIT_NDREADY
 } AVR_AUX;
+
 #define NUM_ENTRY_SIZE 10
 #define AUX_DATA_SIZE 8
 //#define NUM_ENTRY_BEGIN_COL (COLUMN - COLUMN/2)
@@ -230,7 +218,7 @@ int parse_P24(WINDOW *win, int fd, UCHAR ch, char *param_string);
 #endif
 //int update_menu_structs(int i, char *label, UCHAR row, UCHAR col, UCHAR choice, UCHAR ch_type, UCHAR type);
 int update_menu_structs(int i, UCHAR enabled, UCHAR fptr, UCHAR menu, UCHAR label);
-int update_rtparams(int i, UCHAR row, UCHAR col, UCHAR shown, UCHAR type);
+int update_rtparams(int i, UCHAR row, UCHAR col, UCHAR shown, UCHAR dtype, UCHAR type);
 int update_labels(int i, char *ramstr);
 UCHAR current_param;
 UINT temp_UINT;
@@ -243,12 +231,19 @@ int no_menu_structs;
 UINT rt_params_offset;
 UINT menu_struct_offset;
 char labels[NUM_LABELS][MAX_LABEL_LEN];
+//char labels[1][MAX_LABEL_LEN];
 // just have 1 copy in ram and reload from eeprom every time we change menus
 MENU_FUNC_STRUCT menu_structs[NUM_MENU_STRUCTS];
 char *get_label(int index);
 UCHAR get_row(int index);
 UCHAR get_col(int index);
 RT_PARAM rt_params[NUM_RT_PARAMS];
+// define a separate rt_params for the write part of test_write_data.c_str
+// because we want to handle this as if a separate array is running on the PIC24
+#ifdef NOAVR
+RT_PARAM P24_rt_params[NUM_RT_PARAMS];
+void disp_cmdtype(UCHAR state, char *str);
+#endif
 //#ifdef NOAVR
 // we could read the labels into ram when in AVR mode but its just as easy to read them from
 // eeprom directly - doesn't take that much more time, plus it saves ram space in AVR
@@ -268,4 +263,9 @@ void set_state_defaults(void);
 CHECKBOXES check_boxes[NUM_CHECKBOXES];
 int curr_checkbox;
 int last_checkbox;
+int scale_type;
+int prev_scale_type;
+UCHAR ask_data_ready;
+UCHAR aux_index;
+UCHAR new_data_ready;
 #endif
