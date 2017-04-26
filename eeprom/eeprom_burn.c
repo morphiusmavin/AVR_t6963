@@ -24,18 +24,16 @@ extern char eepromString[STRING_LEN] EEMEM;
 //******************************************************************************************//
 int burn_eeprom(void)
 {
-	int i,j;
+	int i;
 	no_labels = 0;
 	no_rtparams = 0;
 	no_menu_structs = 0;
 	total_offset = 0;
-	char *ch;
 
 #ifndef NOAVR
     printString("\r\nwriting to eeprom...\r\n");
 #endif
     i = 0;
-	j = 0;
 #if 1	// update labels
 	i = update_labels(i,"RPM\0");
 	i = update_labels(i,"ENG TEMP\0");
@@ -47,6 +45,7 @@ int burn_eeprom(void)
 	i = update_labels(i,"MAP\0");
 	i = update_labels(i,"OIL TEMP\0");
 	i = update_labels(i,"O2\0");
+	i = update_labels(i,"AUX\0");
 	i = update_labels(i,"home\0");
 	i = update_labels(i,"MENU1a\0");
 	i = update_labels(i,"MENU1b\0");
@@ -73,6 +72,7 @@ int burn_eeprom(void)
 	i = update_labels(i,"next\0");
 	i = update_labels(i,"forward\0");
 	i = update_labels(i,"enter\0");
+	i = update_labels(i,"esc\0");
 	no_labels = i;
 #endif
 	i = 0;
@@ -88,19 +88,20 @@ int burn_eeprom(void)
 	printHexByte((UCHAR)total_offset);
 	printString("\r\n");
 #else
-	printf("no_labels: %d\n",no_labels);
-	printf("total_offset: %d\n",total_offset);
+//	printf("no_labels: %d\n",no_labels);
+//	printf("total_offset: %d\n",total_offset);
 #endif
-	i = update_rtparams(i, 0, 0, 1, RT_RPM);	// first label is at offset 0
-	i = update_rtparams(i, 1, 0, 1, RT_ENGT);
-	i = update_rtparams(i, 2, 0, 1, RT_TRIP);	// first element of offset_array has offset of 2nd label
-	i = update_rtparams(i, 3, 0, 1, RT_TIME);
-	i = update_rtparams(i, 4, 0, 1, RT_AIRT);
-	i = update_rtparams(i, 0, 15, 1, RT_MPH);
-	i = update_rtparams(i, 1, 15, 1, RT_OILP);
-	i = update_rtparams(i, 2, 15, 1, RT_MAP);
-	i = update_rtparams(i, 3, 15, 1, RT_OILT);
-	i = update_rtparams(i, 4, 15, 1, RT_O2);
+	i = update_rtparams(i, 0, 0, 1, 1, RT_RPM);	// first label is at offset 0
+	i = update_rtparams(i, 1, 0, 1, 0, RT_ENGT);
+	i = update_rtparams(i, 2, 0, 1, 0, RT_TRIP);	// first element of offset_array has offset of 2nd label
+	i = update_rtparams(i, 3, 0, 1, 0, RT_TIME);
+	i = update_rtparams(i, 4, 0, 1, 0, RT_AIRT);
+	i = update_rtparams(i, 0, 15, 1, 0, RT_MPH);
+	i = update_rtparams(i, 1, 15, 1, 0, RT_OILP);
+	i = update_rtparams(i, 2, 15, 1, 0, RT_MAP);
+	i = update_rtparams(i, 3, 15, 1, 0, RT_OILT);
+	i = update_rtparams(i, 4, 15, 1, 0, RT_O2);
+	i = update_rtparams(i, 5, 0, 1, 1, RT_AUX);
 	no_rtparams = i;
 // write to the number of rt_params location in eeprom the number of rt_params
 #ifndef NOAVR
@@ -115,18 +116,27 @@ int burn_eeprom(void)
 	printHexByte((UCHAR)total_offset);
 	printString("\r\n");
 #else
-	printf("no_rtparams: %d\n",no_rtparams);
-	printf("total_offset: %d\n",total_offset);
+//	printf("no_rtparams: %d\n",no_rtparams);
+//	printf("total_offset: %d\n",total_offset);
 #endif
 	i = 0;
-	UCHAR enabled, fptr, menu, label = 0;
-	enabled = 1;
 //	menu_structs[i].enabled = enabled;
 //	menu_structs[i].fptr = fptr;
 //	menu_structs[i].menu = menu;
 //	menu_structs[i].label = label;
 // A,B,C,D,#,0
 	// main menu	0
+/*	
+	for(i = 0;i < no_rtparams;i++)
+	{
+		printf("%d\t",P24_rt_params[i].row);
+		printf("%d\t",P24_rt_params[i].col);
+		printf("%d\t",P24_rt_params[i].shown);
+		printf("%d\t",P24_rt_params[i].dtype);
+		printf("%d\n",P24_rt_params[i].type);
+	}
+*/
+	i = 0;
 	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
 	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
 	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C);
@@ -186,7 +196,7 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 1, ckdown, 0, ckdown);		// B
 	i = update_menu_structs(i, 1, cktoggle, 0, cktoggle);	// C
 	i = update_menu_structs(i, 1, ckenter, 0,  ckenter);	// D
-	i = update_menu_structs(i, 0, 0, 0, 0);					// #
+	i = update_menu_structs(i, 0, ckesc, 0, ckesc);			// #
 	i = update_menu_structs(i, 0, 0, 0, 0);					// 0
 
 	// menu 2a		48
@@ -200,62 +210,6 @@ int burn_eeprom(void)
 	// 2b			54
 	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A);
 	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-
-	// 2c			60
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-
-	// 3a
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-
-	// 3b
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-
-	// 3c
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-
-	// 4a
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-
-	// 4b
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
-
-	// 4c
-	i = update_menu_structs(i, 0, 0, 0, 0);
-	i = update_menu_structs(i, 0, 0, 0, 0);
 	i = update_menu_structs(i, 0, 0, 0, 0);
 	i = update_menu_structs(i, 0, 0, 0, 0);
 	i = update_menu_structs(i, 0, 0, 0, 0);
@@ -274,9 +228,19 @@ int burn_eeprom(void)
 	printHexByte((UCHAR)total_offset);
 	printString("\r\n");
 #else
-	printf("no_menu_structs: %d\n",no_menu_structs);
-	printf("total_offset: %d\n",total_offset);
+//	printf("no_menu_structs: %d\n",no_menu_structs);
+//	printf("total_offset: %d\n",total_offset);
 #endif
+/*
+	for(i = 0;i < no_rtparams;i++)
+	{
+		printf("%d\t",P24_rt_params[i].row);
+		printf("%d\t",P24_rt_params[i].col);
+		printf("%d\t",P24_rt_params[i].shown);
+		printf("%d\t",P24_rt_params[i].dtype);
+		printf("%d\n",P24_rt_params[i].type);
+	}
+*/
 	return 0;
 }
 //******************************************************************************************//
@@ -303,14 +267,21 @@ int update_labels(int index, char *ramstr)
 //******************************************************************************************//
 //************************************* update_rtparams*************************************//
 //******************************************************************************************//
-int update_rtparams(int i, UCHAR row, UCHAR col, UCHAR shown, UCHAR type)
+int update_rtparams(int i, UCHAR row, UCHAR col, UCHAR shown, UCHAR dtype, UCHAR type)
 {
 	rt_params[i].row = row;					// row, col tells where the param will appear on screen
 	rt_params[i].col = col;
 	rt_params[i].shown = shown;				// if its shown or not
-	rt_params[i].type = type;					// 0 - UCHAR; 1 - UINT; 2 - string
+	rt_params[i].dtype = dtype;				// 0 - UCHAR; 1 - UINT; 2 - string
+	rt_params[i].type = type;
 #ifndef NOAVR
     eeprom_update_block(&rt_params[i], eepromString+total_offset, sizeof(RT_PARAM));
+#else
+	P24_rt_params[i].row = row;
+	P24_rt_params[i].col = col;
+	P24_rt_params[i].shown = shown;
+	P24_rt_params[i].dtype = dtype;
+	P24_rt_params[i].type = type;
 #endif
 	total_offset += sizeof(RT_PARAM);
 //	printf("total_offset = %d\n",total_offset);
@@ -323,7 +294,6 @@ int update_rtparams(int i, UCHAR row, UCHAR col, UCHAR shown, UCHAR type)
 //int update_menu_structs(int i, char *label, UCHAR row, UCHAR col, UCHAR choice, UCHAR ch_type, UCHAR type)
 int update_menu_structs(int i, UCHAR enabled, UCHAR fptr, UCHAR menu, UCHAR label)
 {
-	int len;
 /*
 	UCHAR enabled;		// if alt function will replace generic function
 	UCHAR key;			// which keypress applies

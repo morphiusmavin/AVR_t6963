@@ -29,6 +29,7 @@ int main(void)
 	int done;
 	UCHAR xbyte;
 	UINT xword;
+	int do_states = 1;
 //    size_t str_size = sizeof(PROMPT_STRUCT);
 
     initUSART();
@@ -135,7 +136,7 @@ int main(void)
 	display_labels();
 	done = 0;
 	char param_string[10];
-
+	
     while (1)
     {
         ret_char = receiveByte();

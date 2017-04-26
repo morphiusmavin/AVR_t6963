@@ -1,9 +1,10 @@
 # GCC/Linux compile flags
 GNUCC = gcc
-GNUCFLAGS = -g -std=gnu99 -Wstrict-prototypes -DNOAVR
+GNUCFLAGS = -Wall -std=gnu99 -Wstrict-prototypes -DNOAVR
+#GNUCFLAGS =  -std=gnu99 -Wstrict-prototypes -DNOAVR
 GNULDFLAGS = -static
 GNUSFLAGS = -D_SVID_SOURCE -D_XOPEN_SOURCE
-GNUNOANSI = -g -std=gnu99 -Wstrict-prototypes 
+GNUNOANSI = -Wall -std=gnu99 -Wstrict-prototypes 
 
 #####################################################
 CC = ${GNUCC}
