@@ -22,7 +22,7 @@
 //******************************************************************************************//
 //************************************** parse_P24 *****************************************//
 //******************************************************************************************//
-// linked into and called by both main.c and test_write_data.c 
+// linked into and called by both main.c and test_write_data.c
 #ifdef MAIN_C
 int parse_P24(UCHAR inch, char *param_string, UCHAR *pxbyte, UINT *pxword)
 #else
@@ -37,8 +37,17 @@ int parse_P24(WINDOW *win, int fd, UCHAR inch, char *param_string)
 	switch(parse_state)
 	{
 		case IDLE:
-			current_param = inch;
-			parse_state = CHECK_HIGHBIT;
+			if((inch & 0x70) == 0x70)
+			{
+				current_param = inch;
+				parse_state = CHECK_HIGHBIT;
+//				mvwprintw(win, DISP_OFFSET+29,2,"             ");
+			}	
+			else
+			{
+				set_defaults();
+				mvwprintw(win, DISP_OFFSET+29,2,"reset: %x  ",inch);
+			}
 			break;
 		case CHECK_HIGHBIT:
 			switch(inch)
@@ -62,6 +71,7 @@ int parse_P24(WINDOW *win, int fd, UCHAR inch, char *param_string)
 					set_defaults();
 					break;
 			}
+//			mvwprintw(win, DISP_OFFSET+32,2,"%d  %d",inch,current_param);
 			break;
 		case GET_CH0:
 			parse_state = SEND_UINT0;
@@ -74,6 +84,7 @@ int parse_P24(WINDOW *win, int fd, UCHAR inch, char *param_string)
 		case GET_CH2:
 			temp_UINT = inch;
 			parse_state = SEND_UINT2;
+//			mvwprintw(win, DISP_OFFSET+33,2,"%d  %d",inch,current_param);
 			break;
 		case SEND_UCHAR0:
 			xbyte = inch;
@@ -106,18 +117,17 @@ int parse_P24(WINDOW *win, int fd, UCHAR inch, char *param_string)
 			xword |= temp_UINT;
 			xword |= 0x0080;
 			sprintf(param_string,"%4u",xword);
-//				printf("uint1:%s\n",param_string);
 			done = 1;
 			break;
 		case SEND_UINT2:
 			xword = (UINT)temp_UINT;
 			temp_UINT = (UINT)inch;
+//			mvwprintw(win, DISP_OFFSET+34,2,"%d  %d",inch,current_param);
 			temp_UINT <<= 8;
 			temp_UINT &= 0xff00;
 			xword |= temp_UINT;
 			xword |= 0x8000;
 			sprintf(param_string,"%4u",xword);
-//				printf("uint2:%s\n",param_string);
 			done = 1;
 			break;
 		default:

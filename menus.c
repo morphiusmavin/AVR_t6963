@@ -248,21 +248,6 @@ static void blank_menu(void)
 //******************************************************************************************//
 //******************************************************************************************//
 //******************************************************************************************//
-static void blank_choices(void)
-{
-	int row,col,i;
-	row = 3;
-	col = 3;
-	char blank[] = "                     ";
-	for(i = 0;i < NUM_CHECKBOXES;i++)
-	{
-		GDispStringAt(row,col,blank);
-		row++;
-	}
-}
-//******************************************************************************************//
-//******************************************************************************************//
-//******************************************************************************************//
 void init_list(void)
 {
 	int i = 0;
@@ -305,6 +290,7 @@ void init_list(void)
 	new_data_ready = 1;
 	cur_row = NUM_ENTRY_ROW;
 	cur_col = NUM_ENTRY_BEGIN_COL;
+	aux_index = 0;
 }
 //******************************************************************************************//
 //******************************************************************************************//
@@ -442,7 +428,16 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 			no_setlist = 0;
 			break;
 		case KP_AST:
-			prev_list();
+			if(menu_structs[menu_index].menu == num_entry)
+			{
+				ret_char = escape(ret_char);
+			}
+			if(menu_structs[menu_index].menu == chkboxes)
+			{
+				ret_char = escape_checkboxes(ret_char);
+			}
+			else
+				prev_list();
 //			mvwprintw(win, 41, 3, "ast");
 			break;
 		default:
@@ -493,6 +488,7 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 
 		mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",labels[get_curr_menu()+no_rtparams]);
 		mvwprintw(win, DISP_OFFSET+20+i+1, 2,"                                  ");
+//		mvwprintw(win, DISP_OFFSET+35, 2,"%d ",curr_checkbox);
 #endif
 	}
 	no_setlist = 1;
@@ -530,6 +526,7 @@ static UCHAR enter(UCHAR ch)
 	cur_col = NUM_ENTRY_BEGIN_COL;
 	prev_list();
 	clean_disp_num();
+	aux_index = 1;
 #ifdef NOAVR
 	mvwprintw(win, 45, 3,"num entered: %s ",new_global_number);
 #endif
@@ -678,11 +675,11 @@ static void init_checkboxes(void)
 	int i;
 	UCHAR row, col;
 	scale_disp(SCALE_DISP_SOME);
-	row = 3;
+	row = 2;
 	col = 3;
 	curr_checkbox = 0;
 	memset(check_boxes,0,sizeof(CHECKBOXES)*NUM_CHECKBOXES);
-	
+
 	strcpy(check_boxes[0].string,"choice 1\0");
 	strcpy(check_boxes[1].string,"choice 2\0");
 	strcpy(check_boxes[2].string,"choice 3\0");
@@ -693,9 +690,10 @@ static void init_checkboxes(void)
 	strcpy(check_boxes[7].string,"choice 8\0");
 	strcpy(check_boxes[8].string,"choice 9\0");
 	strcpy(check_boxes[9].string,"choice 10\0");
-	
+
 	for(i = 0;i < NUM_CHECKBOXES;i++)
 	{
+		check_boxes[i].index = i;
 		GDispStringAt(row,col,check_boxes[i].string);
 		row++;
 	}
@@ -714,6 +712,7 @@ static UCHAR scrolldown_checkboxes(UCHAR ch)
 	if(++curr_checkbox > last_checkbox)
 		curr_checkbox = 0;
 	// move cursor
+//	dispCharAt(1+check_boxes[curr_checkbox].index,0,0x21);
 	return ch;
 }
 
@@ -722,18 +721,19 @@ static UCHAR toggle_checkboxes(UCHAR ch)
 	if(check_boxes[curr_checkbox].checked == 1)
 	{
 		check_boxes[curr_checkbox].checked = 0;
-		dispCharAt(3+check_boxes[curr_checkbox].index,0,0x20);	// display 'blank'
+		dispCharAt(1+check_boxes[curr_checkbox].index,0,0x20);	// display 'blank'
 	}
 	else
 	{
 		check_boxes[curr_checkbox].checked = 1;
-		dispCharAt(3+check_boxes[curr_checkbox].index,0,120);	// display 'x'
+		dispCharAt(1+check_boxes[curr_checkbox].index,0,120);	// display 'x'
 	}
 	return ch;
 }
 
 static UCHAR enter_checkboxes(UCHAR ch)
 {
+	blank_choices();
 	scale_disp(SCALE_DISP_ALL);
 	prev_list();
 	return ch;
@@ -745,3 +745,19 @@ static UCHAR escape_checkboxes(UCHAR ch)
 	prev_list();
 	return ch;
 }
+//******************************************************************************************//
+//******************************************************************************************//
+//******************************************************************************************//
+static void blank_choices(void)
+{
+	int row,col,i;
+	row = 3;
+	col = 3;
+	char blank[] = "                     ";
+	for(i = 0;i < NUM_CHECKBOXES;i++)
+	{
+		GDispStringAt(row,col,blank);
+		row++;
+	}
+}
+

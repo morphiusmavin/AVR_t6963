@@ -1,53 +1,23 @@
 t6963_notes.txt
 
-keypad layout:
+******************************************* overview ****************************************
 
-1 2 3 A
-4 5 6 B
-7 8 9 C
-* 0 # D
+The AVR is just a driver for the LCD display. The serial port of the AVR communicates with a PIC24.
+The PIC24 sends a stream of data specified by an array of structs rt_params.
 
-dec		hex		char
-35		23		#
-42		2a		*
-48		30		0
-49		31		1
-50		32		2
-51		33		3
-52		34		4
-53		35		5
-54		36		6
-55		37		7
-56		38		8
-57		39		9
-65		41		A
-66		42		B
-67		43		C
-68		44		D
+(main.h)
+typedef struct rt_params
+{
+	UCHAR row;			// row, col tells where the param will appear on screen
+	UCHAR col;
+	UCHAR shown;		// if its shown or not
+	UCHAR dtype;		// 0 = UCHAR; 1 = UINT; 2 = dword?
+	UCHAR type;			// rt_types
+} RT_PARAM;
 
-Special character codes sent by the PIC24:
+A 4x4 keypad is attached to the PIC24 so when a key is pressed, one of the 
+following bytes is sent to the AVR
 
-0xF5->0xFF - PIC24 is sending a sequence of predetermined bytes that are shifted, scaled or 
-			bytes combined to make words and displayed at a list of predetermined 
-			row,col locations
-	RT_AUX		0xF5	- tells AVR to send a string of 20 bytes that was entered using the numentry/alnum dialog
-	RT_TRIP		0xF6	- tells the AVR to expect 1 byte to be sent preceded by either RT_LOW or RT_HIGH0
-	RT_TIME,	0xF7	-  "																		"
-	RT_AIRT,	0xF8	-  "																		"
-	RT_O2,		0xF9	-  "																		"
-	RT_MAP,		0xFA	-  "																		"
-	RT_OILT,	0xFB	-  "																		"
-	RT_OILP,	0xFC	-  "																		"
-	RT_ENGT,	0xFD	-  "																		"
-	RT_MPH,		0xFE	-  "																		"
-	RT_RPM		0xFF	- tells the AVR to expect 2 bytes to be send preceded by either RT_HIGH1/2/3
-						- RT_HIGH1 - 2 bytes make up an unsigned int with neither MSB set
-						- RT_HIGH2 - bit 7 of unsigned int is set
-						- RT_HIGH3 - bit 15 of unsigned int is set
-
-using this scheme allows the AVR to separate the RT_XXX commands from actual data						
-
-bytes sent to represent keypresses
 0xE0 - '#'
 0xE1 - '*'
 0xE2 - '0'
@@ -67,7 +37,45 @@ bytes sent to represent keypresses
 
 When the PIC24 sends a byte in the range of 0xE0 -> 0xEF that will be interpreted as
 a keypress. The dialog will filter this out using a switch statement. The default will
-just return whatever was passed in. 
+just return whatever was passed in. (see get_key() in menus.c)
+
+The array of rt_params is filled in with the function update_rtparams() in eeprom_burn.c
+The program compiled in the eeprom directory is used to burn the eeprom initially.
+The program compiled in the test_write_data directory is compiled to run on a linux box
+and is used to simulate the PIC24 talking to the AVR. So eeprom_burn.c is linked into
+both the main program in the parent directory and the simulator in test_write_data.
+The section of code at the beginning of main.c reads from the eeprom 3 different arrays:
+1) labels
+2) rt_params
+3) menu_structs
+It also reads how many labels, rt_params and menu structs and their offsets into the eeprom.
+(see read_eeprom() function in eeprom_burn.c)
+
+Special character codes sent by the PIC24:
+
+RT_RPM
+RT_ENGT,
+RT_TRIP,
+RT_TIME,
+RT_AIRT,
+RT_MPH,
+RT_OILP,
+RT_MAP,
+RT_OILT,
+RT_O2,
+RT_AUX
+
+When the PIC24 is sending data to the AVR, each data is preceded by a one of the following:
+- RT_LOW	- a UCHAR (unsigned char) is sent without the MSB set (0 -> 0x7F)
+- RT_HIGH0	- a UCHAR is sent with the MSB set (0xFF -> 0x80)
+- RT_HIGH1	- a UINT (actually a UCHAR) is sent to make up an unsigned int with neither MSB set
+- RT_HIGH2	- bit 7 of unsigned int is set
+- RT_HIGH3	- bit 15 of unsigned int is set
+The state table in parse_P24.c parses the data stream into UINTs and UCHARs and puts them
+in param_string in do_read() (when used in the simulator) or in main.c where it calls parse_P24().
+Using this scheme allows the AVR to separate the RT_XXX commands from actual data.
+
+*************************************** details ****************************************
 
 The beginning of eeprom stores all the labels used. Another table directly after the labels
 stores the offsets from the beginning of eeprom to each label. Any part of the code that uses
@@ -89,13 +97,14 @@ The array of RT_PARAMS is read into an array in ram and can be changed by comman
 the PIC24 to re-arrange the display.
 
 The next section of eeprom stores the default menu setup which is an array of the MENU_STRUCT:
-typedef struct menu_func
+typedef struct rt_params
 {
-	UCHAR enabled;		// if alt function will replace generic function
-	UCHAR fptr;			// which function to call (menu_types)
-	UCHAR menu;			// if fptr == 0 then it means goto this menu
-	UCHAR label;		// which label to display in legend (labels)
-} MENU_FUNC_STRUCT;
+	UCHAR row;			// row, col tells where the param will appear on screen
+	UCHAR col;
+	UCHAR shown;		// if its shown or not
+	UCHAR dtype;		// 0 = UCHAR; 1 = UINT; 2 = dword?
+	UCHAR type;			// rt_types
+} RT_PARAM;
 
 This array will be read into program memory on startup and can be changed (added to ?) by
 commands from the PIC24.
@@ -151,25 +160,6 @@ This way, we have 3 possible choices:
 
 TODO:
 
-When a menu choice that changes a binary (on/off), UCHAR or UINT setting is chosen, the AVR
-will send a command to the PIC24 telling it to send the current setting. If the setting is a
-UCHAR or UINT, use the number entry dialog. If its a binary setting, then send one or more
-settings and display as a checkbox dialog.
-
-1) AVR sends a command to tell what value it wants (if parse_P24 is done)
-2) PIC24 reads the byte - if 0 then doesn't do anything; if > 0 then it goes out and gets the value(s)
-3) on the next round, the AVR reads a byte sent by the PIC24 saying the data is ready
-4) if its not ready, go another round (or go so many rounds and then send another command)
-5) AVR reads the ready flag
-6) AVR then reads data
-7) AVR sets a flag showing value has been received
-8) AVR will put value in checkbox dialog (if its a binary) or in num entry dialog (if UCHAR or UINT) (?word)
-9) AVR will send a command telling the PIC24 that it can read the changed value(s) back
-
-		
-? - should the AVR reduce the polling by using scale_display - and if so, then how
-	does the PIC24 know it doesn't need the extra data
-
 The numentry/alnum dialog should primarily be used for entering a passcode to start the engine.
 The AVR code will handle the password retries and timeouts. e.g. three tries to enter passcode and
 passcode must be entered within 15 seconds or the system locks out totally for 1/2 hour.
@@ -185,42 +175,6 @@ Other parameters to have the system offer the user to change:
 ? do we really need label_offset[]
 if scale_display is called to reduce the display to just rpm, mph, eng temp & oil press then
 the PIC24 should not send those values
-
-state tables for RT_AUX:
-
-1) AVR sends a REQ_DATA command along with param to tell what value it wants (if parse_P24 is done)
-2) PIC24 reads the byte - if 0 then doesn't do anything; if > 0 then it goes out and gets the value(s)
-3) on the next round, the AVR reads a byte sent by the PIC24 saying the data is ready
-4) if its not ready, go another round (or go so many rounds and then send another command)
-5) AVR reads the ready flag
-6) AVR then reads data
-7) AVR sets a flag showing value has been received
-8) AVR will put value in checkbox dialog (if its a binary) or in num entry dialog (if UCHAR or UINT) (?word)
-9) AVR will send a command telling the PIC24 that it can read the changed value(s) back
-10) AVR will send data
-
-each one of the following states is one whole cycle in the rt_params
-
-enum PIC24_aux_states
-{
-	P24_IDLE = 1,
-	GET_DATA,			// when PIC24 gets a REQ_DATA then go out and get it
-	SEND_DATA_READY,	// tell AVR data is ready to send
-	SEND_DATA,			// send data (how much is predefined)
-	WAIT_ACQ,			// wait for AVR to say valid data was received (if NAQ then go to prev state)
-	P24_WAIT_NEW_DATA,		// wait for AVR to send the updated value(s)
-} PIC24_AUX;
-
-enum AVR_aux_states
-{
-	AVR_IDLE = 1,
-	REQ_DATA,			//  when menu choice is get certain data (this one starts everything)
-	WAIT_DATA_READY,	// wait for SEND_DATA_READY from PIC24 (keep making rounds until data is ready to read)
-	READ_DATA,			// read data (how much is predefined)
-	SEND_ACQ,			// send acq telling PIC24 we have received the data (or send NAQ saying we did not received valid data)
-	AVR_WAIT_NEW_DATA,		// wait for stupid user to finish editing new data
-	SEND_NEW_DATA
-} AVR_AUX;
 
 checkboxes:
 
@@ -251,40 +205,43 @@ B - down
 C - set/clear
 D - enter
 
-when using the simulation (test_write_data) the data is sent in aux_data 8 bytes at a time
-because of the fact that the serial port is set to non-blocking, there's a problem sending
-a variable number of bytes at a time so when it comes time to use it on the actual hardware,
-some things may have to be changed...
+when using the simulation (test_write_data) the data is sent in aux_data AUX_DATA_SIZE
+bytes at a time because of the fact that the serial port is set to non-blocking, there's
+a problem sending a variable number of bytes at a time so when it comes time to use it
+on the actual hardware, some things may have to be changed...
 
+In RT_AUX:
+When either the start_numentry or the init_checkboxes function is called, the AVR will
+send a command to the PIC24 telling it to go get the data. The PIC24 will then send a
+command back saying it has the data in aux_data. The user can then modify the data and
+then send a command back saying the data has been modified.
 
-for(i = 0;i < no_rtparams;i++)
-{
-	if(rt_params[i].shown)
-	{
-		switch(struct[i].type)
-		{
-			case RT_RPM:
-				break;
-			case RT_MPH:
-				break;
-			...
-		}
-	}
-}
+1) AVR sends DATA_REQ state in 1st byte of aux_data.
+2) When PIC24 has data, it sends back the command VALID_DATA to AVR with aux_data
+3) After data is modified, AVR sends a command back: DATA_READY.
 
-and have a function that sets the array of structs to either:
-1) enable all
-2) enable some
-3) enable none
+keypad layout:
 
-but RT_AUX shown is set to 0
+1 2 3 A
+4 5 6 B
+7 8 9 C
+* 0 # D
 
-last 3 checkins:
-959ead8 forgot to add parse_P24.c
-7aa3c40 put parse function in sep file (parse_P24.c) - used by both do_read.c and main.c
-691bad1 alnum entry is working along with num entry
+dec		hex		char
+35		23		#
+42		2a		*
+48		30		0
+49		31		1
+50		32		2
+51		33		3
+52		34		4
+53		35		5
+54		36		6
+55		37		7
+56		38		8
+57		39		9
+65		41		A
+66		42		B
+67		43		C
+68		44		D
 
-this checkin: put state machines in RT_AUX for both test_write_data.c (simulates PIC24)
-and in parse_P24.c (simulates AVR). PIC24 sends sample data to AVR - must have time delay:
-usleep(5000) (and no less than 5000us) at line 131 in parse_P24.c or else it will only
-read 7 bytes at line 134 and not 8 - works when test_data w time delay is 10.

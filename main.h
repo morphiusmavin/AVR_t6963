@@ -5,11 +5,11 @@
 #define STRING_LEN 100
 #define NUM_FPTS 14
 #define MAX_LABEL_LEN 9
-#define NUM_LABELS 38
+#define NUM_LABELS 43
 #define NUM_MENU_CHOICES 6
 #define NUM_MENUS 10
 #define NUM_MENU_STRUCTS NUM_MENUS*NUM_MENU_CHOICES
-#define NUM_RT_PARAMS 11
+#define NUM_RT_PARAMS 12
 #define DISP_OFFSET 18
 #define NUM_CHECKBOXES 10
 #define SCALE_DISP_ALL 0
@@ -65,7 +65,7 @@ functions start here - these are indexes into the array of function pointers (in
 static UCHAR (*fptr[NUM_FPTS])(UCHAR) = {enter, backspace, escape, scr_alnum0, \
 		 scr_alnum1, scr_alnum2, scr_alnum3, cursor_forward, alnum_enter, scrollup_checkboxes, \
 			scrolldown_checkboxes, toggle_checkboxes, enter_checkboxes };
-			
+
 use these when calling update_menu_structs() in eeprom_burn.c
 */
 	entr,
@@ -86,7 +86,7 @@ use these when calling update_menu_structs() in eeprom_burn.c
 
 enum data_types
 {
-	RT_LOW,			// UCHAR without high bit set
+	RT_LOW,				// UCHAR without high bit set
 	RT_HIGH0,			// UCHAR with bit 7 set
 	RT_HIGH1,			// UINT with neither 7 or 15 set
 	RT_HIGH2,			// bit 7 of UINT set
@@ -94,7 +94,7 @@ enum data_types
 } DATA_TYPES;
 enum rt_types
 {
-	RT_RPM,
+	RT_RPM = 0x70,
 	RT_ENGT,
 	RT_TRIP,
 	RT_TIME,
@@ -104,7 +104,8 @@ enum rt_types
 	RT_MAP,
 	RT_OILT,
 	RT_O2,
-	RT_AUX
+	RT_AUX1,
+	RT_AUX2
 } RT_TYPES;
 enum key_types
 {
@@ -129,18 +130,34 @@ enum states
 {
 	IDLE = 1,
 	CHECK_HIGHBIT,
-	SEND_UCHAR0,	// UCHAR without high bit set
-	SEND_UCHAR1,	// UCHAR with high bit set
 	GET_CH0,
 	GET_CH1,
 	GET_CH2,
+	SEND_UCHAR0,	// UCHAR without high bit set
+	SEND_UCHAR1,	// UCHAR with high bit set
 	SEND_UINT0,		// UINT with neither bit 7 or 15 set
 	SEND_UINT1,		// UINT with bit 7 set
 	SEND_UINT2		// UINT with bit 15 set
 } STATES;
 
+enum aux_states
+{
+	IDLE_AUX,
+	DATA_REQ,
+	VALID_DATA,
+	DATA_READY,
+	EXTRA
+} AUX_STATES;
+
+enum aux_commands
+{
+	CMD_GET_DATA = 10,	// AVR tells PIC24 what data it wants
+	CMD_DATA_READY,			// PIC24 tells AVR it has the data to send
+	CMD_NEW_DATA			// AVR tells PIC24 it has new data to store
+} AUX_CMDS;	
+
 #define NUM_ENTRY_SIZE 10
-#define AUX_DATA_SIZE 10
+#define AUX_DATA_SIZE 4
 //#define NUM_ENTRY_BEGIN_COL (COLUMN - COLUMN/2)
 #define NUM_ENTRY_BEGIN_COL 3
 #define NUM_ENTRY_END_COL NUM_ENTRY_BEGIN_COL + NUM_ENTRY_SIZE
@@ -234,4 +251,7 @@ int prev_scale_type;
 UCHAR ask_data_ready;
 UCHAR aux_index;
 UCHAR new_data_ready;
+UCHAR auxcmd;
+UCHAR auxparam;
+
 #endif

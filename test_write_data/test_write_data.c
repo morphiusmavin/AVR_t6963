@@ -55,28 +55,30 @@ int main(int argc, char *argv[])
     UCHAR data = 2;
     UCHAR data1 = 0;
 	UINT data2 = 0;
-	UINT rtdata[11];
+	UINT data3 = 0;
+	UINT rtdata[11];	// this should be no or rt_params
     UCHAR code = RT_RPM;
+    UCHAR code2 = code - RT_RPM;
 	int done;
 	UINT rpm;
 	UCHAR key;
 	UCHAR wkey;
-	UCHAR auxcmd;
-	UCHAR auxparam;
 	char tempx[20];
 	int loop = 0;
 	int loop2 = 0;
 	int do_states = SCALE_DISP_ALL;
 	UCHAR gval_done = 1;
-	UINT test1;
+	UINT starting_aux = 0;
 	char param_string[10];
 	int display_offset = 3;
 	UCHAR read_buf[NUM_ENTRY_SIZE];
 	int y = 0;
+	UINT temp_int;
+	UINT temp_int2 = 0;
 
-	if((argc > 2) && (argv[1][0] == 'w'))
+	if(argv[1][0] == 'w')
 		type = 1;
-	else if((argc == 2) && (argv[1][0] == 'r'))
+	else if(argv[1][0] == 'r')
 		type = 0;
 	else
 	{
@@ -183,7 +185,8 @@ int main(int argc, char *argv[])
 	mvwprintw(menu_win, display_offset+7, 2,"MAP ");
 	mvwprintw(menu_win, display_offset+8, 2,"OILT ");
 	mvwprintw(menu_win, display_offset+9, 2,"O2 ");
-	mvwprintw(menu_win, display_offset+10, 2,"AUX ");
+	mvwprintw(menu_win, display_offset+10, 2,"AUX1 ");
+	mvwprintw(menu_win, display_offset+11, 2,"AUX2 ");
 	wrefresh(menu_win);
 
 	memset(&newtio, 0, sizeof newtio);
@@ -209,7 +212,9 @@ int main(int argc, char *argv[])
 // read	- simulate the AVR
 	if(type == 0)
 	{
-//		printf("read\n");
+		if(argc > 2)
+			starting_aux = atoi(argv[2]);
+//		printf("starting aux: %d\n",starting_aux);
 		do_read(menu_win, fd,display_offset);
 //		printf("do_read: %d\n",ret_code);
 	}	// end of else
@@ -217,29 +222,25 @@ int main(int argc, char *argv[])
 // write - simulate the PIC24
 	else if(type == 1)
 	{
-		aux_data[0] = 0x30;
-		aux_data[1] = 0x31;
-		aux_data[2] = 0x32;
-		aux_data[3] = 0x33;
-		aux_data[4] = 0x34;
-		aux_data[5] = 0x35;
-		aux_data[6] = 0x37;
-		aux_data[7] = 0x38;
-		
 		memset(read_buf,0,sizeof(read_buf));
 		for(i = 0;i < 11;i++)
 			rtdata[i] = i;
-		rtdata[RT_RPM] = 1000;
-		rtdata[RT_AUX] = 2000;	
-		
+		rtdata[RT_RPM] = 300;
+		rtdata[RT_AUX1] = 0;
+		rtdata[RT_AUX2] = 100;
+/*
 		P24_rt_params[RT_TIME].shown = 0;
 		P24_rt_params[RT_TRIP].shown = 0;
 		P24_rt_params[RT_AIRT].shown = 0;
 		P24_rt_params[RT_MAP].shown = 0;
 		P24_rt_params[RT_OILT].shown = 0;
 		P24_rt_params[RT_O2].shown = 0;
-		
-		auxcmd = 0;
+		P24_rt_params[RT_ENGT].shown = 0;
+		P24_rt_params[RT_MPH].shown = 0;
+		P24_rt_params[RT_OILP].shown = 0;
+*/
+//		P24_rt_params[RT_AUX].shown = 0;
+
 		for(itr = 0;itr < iters;itr++)
 		{
 #if 0
@@ -281,147 +282,175 @@ int main(int argc, char *argv[])
 //			for(i = 0;i < 20;i++)
 //				mvwprintw(menu_win, display_offset+i+21, 4,"                      ");
 
-
-			if(code == RT_AUX)
+//#if 0
+			if(code == RT_AUX1)
 			{
-				res = read(fd,&aux_data,AUX_DATA_SIZE);
-				mvwprintw(menu_win, display_offset+36, 2,"res: %d  ",res);
-				for(i = 0;i < AUX_DATA_SIZE;i++)
-					mvwprintw(menu_win, display_offset+37, 2+(i * 3),"%x  ",aux_data[i]);
-#if 0
-				res = read(fd,&auxparam,1);
-				test1 = (UINT)auxparam;
-				test1 <<= 8;
-				res = read(fd,&auxparam,1);
-				test1 |= (UINT)(auxparam);
-				mvwprintw(menu_win, display_offset+37, 2,"%d  ",test1);
-				res = read(fd,&auxparam,1);
-				test1 = (UINT)auxparam;
-				test1 <<= 8;
-				res = read(fd,&auxparam,1);
-				test1 |= (UINT)(auxparam);
-				mvwprintw(menu_win, display_offset+38, 2,"%d  ",test1);
-				res = read(fd,&auxparam,1);
-				test1 = (UINT)auxparam;
-				test1 <<= 8;
-				res = read(fd,&auxparam,1);
-				test1 |= (UINT)(auxparam);
-				mvwprintw(menu_win, display_offset+39, 2,"%d  ",test1);
-				res = read(fd,&auxparam,1);
-				test1 = (UINT)auxparam;
-				test1 <<= 8;
-				res = read(fd,&auxparam,1);
-				test1 |= (UINT)(auxparam);
-				mvwprintw(menu_win, display_offset+40, 2,"%d  ",test1);
-#endif
+				switch(paux_state)
+				{
+					case IDLE_AUX:
+						if(aux_data[0] == CMD_GET_DATA)
+							paux_state = DATA_REQ;
+						else
+							paux_state = IDLE_AUX;
+						break;
+					case DATA_REQ:
+						temp_int2++;
+						auxcmd = CMD_DATA_READY;
+						auxparam = auxcmd + 1;
+						paux_state = VALID_DATA;
+						break;
+					case VALID_DATA:
+						if(aux_data[0] == CMD_NEW_DATA)
+							paux_state = DATA_READY;
+						else
+						{
+							paux_state = VALID_DATA;
+//							loop = break_out_loop(loop, paux_state);
+//							mvwprintw(menu_win, display_offset+40, 2,"loop: %d  ",loop);
+						}	
+						break;
+					case DATA_READY:
+						for(i = 0;i < AUX_DATA_SIZE;i++)
+							mvwprintw(menu_win, display_offset+34, 2+(i * 3),"%x  ",aux_data[i]);
+						paux_state = IDLE_AUX;
+						break;
+					default:
+						paux_state = IDLE_AUX;
+						break;
+				}
+				disp_pstate(paux_state,tempx);
+//				auxcmd = aux_data[0];
+				mvwprintw(menu_win, display_offset+32, 2,"%s        ",tempx);
+				mvwprintw(menu_win, display_offset+33, 2,"cmd: %x  param: %x  ",auxcmd,auxparam);
 			}
-
-			write(fd,&code,1);
-
-			mvwprintw(menu_win, display_offset+35, 4, "rt_type: %s        ",get_label(code));
-			wrefresh(menu_win);
-
-			if(P24_rt_params[code].shown == 1)
+			else if(code == RT_AUX2)
+//#endif
+//			if(code == RT_AUX2)
 			{
-				if(P24_rt_params[code].dtype == 1)
+//				rtdata[code] = (UINT)(auxcmd << 8) | (UINT)auxparam;
+//				auxcmd++;
+//				auxparam++;
+				res = read(fd,&aux_data,AUX_DATA_SIZE);
+				mvwprintw(menu_win, display_offset+28, 2,"res: %d  ",res);
+				for(i = 0;i < AUX_DATA_SIZE;i++)
+					mvwprintw(menu_win, display_offset+29, 2+(i * 3),"%x  ",aux_data[i]);
+//				mvwprintw(menu_win, display_offset+30,2,"%x %x   ",aux_data[0],aux_data[1]);
+				mvwprintw(menu_win, display_offset+30,2,"%x %x   ",aux_data[2],aux_data[3]);
+			}	
+			write(fd,&code,1);
+			usleep(tdelay);
+
+//			if(P24_rt_params[code2].shown == 1)
+// shown means if it gets displayed - add a field called 'sent' if we don't want to send it
+			if(1)
+			{
+				data3 = rtdata[code2];
+				// this is a round-about way to send data back to the AVR
+				// since the AUX1 state table can't do a write back
+				if(P24_rt_params[code2].dtype == 2)			//AUX1
+				{
+					rtdata[code2] = temp_int2;
+				}
+				else if(P24_rt_params[code2].dtype == 3)	// AUX2
+//				if(P24_rt_params[code2].dtype == 3)
+				{
+					temp_int = (UINT)auxcmd;
+					temp_int <<= 8;
+					temp_int &= 0xff00;
+					rtdata[code2] = temp_int;
+					temp_int = (UINT)auxparam;
+					rtdata[code2] |= temp_int;
+					mvwprintw(menu_win, display_offset+31,2,"%x %x %x   ",rtdata[code2],auxcmd,auxparam);
+				}
+				else
+					rtdata[code2] = data3;
+					
+				if(P24_rt_params[code2].dtype > 0)
 				{
 //					usleep(tdelay2);
-					data2 = rtdata[code];
+					data2 = rtdata[code2];
 					if(data2 & 0x8000)
 					{
 						ch = RT_HIGH3;
-	//						mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH3");
 						res = write(fd,&ch,1);
-	//					printf("%d %x ",res,ch);
+						usleep(tdelay);
 						data1 = (UCHAR)(data2);
-						ch = data1;
-	//					printf("%d %x ",res,ch);
+						write(fd,&data1,1);
+						usleep(tdelay);
 						data1 = (UCHAR)(data2>>8);
 						data1 &= 0x7f;
 						ch = data1;
 						res = write(fd,&ch,1);
-	//					printf("%d %x ",res,ch);
 						usleep(tdelay);
 					}
 					else if(data2 & 0x0080)
 					{
-	//					printf("RT_HIGH2 ");
 						ch = RT_HIGH2;
-	//						mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH2");
+//						mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH2");
 						res = write(fd,&ch,1);
-	//					printf("%d %x ",res,ch);
+						usleep(tdelay);
 						data1 = (UCHAR)data2;
 						data1 &= 0x7f;
 						ch = data1;
 						res = write(fd,&ch,1);
-	//					printf("%d %x ",res,ch);
+						usleep(tdelay);
 						data1 = (UCHAR)(data2>>8);
 						ch = data1;
 						res = write(fd,&ch,1);
-	//					printf("%x\n",ch);
 						usleep(tdelay);
 					}
 					else
 					{
-	//					printf("RT_HIGH1 ");
 						ch = RT_HIGH1;
-	//						mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH1");
+//						mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH1");
 						res = write(fd,&ch,1);
-	//					printf("%d %x ",res,ch);
+						usleep(tdelay);
 						data1 = (UCHAR)(data2);
 						ch = data1;
 						res = write(fd,&ch,1);
-	//					printf("%d %x ",res,ch);
+						usleep(tdelay);
 						data1 = (UCHAR)(data2>>8);
 						ch = data1;
 						res = write(fd,&ch,1);
-	//					printf("%x\n",ch);
 						usleep(tdelay);
 					}
-					if(data2 > 6000)
-						data2 = 0;
-					data2 += 1;
-					rtdata[code] = data2;
-					
-	//				printf("%d\n",data2);
+
 					sprintf(param_string,"%4u",data2);
-					mvwprintw(menu_win, display_offset+code, 10, param_string);
+					mvwprintw(menu_win, display_offset+code2, 10,"              ");
+					mvwprintw(menu_win, display_offset+code2, 10, param_string);
 					wrefresh(menu_win);
+					data2 += 10;
+					rtdata[code2] = data2;
 				}
 				// end of if RT_RPM
-				else if(P24_rt_params[code].dtype == 0)
+				else if(P24_rt_params[code2].dtype == 0)
 				{
-					data = (UCHAR)rtdata[code];
+					data = (UCHAR)rtdata[code2];
 					if(data > 0x7f)
 					{
-	//					printf("RT_HIGH0 ");
 						ch = RT_HIGH0;
-	//						mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH0");
+//						mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH0");
 						res = write(fd,&ch,1);
-	//					printf("%d %x ",res,ch);
+						usleep(tdelay);
 						data1 = data & 0x7f;
 						ch = data1;
 						res = write(fd,&ch,1);
-	//					printf("%x\n",ch);
 						usleep(tdelay);
 					}
 					else
 					{
-	//					printf("RT_LOW ");
 						ch = RT_LOW;
-	//						mvwprintw(menu_win, display_offset+2, 18,"RT_LOW  ");
+//						mvwprintw(menu_win, display_offset+2, 18,"RT_LOW  ");
 						res = write(fd,&ch,1);
-	//					printf("%d %x ",res,ch);
+						usleep(tdelay);
 						ch = data;
 						res = write(fd,&ch,1);
-	//					printf("%d %x\n",res,ch);
 						usleep(tdelay);
 					}
 					data++;
-					rtdata[code] = (UINT)data;
-	//				printf("data = %d\n",data);
+					rtdata[code2] = (UINT)data;
 					sprintf(param_string,"%4u",data);
-					mvwprintw(menu_win, display_offset+code, 10, param_string);
+					mvwprintw(menu_win, display_offset+code2, 10, param_string);
 					wrefresh(menu_win);
 				}
 			}
@@ -435,8 +464,11 @@ int main(int argc, char *argv[])
 			wkey = get_keypress(key,menu_win, display_offset);
 			if(wkey != 0xff)
 				write(fd,&wkey,1);	// simulates the PIC24 sending a keypress
-			if(++code > RT_AUX)
+			if(++code > RT_AUX2)
 				code = RT_RPM;
+			code2 = code - RT_RPM;
+//			mvwprintw(menu_win, display_offset+39, 2, "rt_type: %s        ",get_label(code2));
+			wrefresh(menu_win);
 		}
 	}
 	delwin(menu_win);
@@ -454,9 +486,9 @@ int main(int argc, char *argv[])
 //******************************************************************************************//
 static int break_out_loop(int loop,UCHAR curr_state)
 {
-	if(++loop > 10)
+	if(++loop > 5)
 	{
-//		paux_state = P24_IDLE;
+		paux_state = IDLE_AUX;
 		return 0;
 	}
 	else
@@ -473,8 +505,8 @@ void set_defaults(void)
 }
 void set_state_defaults(void)
 {
-//	paux_state = P24_START;
-//	aaux_state = AVR_START;
+	paux_state = IDLE_AUX;
+	aaux_state = IDLE_AUX;
 }
 //******************************************************************************************//
 //**************************************** disp_pstate *************************************//
@@ -482,29 +514,24 @@ void set_state_defaults(void)
 // PIC24_aux_states (main.h)
 static void disp_pstate(UCHAR state, char *str)
 {
-/*
 	switch (state)
 	{
-		case P24_START:
-			strcpy(str,"P24_START\0");
+		case IDLE_AUX:
+			strcpy(str,"IDLE_AUX\0");
 			break;
-		case P24_IDLE:
-			strcpy(str,"P24_IDLE\0");
+		case DATA_REQ:
+			strcpy(str,"DATA_REQ\0");
 			break;
-		case P24_WAITGVAL:
-			strcpy(str,"P24_WAITGVAL\0");
+		case VALID_DATA:
+			strcpy(str,"VALID_DATA\0");
 			break;
-		case WRITE_VALUES:
-			strcpy(str,"WRITE_VALUES\0");
-			break;
-		case WAIT_NEW_DATA:
-			strcpy(str,"WAIT_NEW_DATA\0");
+		case DATA_READY:
+			strcpy(str,"DATA_READY\0");
 			break;
 		default:
 			strcpy(str,"<bad state>\0");
 			break;
 	}
-*/
 }
 //******************************************************************************************//
 //************************************* disp_cmdtype ***************************************//
@@ -688,9 +715,9 @@ void set_blocking (int fd, int should_block)
         }
 
         tty.c_cc[VMIN]  = should_block ? 1 : 0;
-        tty.c_cc[VTIME] = 10;			// 1 second read timeout
-//        tty.c_cc[VTIME] = 0.1;
-//        tty.c_cc[VTIME] = 1;            // 0.1 seconds read timeout
+//        tty.c_cc[VTIME] = 10;			// 1 second read timeout
+//        tty.c_cc[VTIME] = 0.5;
+        tty.c_cc[VTIME] = 1;            // 0.1 seconds read timeout
 
         if (tcsetattr (fd, TCSANOW, &tty) != 0)
                 printf ("error %d setting term attributes", errno);

@@ -45,7 +45,8 @@ int burn_eeprom(void)
 	i = update_labels(i,"MAP\0");
 	i = update_labels(i,"OIL TEMP\0");
 	i = update_labels(i,"O2\0");
-	i = update_labels(i,"AUX\0");
+	i = update_labels(i,"AUX1\0");
+	i = update_labels(i,"AUX2\0");
 	i = update_labels(i,"home\0");
 	i = update_labels(i,"MENU1a\0");
 	i = update_labels(i,"MENU1b\0");
@@ -71,6 +72,10 @@ int burn_eeprom(void)
 	i = update_labels(i,"spec\0");
 	i = update_labels(i,"next\0");
 	i = update_labels(i,"forward\0");
+	i = update_labels(i,"enter\0");
+	i = update_labels(i,"up\0");
+	i = update_labels(i,"down\0");
+	i = update_labels(i,"toggle\0");
 	i = update_labels(i,"enter\0");
 	i = update_labels(i,"esc\0");
 	no_labels = i;
@@ -101,7 +106,8 @@ int burn_eeprom(void)
 	i = update_rtparams(i, 2, 15, 1, 0, RT_MAP);
 	i = update_rtparams(i, 3, 15, 1, 0, RT_OILT);
 	i = update_rtparams(i, 4, 15, 1, 0, RT_O2);
-	i = update_rtparams(i, 5, 0, 1, 1, RT_AUX);
+	i = update_rtparams(i, 5, 0, 1, 2, RT_AUX1);
+	i = update_rtparams(i, 6, 0, 1, 3, RT_AUX2);
 	no_rtparams = i;
 // write to the number of rt_params location in eeprom the number of rt_params
 #ifndef NOAVR
@@ -126,7 +132,7 @@ int burn_eeprom(void)
 //	menu_structs[i].label = label;
 // A,B,C,D,#,0
 	// main menu	0
-/*	
+/*
 	for(i = 0;i < no_rtparams;i++)
 	{
 		printf("%d\t",P24_rt_params[i].row);
