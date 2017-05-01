@@ -96,18 +96,18 @@ int burn_eeprom(void)
 //	printf("no_labels: %d\n",no_labels);
 //	printf("total_offset: %d\n",total_offset);
 #endif
-	i = update_rtparams(i, 0, 0, 1, 1, RT_RPM);	// first label is at offset 0
-	i = update_rtparams(i, 1, 0, 1, 0, RT_ENGT);
-	i = update_rtparams(i, 2, 0, 1, 0, RT_TRIP);	// first element of offset_array has offset of 2nd label
-	i = update_rtparams(i, 3, 0, 1, 0, RT_TIME);
-	i = update_rtparams(i, 4, 0, 1, 0, RT_AIRT);
-	i = update_rtparams(i, 0, 15, 1, 0, RT_MPH);
-	i = update_rtparams(i, 1, 15, 1, 0, RT_OILP);
-	i = update_rtparams(i, 2, 15, 1, 0, RT_MAP);
-	i = update_rtparams(i, 3, 15, 1, 0, RT_OILT);
-	i = update_rtparams(i, 4, 15, 1, 0, RT_O2);
-	i = update_rtparams(i, 5, 0, 1, 2, RT_AUX1);
-	i = update_rtparams(i, 6, 0, 1, 3, RT_AUX2);
+	i = update_rtparams(i, 0, 0, SHOWN_SENT, 1, RT_RPM);	// first label is at offset 0
+	i = update_rtparams(i, 1, 0, SHOWN_SENT, 0, RT_ENGT);
+	i = update_rtparams(i, 2, 0, SHOWN_SENT, 0, RT_TRIP);	// first element of offset_array has offset of 2nd label
+	i = update_rtparams(i, 3, 0, SHOWN_SENT, 0, RT_TIME);
+	i = update_rtparams(i, 4, 0, SHOWN_SENT, 0, RT_AIRT);
+	i = update_rtparams(i, 0, 15, SHOWN_SENT, 0, RT_MPH);
+	i = update_rtparams(i, 1, 15, SHOWN_SENT, 0, RT_OILP);
+	i = update_rtparams(i, 2, 15, SHOWN_SENT, 0, RT_MAP);
+	i = update_rtparams(i, 3, 15, SHOWN_SENT, 0, RT_OILT);
+	i = update_rtparams(i, 4, 15, SHOWN_SENT, 0, RT_O2);
+	i = update_rtparams(i, 5, 0, SHOWN_SENT, 2, RT_AUX1);
+	i = update_rtparams(i, 6, 0, SHOWN_SENT, 3, RT_AUX2);
 	no_rtparams = i;
 // write to the number of rt_params location in eeprom the number of rt_params
 #ifndef NOAVR

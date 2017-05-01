@@ -18,6 +18,7 @@
 static void disp_astate(UCHAR state, char *str);
 static int break_out_loop(int loop,UCHAR curr_state);
 static void disp_parse_state(UCHAR state, char *str);
+static void disp_auxcmd(UCHAR state, char *str);
 static int loop;
 static int loop2;
 
@@ -34,21 +35,31 @@ void do_read(WINDOW *win, int fd, int display_offset)
 	UCHAR limit8 = 0;
 	UINT limit16 = 0;
 	UINT limit16a = 1;
-	int tempint;
+	UINT tempint;
 	int i,j;
 	char test_str[10];
 	int do_states = 1;
 	int res;
 	char tempx[20];
 	int error_code = 0;
+	UCHAR aux_data[AUX_DATA_SIZE];
+	UCHAR aux_data2[AUX_DATA_SIZE];
+	UCHAR auxcmd, auxparam;
 
 //	set_win2(win);
 	init_list();
 	display_labels();
 	wrefresh(win);
+	memset(aux_data,0,AUX_DATA_SIZE);
+	memset(aux_data2,0,AUX_DATA_SIZE);
 
 	for(i = 0;i < AUX_DATA_SIZE;i++)
-		aux_data[i] = i+10;
+	{
+		aux_data[i]++;
+		aux_data2[i]++;
+	}
+	for(i = 0;i < AUX_DATA_SIZE;i++)
+		aux_data[i]++;
 
 	while(TRUE)
 	{
@@ -76,9 +87,11 @@ void do_read(WINDOW *win, int fd, int display_offset)
 		// get_key will filter out and process any keypresses in menus.c
 		ch = get_key(ch);
 		// ignore any chars with highbit set - they are processed by get_key()
+		mvwprintw(win, DISP_OFFSET+28, 2,"%x ",ch);
 		if((ch & 0x80) == 0)
 		{
 			done = parse_P24(win, fd, ch, param_string);
+
 
 	//		could just do this:
 	//		done = parse_P24(fd, get_key(read(fd,&ch,1)));s
@@ -87,8 +100,8 @@ void do_read(WINDOW *win, int fd, int display_offset)
 			if(current_param-RT_RPM >= no_rtparams)
 			{
 				mvwprintw(win, DISP_OFFSET+32, 2+(2*error_code), "%x ",current_param-RT_RPM);
-				disp_parse_state(parse_state,tempx);
-				mvwprintw(win, DISP_OFFSET+33, 2,"%s       ",tempx);
+//				disp_parse_state(parse_state,tempx);
+//				mvwprintw(win, DISP_OFFSET+33, 2,"%s       ",tempx);
 				if(++error_code > 25)
 				{
 					mvwprintw(win, DISP_OFFSET+32, 2,"                                                    ");
@@ -99,13 +112,19 @@ void do_read(WINDOW *win, int fd, int display_offset)
 //				set_defaults();
 			}
 
+
 			if(done)
 			{
 //#if 0
 				if(current_param == RT_AUX1)
 				{
 					res = 0;
-
+					tempint = atol(param_string);
+					auxparam = (UCHAR)tempint;
+					tempint >>= 8;
+					auxcmd = (UCHAR)tempint;
+					mvwprintw(win, DISP_OFFSET+31, 2,  "cmd: %x  param: %x  ",auxcmd,auxparam);
+//#if 0
 					switch(aaux_state)
 					{
 						// menu choice sets aux_index to something other than 0
@@ -114,38 +133,44 @@ void do_read(WINDOW *win, int fd, int display_offset)
 							if(aux_index != 0)
 							{
 								aux_data[0] = CMD_GET_DATA;
+								aux_data[2] = CMD_DATA_READY;
+								aux_data[3] = CMD_NEW_DATA;
+								aux_data[1] = aux_index;
+								mvwprintw(win, DISP_OFFSET+28, 2,"aux_index: %x  ",aux_index);
 								aaux_state = DATA_REQ;
-								aux_index = 0;
 							}
 							else aaux_state = IDLE_AUX;
 							break;
 						// wait for PIC24 to get data	
 						case DATA_REQ:
+							aux_index++;
 							if(auxcmd == CMD_DATA_READY)
 							{
 								aaux_state = VALID_DATA;
-								mvwprintw(win, DISP_OFFSET+34,2,"             ");
 							}	
 							else
 							{
 								aaux_state = DATA_REQ;
 								loop = break_out_loop(loop,aaux_state);
-								mvwprintw(win, DISP_OFFSET+34,2,"loop: %d ",loop);
+								mvwprintw(win, DISP_OFFSET+35,2,"loop: %d ",loop);
 							}
 							break;
 						// read data into buffer	
 						case VALID_DATA:
+							loop = 0;
+							mvwprintw(win, DISP_OFFSET+34,2,"             ");
 							aux_data[0] = CMD_NEW_DATA;
 							aaux_state = DATA_READY;
 							break;
 						// data has been modified by AVR and is ready to send back to PIC24	
 						case DATA_READY:
-							aux_data[0] = (UCHAR)(limit16 >> 8);
-							aux_data[1] = (UCHAR)limit16;
+							aux_data2[0] = (UCHAR)(limit16 >> 8);
+							aux_data2[1] = (UCHAR)limit16;
 							limit16++;
-							aux_data[2] = (UCHAR)(limit16a >> 8);
-							aux_data[3] = (UCHAR)limit16a;
-							limit16a += 10;
+							aux_data2[2] = (UCHAR)(limit16a >> 8);
+							aux_data2[3] = (UCHAR)limit16a;
+							limit16a += 2;
+							mvwprintw(win, DISP_OFFSET+29, 2,"%d %d  ",limit16,limit16a);
 							aaux_state = IDLE_AUX;
 							break;
 						default:
@@ -154,44 +179,51 @@ void do_read(WINDOW *win, int fd, int display_offset)
 					}
 					disp_astate(aaux_state,tempx);
 					mvwprintw(win, DISP_OFFSET+30, 2,"%s     ",tempx);
-					mvwprintw(win, DISP_OFFSET+31, 2, \
-					"aux_index: %d cmd: %d  param: %d    ",aux_index,auxcmd,auxparam);
-				}
-				else if (current_param == RT_AUX2)
+					disp_auxcmd(aux_data[0],tempx);
+					mvwprintw(win, DISP_OFFSET+25, 2,"%s     ",tempx);
 //#endif
-//				if(current_param == RT_AUX2)
-				{
-					tempint = atoi(param_string);
-					auxcmd = (UCHAR)((tempint >> 8) & 0x00ff);
-					auxparam = (UCHAR)(tempint & 0x00ff);
-//					mvwprintw(win, DISP_OFFSET+31, 2,"cmd: %x  param: %x    ",auxcmd,auxparam);					
 //					for(i = 0;i < AUX_DATA_SIZE;i++)
 //						aux_data[i]++;
+					for(i = 0;i < AUX_DATA_SIZE;i++)
+						mvwprintw(win, display_offset+33, 2+(i * 3),"%x  ",aux_data[i]);
+
 					write(fd,aux_data,AUX_DATA_SIZE);
+
+				}
+				else if (current_param == RT_AUX2)
+				{
+//					mvwprintw(win, DISP_OFFSET+31, 2,"cmd: %x  param: %x    ",auxcmd,auxparam);					
+
+//					for(i = 0;i < AUX_DATA_SIZE;i++)
+//						aux_data2[i]++;
+					for(i = 0;i < AUX_DATA_SIZE;i++)
+						mvwprintw(win, display_offset+34, 2+(i * 3),"%x  ",aux_data2[i]);
+					write(fd,aux_data2,AUX_DATA_SIZE);
+
 				}
 //				mvwprintw(win, DISP_OFFSET+31, 2,"cmd: %x  param: %x    ",auxcmd,auxparam);
-				mvwprintw(win, display_offset-1, 2, "current param: %x  %s  ",  \
-					current_param-RT_RPM,param_string);
-				mvwprintw(win, display_offset+current_param-RT_RPM, 15, "        ");
-				mvwprintw(win, display_offset+current_param-RT_RPM, 15, param_string);
+				if(rt_params[current_param-RT_RPM].shown == SHOWN_SENT)
+				{
+mvwprintw(win, display_offset-1, 2, "current param: %x  %s  ",current_param-RT_RPM,param_string);
+					mvwprintw(win, display_offset+current_param-RT_RPM, 15, "     ");
+					mvwprintw(win, display_offset+current_param-RT_RPM, 15, param_string);
+				}	
 	//			mvwprintw(win, display_offset+16, 5, "param_string = %s  ",param_string);
 				wrefresh(win);
 	// this displays the RT params on the screen at their positions according to the rt_params struct
 	//			mvwprintw(win, display_offset+17,5,"%d ",no_rtparams);
 				for(i = 0;i < no_rtparams;i++)
 				{
-
 	//				mvwprintw(win, display_offset+18+i,5,"rt_params: %d  %d  %d  %d  ", \
 	//				rt_params[i].row,rt_params[i].col, rt_params[i].shown,rt_params[i].type);
-
-					if(rt_params[i].shown == 1)
+					if(rt_params[i].shown == SHOWN_SENT)
 					{
 						if(rt_params[i].type == current_param)
 						{
 							GDispStringAt(rt_params[i].row,rt_params[i].col+9,"      ");
 						}
 
-						if(rt_params[i].shown && rt_params[i].type == current_param)
+						if(rt_params[i].type == current_param && (rt_params[i].shown == SHOWN_SENT))
 						{
 							GDispStringAt(rt_params[i].row,rt_params[i].col+10,param_string);
 						}
@@ -209,7 +241,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 //******************************************************************************************//
 static int break_out_loop(int loop,UCHAR curr_state)
 {
-	if(++loop > 5)
+	if(++loop > 3)
 	{
 		aaux_state = IDLE_AUX;
 		return 0;
@@ -218,6 +250,30 @@ static int break_out_loop(int loop,UCHAR curr_state)
 	{
 		aaux_state = curr_state;
 		return loop;
+	}
+}
+//******************************************************************************************//
+//************************************** disp_auxcmd ***************************************//
+//******************************************************************************************//
+static void disp_auxcmd(UCHAR state, char *str)
+{
+	switch (state)
+	{
+		case CMD_GET_DATA:
+			strcpy(str,"CMD_GET_DATA\0");
+			break;
+		case CMD_DATA_READY:
+			strcpy(str,"CMD_DATA_READY\0");
+			break;
+		case CMD_NEW_DATA:
+			strcpy(str,"CMD_NEW_DATA\0");
+			break;
+		case CMD_EXTRA:
+			strcpy(str,"CMD_EXTRA\0");
+			break;
+		default:
+		strcpy(str,"<bad state>\0");
+		break;
 	}
 }
 //******************************************************************************************//

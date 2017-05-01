@@ -32,6 +32,7 @@ void set_defaults(void);
 int set_interface_attribs (int fd, int speed, int parity);
 void set_blocking (int fd, int should_block);
 static void disp_pstate(UCHAR state, char *str);
+static void disp_auxcmd(UCHAR state, char *str);
 static int break_out_loop(int loop,UCHAR curr_state);
 static UCHAR get_keypress(UCHAR ch,WINDOW *win, int display_offset);
 #endif
@@ -74,7 +75,11 @@ int main(int argc, char *argv[])
 	UCHAR read_buf[NUM_ENTRY_SIZE];
 	int y = 0;
 	UINT temp_int;
-	UINT temp_int2 = 0;
+	UCHAR laux_data[AUX_DATA_SIZE];
+	UCHAR laux_data2[AUX_DATA_SIZE];
+	UCHAR auxcmd = 0;
+	UCHAR auxparam = 0;
+	UINT temp1, temp2;
 
 	if(argv[1][0] == 'w')
 		type = 1;
@@ -203,7 +208,8 @@ int main(int argc, char *argv[])
 	}
 
 	set_interface_attribs (fd, BAUDRATE, 0);
-	set_blocking (fd, 0);
+//	set_blocking (fd, 1);	// block on read
+	set_blocking (fd, 0);	// non-blocking
 
 	res2 = 0;
 	set_defaults();
@@ -225,9 +231,9 @@ int main(int argc, char *argv[])
 		memset(read_buf,0,sizeof(read_buf));
 		for(i = 0;i < 11;i++)
 			rtdata[i] = i;
-		rtdata[RT_RPM] = 300;
+		rtdata[RT_RPM] = 0;
 		rtdata[RT_AUX1] = 0;
-		rtdata[RT_AUX2] = 100;
+		rtdata[RT_AUX2] = 0;
 /*
 		P24_rt_params[RT_TIME].shown = 0;
 		P24_rt_params[RT_TRIP].shown = 0;
@@ -283,84 +289,22 @@ int main(int argc, char *argv[])
 //				mvwprintw(menu_win, display_offset+i+21, 4,"                      ");
 
 //#if 0
-			if(code == RT_AUX1)
-			{
-				switch(paux_state)
-				{
-					case IDLE_AUX:
-						if(aux_data[0] == CMD_GET_DATA)
-							paux_state = DATA_REQ;
-						else
-							paux_state = IDLE_AUX;
-						break;
-					case DATA_REQ:
-						temp_int2++;
-						auxcmd = CMD_DATA_READY;
-						auxparam = auxcmd + 1;
-						paux_state = VALID_DATA;
-						break;
-					case VALID_DATA:
-						if(aux_data[0] == CMD_NEW_DATA)
-							paux_state = DATA_READY;
-						else
-						{
-							paux_state = VALID_DATA;
-//							loop = break_out_loop(loop, paux_state);
-//							mvwprintw(menu_win, display_offset+40, 2,"loop: %d  ",loop);
-						}	
-						break;
-					case DATA_READY:
-						for(i = 0;i < AUX_DATA_SIZE;i++)
-							mvwprintw(menu_win, display_offset+34, 2+(i * 3),"%x  ",aux_data[i]);
-						paux_state = IDLE_AUX;
-						break;
-					default:
-						paux_state = IDLE_AUX;
-						break;
-				}
-				disp_pstate(paux_state,tempx);
-//				auxcmd = aux_data[0];
-				mvwprintw(menu_win, display_offset+32, 2,"%s        ",tempx);
-				mvwprintw(menu_win, display_offset+33, 2,"cmd: %x  param: %x  ",auxcmd,auxparam);
-			}
-			else if(code == RT_AUX2)
-//#endif
-//			if(code == RT_AUX2)
-			{
-//				rtdata[code] = (UINT)(auxcmd << 8) | (UINT)auxparam;
-//				auxcmd++;
-//				auxparam++;
-				res = read(fd,&aux_data,AUX_DATA_SIZE);
-				mvwprintw(menu_win, display_offset+28, 2,"res: %d  ",res);
-				for(i = 0;i < AUX_DATA_SIZE;i++)
-					mvwprintw(menu_win, display_offset+29, 2+(i * 3),"%x  ",aux_data[i]);
-//				mvwprintw(menu_win, display_offset+30,2,"%x %x   ",aux_data[0],aux_data[1]);
-				mvwprintw(menu_win, display_offset+30,2,"%x %x   ",aux_data[2],aux_data[3]);
-			}	
 			write(fd,&code,1);
-			usleep(tdelay);
+			usleep(tdelay/2);
 
-//			if(P24_rt_params[code2].shown == 1)
-// shown means if it gets displayed - add a field called 'sent' if we don't want to send it
-			if(1)
+			if(P24_rt_params[code2].shown == NOSHOWN_SENT || P24_rt_params[code2].shown == SHOWN_SENT)
 			{
 				data3 = rtdata[code2];
 				// this is a round-about way to send data back to the AVR
 				// since the AUX1 state table can't do a write back
 				if(P24_rt_params[code2].dtype == 2)			//AUX1
 				{
-					rtdata[code2] = temp_int2;
+mvwprintw(menu_win, display_offset+22,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UCHAR)rtdata[code2]);
 				}
 				else if(P24_rt_params[code2].dtype == 3)	// AUX2
 //				if(P24_rt_params[code2].dtype == 3)
 				{
-					temp_int = (UINT)auxcmd;
-					temp_int <<= 8;
-					temp_int &= 0xff00;
-					rtdata[code2] = temp_int;
-					temp_int = (UINT)auxparam;
-					rtdata[code2] |= temp_int;
-					mvwprintw(menu_win, display_offset+31,2,"%x %x %x   ",rtdata[code2],auxcmd,auxparam);
+mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UCHAR)rtdata[code2]);
 				}
 				else
 					rtdata[code2] = data3;
@@ -419,7 +363,7 @@ int main(int argc, char *argv[])
 					mvwprintw(menu_win, display_offset+code2, 10,"              ");
 					mvwprintw(menu_win, display_offset+code2, 10, param_string);
 					wrefresh(menu_win);
-					data2 += 10;
+					data2++;
 					rtdata[code2] = data2;
 				}
 				// end of if RT_RPM
@@ -460,14 +404,99 @@ int main(int argc, char *argv[])
 			wrefresh(menu_win);
 
 	// see if one of the keys from the "keypad" is pressed
+//#if 0	//comment this out and set blocking to non-blocking
 			key = wgetch(menu_win);
 			wkey = get_keypress(key,menu_win, display_offset);
 			if(wkey != 0xff)
 				write(fd,&wkey,1);	// simulates the PIC24 sending a keypress
+//#endif
+			if(code == RT_AUX1)
+			{
+				res = read(fd,&laux_data,AUX_DATA_SIZE);
+//				mvwprintw(menu_win, display_offset+24, 2,"res: %d  ",res);
+//				for(i = 0;i < AUX_DATA_SIZE;i++)
+//					mvwprintw(menu_win, display_offset+25, 2+(i * 3),"%x  ",laux_data[i]);
+//				mvwprintw(menu_win, display_offset+26, 2,"%x %x  ",laux_data[0],laux_data[1]);
+//#if 0
+				switch(paux_state)
+				{
+					case IDLE_AUX:
+						auxcmd = auxparam = 0;
+						if(laux_data[0] == CMD_GET_DATA)
+						{
+							paux_state = DATA_REQ;
+							aux_index = laux_data[1];
+							mvwprintw(menu_win, display_offset+26, 2,"aux_index: %x  ",aux_index);
+						}	
+						else
+							paux_state = IDLE_AUX;
+						break;
+					case DATA_REQ:
+						auxcmd = CMD_DATA_READY;
+						auxparam = 0;
+						paux_state = VALID_DATA;
+						break;
+					case VALID_DATA:
+						auxcmd = auxparam = 1;
+						if(laux_data[0] == CMD_NEW_DATA)
+							paux_state = DATA_READY;
+						else
+						{
+							paux_state = VALID_DATA;
+							loop = break_out_loop(loop, paux_state);
+							mvwprintw(menu_win, display_offset+40, 2,"loop: %d  ",loop);
+						}	
+						break;
+					case DATA_READY:
+						loop = 0;
+						auxcmd = auxparam = 2;
+//						for(i = 0;i < AUX_DATA_SIZE;i++)
+//							mvwprintw(menu_win, display_offset+26, 2+(i * 3),"%x  ",laux_data[i]);
+						paux_state = IDLE_AUX;
+						break;
+					default:
+						paux_state = IDLE_AUX;
+						break;
+				}
+//#endif
+				disp_pstate(paux_state,tempx);
+//				auxcmd = laux_data[0];
+				mvwprintw(menu_win, display_offset+27, 2,"%s        ",tempx);
+				mvwprintw(menu_win, display_offset+28, 2,"cmd: %x  param: %x  ",auxcmd,auxparam);
+				disp_auxcmd(laux_data[0], tempx);
+				mvwprintw(menu_win, display_offset+24, 2,"%s        ",tempx);
+				temp_int = (UINT)auxcmd;
+//				mvwprintw(menu_win, display_offset+34,2,"%x ",temp_int);
+				temp_int <<= 8;
+				temp_int &= 0xff00;
+//				mvwprintw(menu_win, display_offset+35,2,"%x ",temp_int);
+				rtdata[code2] = temp_int;
+				temp_int = (UINT)auxparam;
+				rtdata[code2] |= temp_int;
+				mvwprintw(menu_win, display_offset+34,2,"%x %x %x   ",temp_int, auxcmd,auxparam);
+			}
+			else if(code == RT_AUX2)
+			{
+				rtdata[code2] = temp_int;
+
+				res = read(fd,&laux_data2,AUX_DATA_SIZE);
+//				mvwprintw(menu_win, display_offset+31, 2,"res: %d  ",res);
+//				for(i = 0;i < AUX_DATA_SIZE;i++)
+//					mvwprintw(menu_win, display_offset+29, 2+(i * 3),"%x  ",laux_data2[i]);
+				temp1 = (UINT)laux_data2[0];
+				temp1 <<= 8;
+				temp1 |= (UINT)laux_data2[1];
+
+				temp2 = (UINT)laux_data2[2];
+				temp2 <<= 8;
+				temp2 |= (UINT)laux_data2[3];
+				mvwprintw(menu_win, display_offset+30, 2,"%d   %d      ",temp1,temp2);
+
+			}	
 			if(++code > RT_AUX2)
 				code = RT_RPM;
 			code2 = code - RT_RPM;
-//			mvwprintw(menu_win, display_offset+39, 2, "rt_type: %s        ",get_label(code2));
+			mvwprintw(menu_win, display_offset+39, 2, "rt_type: %d %s        ",code2,get_label(code2));
 			wrefresh(menu_win);
 		}
 	}
@@ -531,6 +560,30 @@ static void disp_pstate(UCHAR state, char *str)
 		default:
 			strcpy(str,"<bad state>\0");
 			break;
+	}
+}
+//******************************************************************************************//
+//************************************** disp_auxcmd ***************************************//
+//******************************************************************************************//
+static void disp_auxcmd(UCHAR state, char *str)
+{
+	switch (state)
+	{
+		case CMD_GET_DATA:
+			strcpy(str,"CMD_GET_DATA\0");
+			break;
+		case CMD_DATA_READY:
+			strcpy(str,"CMD_DATA_READY\0");
+			break;
+		case CMD_NEW_DATA:
+			strcpy(str,"CMD_NEW_DATA\0");
+			break;
+		case CMD_EXTRA:
+			strcpy(str,"CMD_EXTRA\0");
+			break;
+		default:
+		strcpy(str,"<bad state>\0");
+		break;
 	}
 }
 //******************************************************************************************//
@@ -649,6 +702,16 @@ static UCHAR get_keypress(UCHAR key,WINDOW *win, int display_offset)
 				mvwprintw(win, display_offset+23, 8, "ast   ");
 				wkey = KP_AST;
 				break;
+			case 'U':
+			case 'u':
+				mvwprintw(win, display_offset+23, 8,"U");
+				wkey = 0xff;
+				break;	
+			case 'V':
+			case 'v':
+				mvwprintw(win, display_offset+23, 8,"V");
+				wkey = 0xff;
+				break;	
 			default:
 				mvwprintw(win, display_offset+23, 8, "?     ");
 				wkey = 0xff;

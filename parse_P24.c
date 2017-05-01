@@ -46,7 +46,7 @@ int parse_P24(WINDOW *win, int fd, UCHAR inch, char *param_string)
 			else
 			{
 				set_defaults();
-				mvwprintw(win, DISP_OFFSET+29,2,"reset: %x  ",inch);
+//				mvwprintw(win, DISP_OFFSET+29,2,"reset: %x  ",inch);
 			}
 			break;
 		case CHECK_HIGHBIT:

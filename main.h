@@ -157,7 +157,7 @@ enum aux_commands
 } AUX_CMDS;	
 
 #define NUM_ENTRY_SIZE 10
-#define AUX_DATA_SIZE 4
+#define AUX_DATA_SIZE 10
 //#define NUM_ENTRY_BEGIN_COL (COLUMN - COLUMN/2)
 #define NUM_ENTRY_BEGIN_COL 3
 #define NUM_ENTRY_END_COL NUM_ENTRY_BEGIN_COL + NUM_ENTRY_SIZE
@@ -241,7 +241,8 @@ char new_global_number[NUM_ENTRY_SIZE];
 UCHAR aux_type;	// tells PIC24 what to send when code = RT_AUX
 UCHAR paux_state;
 UCHAR aaux_state;
-UCHAR aux_data[AUX_DATA_SIZE];
+//UCHAR aux_data[AUX_DATA_SIZE];
+//UCHAR aux_data2[AUX_DATA_SIZE];
 void set_state_defaults(void);
 CHECKBOXES check_boxes[NUM_CHECKBOXES];
 int curr_checkbox;
@@ -251,7 +252,7 @@ int prev_scale_type;
 UCHAR ask_data_ready;
 UCHAR aux_index;
 UCHAR new_data_ready;
-UCHAR auxcmd;
-UCHAR auxparam;
+//UCHAR auxcmd;
+//UCHAR auxparam;
 
 #endif

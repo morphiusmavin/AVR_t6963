@@ -54,16 +54,17 @@ It also reads how many labels, rt_params and menu structs and their offsets into
 Special character codes sent by the PIC24:
 
 RT_RPM
-RT_ENGT,
-RT_TRIP,
-RT_TIME,
-RT_AIRT,
-RT_MPH,
-RT_OILP,
-RT_MAP,
-RT_OILT,
-RT_O2,
-RT_AUX
+RT_ENGT
+RT_TRIP
+RT_TIME
+RT_AIRT
+RT_MPH
+RT_OILP
+RT_MAP
+RT_OILT
+RT_O2
+RT_AUX1
+RT_AUX2
 
 When the PIC24 is sending data to the AVR, each data is preceded by a one of the following:
 - RT_LOW	- a UCHAR (unsigned char) is sent without the MSB set (0 -> 0x7F)
@@ -210,11 +211,26 @@ bytes at a time because of the fact that the serial port is set to non-blocking,
 a problem sending a variable number of bytes at a time so when it comes time to use it
 on the actual hardware, some things may have to be changed...
 
-In RT_AUX:
+RT_AUX1 & RT_AUX2 are states that send data back to PIC24. There is a state machine
+in RT_AUX1 for both ends. 2 local variable: auxcmd and auxparam get stuffed into the
+data (being transmitted with the other RT values) and sent to the AVR and is used to
+advance threw the states. The auxcmd/params used by the PIC24 are sent with the 
+aux_data values. The reason the PIC24 must send the auxcmd/params in the RT_AUX1 data
+stream is so it can be filtered threw the routine that makes sure there's no highbits
+set. The AVR can send back as much data (only tested up to 20 bytes) to the PIC24
+because there's no filtering going the other way, so it stuffs the auxcmd/params into
+the data sent back. There's also an RT_AUX2 data value which acts just like RT_AUX1,
+but I don't know if I'll need it yet. The reason for all this trouble is so the keypad
+user can set different system values using the keypad,LCD and the menuing system.
+
 When either the start_numentry or the init_checkboxes function is called, the AVR will
 send a command to the PIC24 telling it to go get the data. The PIC24 will then send a
 command back saying it has the data in aux_data. The user can then modify the data and
 then send a command back saying the data has been modified.
+
+This would mean the state machine doesn't start until a dialog is pulled up. This may
+not be the best solution if there's other events that occur like a system fault from
+the PIC24 that needs to pop-up on the screen (e.g. low wiper fluid level).
 
 1) AVR sends DATA_REQ state in 1st byte of aux_data.
 2) When PIC24 has data, it sends back the command VALID_DATA to AVR with aux_data
