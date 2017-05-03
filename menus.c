@@ -48,7 +48,7 @@ static void scroll_checkboxes(void);
 static void finish_checkboxes(void);
 static void stop_rtdisplay(void);
 static void blank_choices(void);
-
+static void display_edit_value(void);
 static UCHAR generic_menu_function(UCHAR ch, int  index);
 static UCHAR backspace(UCHAR ch);
 static UCHAR enter(UCHAR ch);
@@ -66,7 +66,7 @@ static UCHAR escape_checkboxes(UCHAR ch);
 #endif
 #if 1
 static int first_menu = MAIN;
-static int last_menu = MENU4C;
+static int last_menu = testnum2;
 static int current_fptr;		// pointer into the menu_list[]
 static int prev_fptr;
 static int list_size;
@@ -90,9 +90,13 @@ static UCHAR (*fptr[NUM_FPTS])(UCHAR) = {enter, backspace, escape, scr_alnum0, \
 //******************************************************************************************//
 //******************************************************************************************//
 //******************************************************************************************//
-char *get_label(int index)
+char *get_rt_label(int index)
 {
-	return labels[index];
+	return rt_labels[index];
+}
+char *get_menu_label(int index)
+{
+	return menu_labels[index];
 }
 UCHAR get_row(int index)
 {
@@ -127,7 +131,7 @@ void adv_menu_label(int index, UCHAR *row, UCHAR *col)
 
 	if(menu_structs[index].enabled)
 	{
-		strcpy(temp,labels[menu_structs[index].label+no_rtparams]);
+		strcpy(temp,menu_labels[menu_structs[index].label]);
 		GDispStringAt(*row,*col,temp2);
 		GDispStringAt(*row,*col+3,temp);
 
@@ -184,9 +188,9 @@ void display_labels(void)
 
 	for(i = 0;i < no_rtparams;i++)
 	{
-		if(rt_params[i].shown == 1)
+		if(rt_params[i].shown == SHOWN_SENT)
 		{
-			strcpy(temp,get_label(i));
+			strcpy(temp,get_rt_label(i));
 			GDispStringAt(rt_params[i].row,rt_params[i].col,temp);
 		}
 	}
@@ -208,32 +212,39 @@ static void scale_disp(int amt)
 	{
 		case SCALE_DISP_ALL:
 			for(i = 0;i < no_rtparams;i++)
-				rt_params[i].shown = 1;
-			display_labels();
+				if(rt_params[i].type == RT_AUX1 || rt_params[i].type == RT_AUX2)
+					rt_params[i].shown = NOSHOWN_SENT;
+				else	
+					rt_params[i].shown = SHOWN_SENT;
 			break;
 		case SCALE_DISP_SOME:
 			for(i = 0;i < no_rtparams;i++)
 			{
 				if(rt_params[i].type == RT_RPM || rt_params[i].type == RT_ENGT || \
 						rt_params[i].type == RT_MPH || rt_params[i].type == RT_OILP)
-					rt_params[i].shown = 1;
-				else
-				{
-					rt_params[i].shown = 0;
-					GDispStringAt(rt_params[i].row,rt_params[i].col,blank);
-				}
+					rt_params[i].shown = SHOWN_SENT;
+				else if(rt_params[i].type == RT_AUX1 || rt_params[i].type == RT_AUX2)
+					rt_params[i].shown = NOSHOWN_SENT;
+				else	
+					rt_params[i].shown = NOSHOWN_NOSENT;
+					
+				GDispStringAt(rt_params[i].row,rt_params[i].col,blank);
 			}
 			break;
 		case SCALE_DISP_NONE:
 			for(i = 0;i < no_rtparams;i++)
 			{
-				rt_params[i].shown = 0;
+				if(rt_params[i].type == RT_AUX1 || rt_params[i].type == RT_AUX2)
+					rt_params[i].shown = NOSHOWN_SENT;
+				else	
+					rt_params[i].shown = NOSHOWN_NOSENT;
 				GDispStringAt(rt_params[i].row,rt_params[i].col,blank);
 			}
 			break;
 		default:
 			break;
 	}
+	display_labels();
 }
 //******************************************************************************************//
 //******************************************************************************************//
@@ -252,8 +263,6 @@ void init_list(void)
 {
 	int i = 0;
 	UCHAR k;
-
-//	GDispStringAt(5,5,"test1");
 
 	alnum_array[i++] = 33;		// first one is a '!'
 	for(k = 34;k < 48;k++)		// '"' - '/'	14
@@ -286,8 +295,10 @@ void init_list(void)
 	last_checkbox = NUM_CHECKBOXES-1;
 	scale_type = 0;
 	prev_scale_type = 1;
-	ask_data_ready = 1;
-	new_data_ready = 1;
+	ask_data_ready = 0;
+	new_data_ready = 0;
+	data_entry_mode = 0;
+	mod_data_ready = 0;
 	cur_row = NUM_ENTRY_ROW;
 	cur_col = NUM_ENTRY_BEGIN_COL;
 	aux_index = 0;
@@ -333,6 +344,12 @@ UCHAR get_key(UCHAR ch)
 	if(curr_fptr_changed())
 	{
 		display_menus(get_curr_menu());
+	}
+	if(new_data_ready == 1)
+	{
+		data_entry_mode = 1;
+		display_edit_value();
+		new_data_ready = 0;
 	}
 	return ret_char;
 }
@@ -448,6 +465,11 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 		if(menu_structs[menu_index].fptr == 0)
 		{
 			set_list(menu_structs[menu_index].menu);
+			if(menu_structs[menu_index].menu == num_entry && menu_structs[menu_index].index > 0)
+				aux_index = menu_structs[menu_index].index;
+
+//			mvwprintw(win, DISP_OFFSET+19, 2,"aux_index: %d  ",aux_index);
+			
 			if(menu_structs[menu_index].menu == num_entry)
 			{
 				start_numentry();
@@ -479,14 +501,14 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 		for(i = 0;i < 10;i++)
 			mvwprintw(win, 34+i, 2,"                ");
 		for(i = 0;i < current_fptr;i++)
-			mvwprintw(win, 34+i, 2," -> %s  ",labels[menu_list[i]+no_rtparams]);
+			mvwprintw(win, 34+i, 2," -> %s  ",menu_labels[menu_list[i]]);
 
-		mvwprintw(win, 34+i, 2," -> %s  ",labels[get_curr_menu()+no_rtparams]);
+		mvwprintw(win, 34+i, 2," -> %s  ",menu_labels[get_curr_menu()]);
 */
 		for(i = 0;i < current_fptr;i++)
-			mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",labels[menu_list[i]+no_rtparams]);
+			mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",menu_labels[menu_list[i]]);
 
-		mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",labels[get_curr_menu()+no_rtparams]);
+		mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",menu_labels[get_curr_menu()]);
 		mvwprintw(win, DISP_OFFSET+20+i+1, 2,"                                  ");
 //		mvwprintw(win, DISP_OFFSET+35, 2,"%d ",curr_checkbox);
 #endif
@@ -499,9 +521,12 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 //******************************************************************************************//
 static UCHAR backspace(UCHAR ch)
 {
-	cursor_backward();
-	dispCharAt(cur_row,cur_col,0x20);
-	cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = 0x20;
+	if(data_entry_mode)
+	{	
+		cursor_backward();
+		dispCharAt(cur_row,cur_col,0x20);
+		cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = 0x20;
+	}
 //	memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
 	return ch;
 }
@@ -514,7 +539,9 @@ static UCHAR escape(UCHAR ch)
 	cur_col = NUM_ENTRY_BEGIN_COL;
 	prev_list();
 	clean_disp_num();
-	scale_disp(SCALE_DISP_ALL);
+//	scale_disp(SCALE_DISP_ALL);
+	data_entry_mode = 0;
+	mod_data_ready = 1;
 	return ch;
 }
 //******************************************************************************************//
@@ -522,15 +549,18 @@ static UCHAR escape(UCHAR ch)
 //******************************************************************************************//
 static UCHAR enter(UCHAR ch)
 {
-	memcpy((void*)new_global_number,(void*)cur_global_number,NUM_ENTRY_SIZE);
-	cur_col = NUM_ENTRY_BEGIN_COL;
-	prev_list();
-	clean_disp_num();
-	aux_index = 1;
+	if(data_entry_mode)
+	{	
+		memcpy((void*)new_global_number,(void*)cur_global_number,NUM_ENTRY_SIZE);
+		cur_col = NUM_ENTRY_BEGIN_COL;
+		prev_list();
+		clean_disp_num();
+		mod_data_ready = 1;
+	}
 #ifdef NOAVR
-	mvwprintw(win, 45, 3,"num entered: %s ",new_global_number);
+	mvwprintw(win, 44, 3,"num entered: %s ",new_global_number);
 #endif
-	scale_disp(SCALE_DISP_ALL);
+//	scale_disp(SCALE_DISP_ALL);
 	return ch;
 }
 //******************************************************************************************//
@@ -541,7 +571,7 @@ static void start_numentry(void)
 #ifdef NOAVR
 	mvwprintw(win, 45, 3,"                                   ");
 #endif
-	scale_disp(SCALE_DISP_SOME);
+//	scale_disp(SCALE_DISP_SOME);
 	cur_row = NUM_ENTRY_ROW;
 	cur_col = NUM_ENTRY_BEGIN_COL;
 	memset((void*)new_global_number,0,NUM_ENTRY_SIZE);
@@ -549,6 +579,15 @@ static void start_numentry(void)
 	clean_disp_num();
 	dispCharAt(cur_row,cur_col+NUM_ENTRY_SIZE,'/');
 //	set_list(NUM_ENTRY);
+}
+//******************************************************************************************//
+//********************************* display_edit_value *************************************//
+//******************************************************************************************//
+static void display_edit_value(void)
+{
+	GDispStringAt(cur_row,cur_col,cur_global_number);
+	cur_col = strlen(cur_global_number);
+    dispSetCursorX(TEXT_ON | CURSOR_BLINK_ON,cur_row,cur_col,LINE_8_CURSOR);
 }
 //******************************************************************************************//
 //********************************** scroll_alnum_list *************************************//
@@ -618,8 +657,14 @@ static void cursor_backward(void)
 //******************************************************************************************//
 static void cursor_forward_stuff(char x)
 {
-	stuff_num(x);
-	cursor_forward(x);
+	if(data_entry_mode)
+	{
+		stuff_num(x);
+		cursor_forward(x);
+#ifdef NOAVR
+		mvwprintw(win, DISP_OFFSET+27, 2,"stuff: %x ",x);
+#endif
+	}
 }
 //******************************************************************************************//
 //*************************************** stuff_num ****************************************//
@@ -706,7 +751,6 @@ static UCHAR scrollup_checkboxes(UCHAR ch)
 //	dispCharAt(1+check_boxes[curr_checkbox].index,0,0x21);
 	return ch;
 }
-
 static UCHAR scrolldown_checkboxes(UCHAR ch)
 {
 	if(++curr_checkbox > last_checkbox)
@@ -715,7 +759,6 @@ static UCHAR scrolldown_checkboxes(UCHAR ch)
 //	dispCharAt(1+check_boxes[curr_checkbox].index,0,0x21);
 	return ch;
 }
-
 static UCHAR toggle_checkboxes(UCHAR ch)
 {
 	if(check_boxes[curr_checkbox].checked == 1)
@@ -730,7 +773,6 @@ static UCHAR toggle_checkboxes(UCHAR ch)
 	}
 	return ch;
 }
-
 static UCHAR enter_checkboxes(UCHAR ch)
 {
 	blank_choices();

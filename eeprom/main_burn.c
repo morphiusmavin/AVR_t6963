@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 void printMenu(void);
-
 char eepromString[STRING_LEN] EEMEM;
 
 int main(void)
@@ -55,7 +54,7 @@ int main(void)
 				break;
             case 'c':
                 printString("displaying labels\r\n");
-                for(i = 0;i < no_labels;i++)
+                for(i = 0;i < no_menu_labels+no_rt_labels;i++)
                 {
 					j = 0;
 					memset(ramString,0,STRING_LEN);

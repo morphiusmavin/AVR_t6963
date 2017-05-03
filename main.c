@@ -46,15 +46,16 @@ int main(void)
 //******************************************************************************************//
 //******************* read all the data from eeprom into memory  ***************************//
 //******************************************************************************************//
-	no_labels  = eeprom_read_byte((UCHAR*)NO_LABELS_EEPROM_LOCATION);
+	no_rt_labels  = eeprom_read_byte((UCHAR*)NO_RT_LABELS_EEPROM_LOCATION);
 
-	if(no_labels != 0xff)
+	if(no_rt_labels != 0xff)
 	{
 #ifdef TTY_DISPLAY
 #warning "TTY_DISPLAY defined"
 		printString("reading prompt data into prompt structs\r\n");
 #endif
-		no_labels  = eeprom_read_byte((UCHAR*)NO_LABELS_EEPROM_LOCATION);
+		no_rt_labels  = eeprom_read_byte((UCHAR*)NO_RT_LABELS_EEPROM_LOCATION);
+		no_menu_labels  = eeprom_read_byte((UCHAR*)NO_MENU_LABELS_EEPROM_LOCATION);
 		no_rtparams  = eeprom_read_byte((UCHAR*)NO_RTPARAMS_EEPROM_LOCATION);
 		no_menu_structs  = eeprom_read_byte((UCHAR*)NO_MENUS_EEPROM_LOCATION);
 #ifdef TTY_DISPLAY
@@ -177,7 +178,7 @@ int main(void)
 					GDispStringAt(rt_params[i].row,rt_params[i].col+9,"      ");
 				}
 
-				if(rt_params[i].shown && rt_params[i].type == current_param)
+				if(rt_params[i].type == current_param && rt_params[i].shown == SHOWN_SENT)
 				{
 					GDispStringAt(rt_params[i].row,rt_params[i].col+10,param_string);
 				}

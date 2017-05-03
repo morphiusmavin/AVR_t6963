@@ -75,11 +75,13 @@ int main(int argc, char *argv[])
 	UCHAR read_buf[NUM_ENTRY_SIZE];
 	int y = 0;
 	UINT temp_int;
+	UINT temp_int2 = 0;
 	UCHAR laux_data[AUX_DATA_SIZE];
 	UCHAR laux_data2[AUX_DATA_SIZE];
 	UCHAR auxcmd = 0;
 	UCHAR auxparam = 0;
 	UINT temp1, temp2;
+	UINT *sample_data;
 
 	if(argv[1][0] == 'w')
 		type = 1;
@@ -92,14 +94,19 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	memset(new_global_number,0,NUM_ENTRY_SIZE);
-	memset(labels,0,NUM_LABELS*MAX_LABEL_LEN);
+	memset(menu_labels,0,NUM_MENU_LABELS*MAX_LABEL_LEN);
+	memset(rt_labels,0,NUM_RT_LABELS*MAX_LABEL_LEN);
 	memset(menu_structs,0,NUM_MENU_STRUCTS*sizeof(MENU_FUNC_STRUCT));
 	memset(rt_params,0,NUM_RT_PARAMS*sizeof(RT_PARAM));
 	memset(P24_rt_params,0,NUM_RT_PARAMS*sizeof(RT_PARAM));
 #endif
-#if 0
 	burn_eeprom();
-	printf("P24_rt_params\n");
+	sample_data = (UINT *)malloc(no_data_index*sizeof(UINT));
+	for(i = 0;i < no_data_index;i++)
+		sample_data[i] = (i+50)*20;
+// comment out the following #if/#endif's to print out what's loaded by eeprom_burn() and the totals
+#if 0
+	printf("P24_rt_params:\n\n");
 	for(i = 0;i < no_rtparams;i++)
 	{
 //		printf("%d\t",i);
@@ -109,13 +116,19 @@ int main(int argc, char *argv[])
 		printf("%d\t",P24_rt_params[i].dtype);
 		printf("%d\n",P24_rt_params[i].type);
 	}
-
-	for(i = 0;i < no_labels;i++)
+	printf("\nrt_labels:\n\n");
+	for(i = 0;i < no_rt_labels;i++)
 	{
-		printf("%d %s\n",i,labels[i]);
+		printf("%d %s\n",i,rt_labels[i]);
 	}
 
-	printf("rt_params:\n");
+	printf("\nmenu_labels:\n\n");
+	for(i = 0;i < no_menu_labels;i++)
+	{
+		printf("%d %s\n",i,menu_labels[i]);
+	}
+
+	printf("\nrt_params:\n\n");
 	for(i = 0;i < no_rtparams;i++)
 	{
 //		printf("%d\t",i);
@@ -125,27 +138,35 @@ int main(int argc, char *argv[])
 		printf("%d\t",rt_params[i].dtype);
 		printf("%d\n",rt_params[i].type);
 	}
-	printf("menu structs: %d\n",no_menu_structs);
-//	for(i = 0;i < no_menu_structs;i++)
-	for(i = 0;i < 2;i++)
+	printf("\nmenu structs:\n\n");
+	for(i = 0;i < no_menu_structs;i++)
+//	for(i = 0;i < 2;i++)
 	{
 		printf("%d\t",menu_structs[i].enabled);
 		printf("%d\t",menu_structs[i].fptr);
 		printf("%d\t",menu_structs[i].menu);
-		printf("%x\n",menu_structs[i].label);
+		printf("%x\t",menu_structs[i].label);
+		printf("%x\n",menu_structs[i].index);
 	}
-	init_list();
+	printf("\nsample_data\n\n");
+	for(i = 0;i < no_data_index;i++)
+		printf("%d\n",sample_data[i]);
+
+	printf("\nno_rt_labels: %d\n",no_rt_labels);
+	printf("no_menu_labels: %d\n",no_menu_labels);
+	printf("rt params: %d\n",no_rtparams);
+	printf("menu structs: %d\n",no_menu_structs);
+	printf("menu labels: %d\n",no_menu_labels);
 	return 0;
 #endif
 #if 1
-	burn_eeprom();
 	initscr();			/* Start curses mode 		*/
 	clear();
 	noecho();
 	nodelay(stdscr,TRUE);
 	raw();				/* Line buffering disabled	*/
 	cbreak();	/* Line buffering disabled. pass on everything */
-	menu_win = newwin(55, 65, 0,0);
+	menu_win = newwin(60, 65, 0,0);
 	keypad(menu_win, TRUE);
 	nodelay(menu_win, TRUE);
 	box(menu_win,0,0);
@@ -214,6 +235,9 @@ int main(int argc, char *argv[])
 	res2 = 0;
 	set_defaults();
 	set_state_defaults();
+	memset(laux_data,0,AUX_DATA_SIZE);
+	memset(laux_data2,0,AUX_DATA_SIZE);
+
 
 // read	- simulate the AVR
 	if(type == 0)
@@ -294,24 +318,8 @@ int main(int argc, char *argv[])
 
 			if(P24_rt_params[code2].shown == NOSHOWN_SENT || P24_rt_params[code2].shown == SHOWN_SENT)
 			{
-				data3 = rtdata[code2];
-				// this is a round-about way to send data back to the AVR
-				// since the AUX1 state table can't do a write back
-				if(P24_rt_params[code2].dtype == 2)			//AUX1
-				{
-mvwprintw(menu_win, display_offset+22,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UCHAR)rtdata[code2]);
-				}
-				else if(P24_rt_params[code2].dtype == 3)	// AUX2
-//				if(P24_rt_params[code2].dtype == 3)
-				{
-mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UCHAR)rtdata[code2]);
-				}
-				else
-					rtdata[code2] = data3;
-					
 				if(P24_rt_params[code2].dtype > 0)
 				{
-//					usleep(tdelay2);
 					data2 = rtdata[code2];
 					if(data2 & 0x8000)
 					{
@@ -330,7 +338,6 @@ mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UC
 					else if(data2 & 0x0080)
 					{
 						ch = RT_HIGH2;
-//						mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH2");
 						res = write(fd,&ch,1);
 						usleep(tdelay);
 						data1 = (UCHAR)data2;
@@ -346,7 +353,6 @@ mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UC
 					else
 					{
 						ch = RT_HIGH1;
-//						mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH1");
 						res = write(fd,&ch,1);
 						usleep(tdelay);
 						data1 = (UCHAR)(data2);
@@ -363,7 +369,12 @@ mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UC
 					mvwprintw(menu_win, display_offset+code2, 10,"              ");
 					mvwprintw(menu_win, display_offset+code2, 10, param_string);
 					wrefresh(menu_win);
-					data2++;
+					if(code2 != RT_AUX1-RT_OFFSET && code2 != RT_AUX2-RT_OFFSET)
+					{
+						mvwprintw(menu_win, display_offset+22,2,"%d %d   ",code2,data2);
+						data2 += 10;
+					}
+					else mvwprintw(menu_win, display_offset+23,2,"%d %d   ",code2,data2);
 					rtdata[code2] = data2;
 				}
 				// end of if RT_RPM
@@ -373,7 +384,6 @@ mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UC
 					if(data > 0x7f)
 					{
 						ch = RT_HIGH0;
-//						mvwprintw(menu_win, display_offset+2, 18,"RT_HIGH0");
 						res = write(fd,&ch,1);
 						usleep(tdelay);
 						data1 = data & 0x7f;
@@ -384,7 +394,6 @@ mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UC
 					else
 					{
 						ch = RT_LOW;
-//						mvwprintw(menu_win, display_offset+2, 18,"RT_LOW  ");
 						res = write(fd,&ch,1);
 						usleep(tdelay);
 						ch = data;
@@ -426,12 +435,14 @@ mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UC
 						{
 							paux_state = DATA_REQ;
 							aux_index = laux_data[1];
-							mvwprintw(menu_win, display_offset+26, 2,"aux_index: %x  ",aux_index);
 						}	
 						else
 							paux_state = IDLE_AUX;
 						break;
+											// write requested data to AVR to be modified	
 					case DATA_REQ:
+						rtdata[code2+1] = sample_data[aux_index];		// this ends up in tempint2 of do_read()
+						mvwprintw(menu_win, display_offset+29, 2,"sample_data b4: %d    ",rtdata[code2+1]);
 						auxcmd = CMD_DATA_READY;
 						auxparam = 0;
 						paux_state = VALID_DATA;
@@ -444,11 +455,12 @@ mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UC
 						{
 							paux_state = VALID_DATA;
 							loop = break_out_loop(loop, paux_state);
-							mvwprintw(menu_win, display_offset+40, 2,"loop: %d  ",loop);
+							mvwprintw(menu_win, display_offset+24, 2,"loop: %d  ",loop);
 						}	
 						break;
 					case DATA_READY:
 						loop = 0;
+						mvwprintw(menu_win, display_offset+24, 2,"             ");
 						auxcmd = auxparam = 2;
 //						for(i = 0;i < AUX_DATA_SIZE;i++)
 //							mvwprintw(menu_win, display_offset+26, 2+(i * 3),"%x  ",laux_data[i]);
@@ -461,42 +473,55 @@ mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UC
 //#endif
 				disp_pstate(paux_state,tempx);
 //				auxcmd = laux_data[0];
-				mvwprintw(menu_win, display_offset+27, 2,"%s        ",tempx);
-				mvwprintw(menu_win, display_offset+28, 2,"cmd: %x  param: %x  ",auxcmd,auxparam);
+				mvwprintw(menu_win, display_offset+25, 2,"aux_index: %x  ",aux_index);
+				mvwprintw(menu_win, display_offset+26, 2,"%s        ",tempx);
 				disp_auxcmd(laux_data[0], tempx);
-				mvwprintw(menu_win, display_offset+24, 2,"%s        ",tempx);
+				mvwprintw(menu_win, display_offset+26, 20,"%s        ",tempx);
+				mvwprintw(menu_win, display_offset+27, 2,"cmd: %x  param: %x  ",auxcmd,auxparam);
 				temp_int = (UINT)auxcmd;
 //				mvwprintw(menu_win, display_offset+34,2,"%x ",temp_int);
 				temp_int <<= 8;
-				temp_int &= 0xff00;
+//				temp_int &= 0xff00;
 //				mvwprintw(menu_win, display_offset+35,2,"%x ",temp_int);
 				rtdata[code2] = temp_int;
 				temp_int = (UINT)auxparam;
 				rtdata[code2] |= temp_int;
-				mvwprintw(menu_win, display_offset+34,2,"%x %x %x   ",temp_int, auxcmd,auxparam);
+//				mvwprintw(menu_win, display_offset+28,2,"temp_int: %x   ",temp_int);
+				temp_int2 = (UINT)laux_data[2];
+				temp_int2 <<= 8;
+				temp_int2 |= (UINT)laux_data[3];
+				mvwprintw(menu_win, display_offset+31, 2,"temp_int2: %d  ",temp_int2);
 			}
 			else if(code == RT_AUX2)
 			{
-				rtdata[code2] = temp_int;
-
 				res = read(fd,&laux_data2,AUX_DATA_SIZE);
 //				mvwprintw(menu_win, display_offset+31, 2,"res: %d  ",res);
 //				for(i = 0;i < AUX_DATA_SIZE;i++)
 //					mvwprintw(menu_win, display_offset+29, 2+(i * 3),"%x  ",laux_data2[i]);
-				temp1 = (UINT)laux_data2[0];
-				temp1 <<= 8;
-				temp1 |= (UINT)laux_data2[1];
+//				temp1 = (UINT)laux_data2[0];
+//				temp1 <<= 8;
+//				temp1 |= (UINT)laux_data2[1];
+				if(paux_state == DATA_READY)
+				{
+					sample_data[aux_index] = (UINT)laux_data2[0];
+					sample_data[aux_index] <<= 8;
+					sample_data[aux_index] |= (UINT)laux_data2[1];
+					mvwprintw(menu_win, display_offset+30, 2,"sample_data after: %d    ",sample_data[aux_index]);
+				}
 
-				temp2 = (UINT)laux_data2[2];
-				temp2 <<= 8;
-				temp2 |= (UINT)laux_data2[3];
-				mvwprintw(menu_win, display_offset+30, 2,"%d   %d      ",temp1,temp2);
+//				temp2 = (UINT)laux_data2[2];
 
+//				temp2 <<= 8;
+//				temp2 |= (UINT)laux_data2[3];
 			}	
+
+			for(i = 0;i < no_data_index;i++)
+				mvwprintw(menu_win, display_offset+32+i, 2,"%d  ",sample_data[i]);
+
 			if(++code > RT_AUX2)
 				code = RT_RPM;
 			code2 = code - RT_RPM;
-			mvwprintw(menu_win, display_offset+39, 2, "rt_type: %d %s        ",code2,get_label(code2));
+//			mvwprintw(menu_win, display_offset+39, 2, "rt_type: %d %s        ",code2,get_rt_label(code2));
 			wrefresh(menu_win);
 		}
 	}
@@ -504,7 +529,7 @@ mvwprintw(menu_win, display_offset+23,2,"%x  %x  ",(UCHAR)(rtdata[code2]>>8),(UC
 	clrtoeol();
 	refresh();
 	endwin();
-
+	free(sample_data);
 	tcsetattr(fd,TCSANOW,&oldtio);
 	close(fd);
 	exit(0);
