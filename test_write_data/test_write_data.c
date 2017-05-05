@@ -33,7 +33,7 @@ int set_interface_attribs (int fd, int speed, int parity);
 void set_blocking (int fd, int should_block);
 static void disp_pstate(UCHAR state, char *str);
 static void disp_auxcmd(UCHAR state, char *str);
-static int break_out_loop(int loop,UCHAR curr_state);
+//static int break_out_loop(int loop,UCHAR curr_state);
 static UCHAR get_keypress(UCHAR ch,WINDOW *win, int display_offset);
 #endif
 //******************************************************************************************//
@@ -42,12 +42,10 @@ static UCHAR get_keypress(UCHAR ch,WINDOW *win, int display_offset);
 int main(int argc, char *argv[])
 {
 #if 1
-	int fd, res, res2;
+	int fd;
 	int type = 0;
-	int iters, itr, itr2 = 0;
+	int iters, itr;
 	int i,j;
-	UCHAR alnum_strlen = 0;
-	int write_alnum = 5;
 	UCHAR ch;
 	struct termios oldtio,newtio;
 	WINDOW *menu_win;
@@ -56,31 +54,21 @@ int main(int argc, char *argv[])
     UCHAR data = 2;
     UCHAR data1 = 0;
 	UINT data2 = 0;
-	UINT data3 = 0;
 	UINT rtdata[11];	// this should be no or rt_params
     UCHAR code = RT_RPM;
     UCHAR code2 = code - RT_RPM;
-	int done;
-	UINT rpm;
 	UCHAR key;
 	UCHAR wkey;
 	char tempx[20];
-	int loop = 0;
-	int loop2 = 0;
-	int do_states = SCALE_DISP_ALL;
-	UCHAR gval_done = 1;
-	UINT starting_aux = 0;
 	char param_string[10];
 	int display_offset = 3;
 	UCHAR read_buf[NUM_ENTRY_SIZE];
-	int y = 0;
 	UINT temp_int;
 	UINT temp_int2 = 0;
-	UCHAR laux_data[AUX_DATA_SIZE];
-	UCHAR laux_data2[AUX_DATA_SIZE];
+	UCHAR pic_data[AUX_DATA_SIZE];
+	UCHAR pic_data2[AUX_DATA_SIZE];
 	UCHAR auxcmd = 0;
 	UCHAR auxparam = 0;
-	UINT temp1, temp2;
 	UINT *sample_data;
 
 	if(argv[1][0] == 'w')
@@ -232,19 +220,15 @@ int main(int argc, char *argv[])
 //	set_blocking (fd, 1);	// block on read
 	set_blocking (fd, 0);	// non-blocking
 
-	res2 = 0;
 	set_defaults();
 	set_state_defaults();
-	memset(laux_data,0,AUX_DATA_SIZE);
-	memset(laux_data2,0,AUX_DATA_SIZE);
+	memset(pic_data,0,AUX_DATA_SIZE);
+	memset(pic_data2,0,AUX_DATA_SIZE);
 
 
 // read	- simulate the AVR
 	if(type == 0)
 	{
-		if(argc > 2)
-			starting_aux = atoi(argv[2]);
-//		printf("starting aux: %d\n",starting_aux);
 		do_read(menu_win, fd,display_offset);
 //		printf("do_read: %d\n",ret_code);
 	}	// end of else
@@ -324,7 +308,7 @@ int main(int argc, char *argv[])
 					if(data2 & 0x8000)
 					{
 						ch = RT_HIGH3;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 						data1 = (UCHAR)(data2);
 						write(fd,&data1,1);
@@ -332,36 +316,36 @@ int main(int argc, char *argv[])
 						data1 = (UCHAR)(data2>>8);
 						data1 &= 0x7f;
 						ch = data1;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 					}
 					else if(data2 & 0x0080)
 					{
 						ch = RT_HIGH2;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 						data1 = (UCHAR)data2;
 						data1 &= 0x7f;
 						ch = data1;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 						data1 = (UCHAR)(data2>>8);
 						ch = data1;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 					}
 					else
 					{
 						ch = RT_HIGH1;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 						data1 = (UCHAR)(data2);
 						ch = data1;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 						data1 = (UCHAR)(data2>>8);
 						ch = data1;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 					}
 
@@ -384,20 +368,20 @@ int main(int argc, char *argv[])
 					if(data > 0x7f)
 					{
 						ch = RT_HIGH0;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 						data1 = data & 0x7f;
 						ch = data1;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 					}
 					else
 					{
 						ch = RT_LOW;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 						ch = data;
-						res = write(fd,&ch,1);
+						write(fd,&ch,1);
 						usleep(tdelay);
 					}
 					data++;
@@ -421,20 +405,20 @@ int main(int argc, char *argv[])
 //#endif
 			if(code == RT_AUX1)
 			{
-				res = read(fd,&laux_data,AUX_DATA_SIZE);
+				read(fd,&pic_data,AUX_DATA_SIZE);
 //				mvwprintw(menu_win, display_offset+24, 2,"res: %d  ",res);
 //				for(i = 0;i < AUX_DATA_SIZE;i++)
-//					mvwprintw(menu_win, display_offset+25, 2+(i * 3),"%x  ",laux_data[i]);
-//				mvwprintw(menu_win, display_offset+26, 2,"%x %x  ",laux_data[0],laux_data[1]);
+//					mvwprintw(menu_win, display_offset+25, 2+(i * 3),"%x  ",pic_data[i]);
+//				mvwprintw(menu_win, display_offset+26, 2,"%x %x  ",pic_data[0],pic_data[1]);
 //#if 0
 				switch(paux_state)
 				{
 					case IDLE_AUX:
 						auxcmd = auxparam = 0;
-						if(laux_data[0] == CMD_GET_DATA)
+						if(pic_data[0] == CMD_GET_DATA)
 						{
 							paux_state = DATA_REQ;
-							aux_index = laux_data[1];
+							aux_index = pic_data[1];
 						}	
 						else
 							paux_state = IDLE_AUX;
@@ -449,7 +433,7 @@ int main(int argc, char *argv[])
 						break;
 					case VALID_DATA:
 						auxcmd = auxparam = 1;
-						if(laux_data[0] == CMD_NEW_DATA)
+						if(pic_data[0] == CMD_NEW_DATA)
 							paux_state = DATA_READY;
 						else
 						{
@@ -459,23 +443,23 @@ int main(int argc, char *argv[])
 						}	
 						break;
 					case DATA_READY:
-						loop = 0;
 						mvwprintw(menu_win, display_offset+24, 2,"             ");
 						auxcmd = auxparam = 2;
 //						for(i = 0;i < AUX_DATA_SIZE;i++)
-//							mvwprintw(menu_win, display_offset+26, 2+(i * 3),"%x  ",laux_data[i]);
-						paux_state = IDLE_AUX;
+//							mvwprintw(menu_win, display_offset+26, 2+(i * 3),"%x  ",pic_data[i]);
+						paux_state = EXTRA;
 						break;
+					case EXTRA:	
 					default:
 						paux_state = IDLE_AUX;
 						break;
 				}
 //#endif
 				disp_pstate(paux_state,tempx);
-//				auxcmd = laux_data[0];
+//				auxcmd = pic_data[0];
 				mvwprintw(menu_win, display_offset+25, 2,"aux_index: %x  ",aux_index);
 				mvwprintw(menu_win, display_offset+26, 2,"%s        ",tempx);
-				disp_auxcmd(laux_data[0], tempx);
+				disp_auxcmd(pic_data[0], tempx);
 				mvwprintw(menu_win, display_offset+26, 20,"%s        ",tempx);
 				mvwprintw(menu_win, display_offset+27, 2,"cmd: %x  param: %x  ",auxcmd,auxparam);
 				temp_int = (UINT)auxcmd;
@@ -487,36 +471,51 @@ int main(int argc, char *argv[])
 				temp_int = (UINT)auxparam;
 				rtdata[code2] |= temp_int;
 //				mvwprintw(menu_win, display_offset+28,2,"temp_int: %x   ",temp_int);
-				temp_int2 = (UINT)laux_data[2];
+				temp_int2 = (UINT)pic_data[2];
 				temp_int2 <<= 8;
-				temp_int2 |= (UINT)laux_data[3];
-				mvwprintw(menu_win, display_offset+31, 2,"temp_int2: %d  ",temp_int2);
+				temp_int2 |= (UINT)pic_data[3];
+//				mvwprintw(menu_win, display_offset+33, 2,"temp_int2: %d  ",temp_int2);
 			}
 			else if(code == RT_AUX2)
 			{
-				res = read(fd,&laux_data2,AUX_DATA_SIZE);
+				read(fd,&pic_data2,AUX_DATA_SIZE);
 //				mvwprintw(menu_win, display_offset+31, 2,"res: %d  ",res);
 //				for(i = 0;i < AUX_DATA_SIZE;i++)
-//					mvwprintw(menu_win, display_offset+29, 2+(i * 3),"%x  ",laux_data2[i]);
-//				temp1 = (UINT)laux_data2[0];
+//					mvwprintw(menu_win, display_offset+29, 2+(i * 3),"%x  ",pic_data2[i]);
+//				temp1 = (UINT)pic_data2[0];
 //				temp1 <<= 8;
-//				temp1 |= (UINT)laux_data2[1];
+//				temp1 |= (UINT)pic_data2[1];
+				UCHAR test1x, test2x;
+				UINT test1y;
 				if(paux_state == DATA_READY)
 				{
-					sample_data[aux_index] = (UINT)laux_data2[0];
+					test1x = pic_data2[2];
+					mvwprintw(menu_win, display_offset+31,2,"%x  ",test1x);
+					test2x= pic_data2[3] << 1;
+					test2x &= 0x80;
+					mvwprintw(menu_win, display_offset+31,6,"%x  ",test2x);
+					test1y = (UINT)test1x;
+					test1y <<= 8;
+					mvwprintw(menu_win, display_offset+31,10,"%x  ",test1y);
+					test1y |= (UINT)(test2x);
+					mvwprintw(menu_win, display_offset+31,16,"%x  ",test1y);
+					sample_data[aux_index] = (UINT)pic_data2[0];
+					// this is a work-around for strange bug - for some reason the high bit of 
+					// the 2nd byte is getting unset
 					sample_data[aux_index] <<= 8;
-					sample_data[aux_index] |= (UINT)laux_data2[1];
-					mvwprintw(menu_win, display_offset+30, 2,"after:%d    %x %x %x %x    ",sample_data[aux_index],laux_data2[0],laux_data2[1],laux_data2[2],laux_data2[3]);
+					pic_data2[1] |= test2x;
+					sample_data[aux_index] |= (UINT)pic_data2[1];
+					mvwprintw(menu_win, display_offset+30, 2,"after:%d    %x %x %x %x %d   ",sample_data[aux_index],pic_data2[0],pic_data2[1],pic_data2[2],pic_data2[3],test1y);
 				}
 
-//				temp2 = (UINT)laux_data2[2];
+//				temp2 = (UINT)pic_data2[2];
 
 //				temp2 <<= 8;
-//				temp2 |= (UINT)laux_data2[3];
+//				temp2 |= (UINT)pic_data2[3];
 			}	
 
 			for(i = 0;i < no_data_index;i++)
-				mvwprintw(menu_win, display_offset+32+i, 2,"%d  ",sample_data[i]);
+				mvwprintw(menu_win, display_offset+34+i, 2,"%d  ",sample_data[i]);
 
 			if(++code > RT_AUX2)
 				code = RT_RPM;
@@ -538,6 +537,7 @@ int main(int argc, char *argv[])
 //******************************************************************************************//
 //************************************** break_out_loop ************************************//
 //******************************************************************************************//
+/*
 static int break_out_loop(int loop,UCHAR curr_state)
 {
 	if(++loop > 5)
@@ -551,7 +551,7 @@ static int break_out_loop(int loop,UCHAR curr_state)
 		return loop;
 	}
 }
-
+*/
 void set_defaults(void)
 {
 	temp_UINT = 0;
@@ -582,6 +582,9 @@ static void disp_pstate(UCHAR state, char *str)
 		case DATA_READY:
 			strcpy(str,"DATA_READY\0");
 			break;
+		case EXTRA:
+			strcpy(str,"EXTRA\0");
+			break;
 		default:
 			strcpy(str,"<bad state>\0");
 			break;
@@ -607,37 +610,10 @@ static void disp_auxcmd(UCHAR state, char *str)
 			strcpy(str,"CMD_EXTRA\0");
 			break;
 		default:
-		strcpy(str,"<bad state>\0");
-		break;
-	}
-}
-//******************************************************************************************//
-//************************************* disp_cmdtype ***************************************//
-//******************************************************************************************//
-void disp_cmdtype(UCHAR state, char *str)
-{
-/*
-	switch (state)
-	{
-		case START_AVR:
-		strcpy(str,"START_AVR\0");
-		break;
-		case DATA_READY:
-		strcpy(str,"DATA_READY\0");
-		break;
-		case NEW_DATA_READY:
-		strcpy(str,"NEW_DATA_READY\0");
-		break;
-		case NONE:
-		strcpy(str,"NONE\0");
-		break;
 		strcpy(str,"<bad cmd>\0");
-		default:
 		break;
 	}
-*/
 }
-
 //******************************************************************************************//
 //*************************************** get_keypress *************************************//
 //******************************************************************************************//

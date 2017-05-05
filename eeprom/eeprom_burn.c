@@ -50,7 +50,8 @@ int burn_eeprom(void)
 	i = update_rt_labels(i,"AUX2\0");
 	no_rt_labels = i;
 	i = 0;
-	i = update_menu_labels(i,"home\0");		// start of menus
+// start of menus
+	i = update_menu_labels(i,"home\0");
 	i = update_menu_labels(i,"MENU1a\0");
 	i = update_menu_labels(i,"MENU1b\0");
 	i = update_menu_labels(i,"MENU1c\0");
@@ -60,13 +61,16 @@ int burn_eeprom(void)
 	i = update_menu_labels(i,"checkbox\0");
 	i = update_menu_labels(i,"MENU2a\0");
 	i = update_menu_labels(i,"MENU2b\0");
-	i = update_menu_labels(i,"MENU2c\0");
-	i = update_menu_labels(i,"MENU3a\0");
-	i = update_menu_labels(i,"MENU3b\0");
-	i = update_menu_labels(i,"MENU3c\0");
-	i = update_menu_labels(i,"MENU4a\0");
+	i = update_menu_labels(i,"test0\0");
 	i = update_menu_labels(i,"test1\0");
-	i = update_menu_labels(i,"test2\0");		// end of menus
+	i = update_menu_labels(i,"test2\0");
+	i = update_menu_labels(i,"test3\0");
+	i = update_menu_labels(i,"test4\0");
+	i = update_menu_labels(i,"test5\0");
+	i = update_menu_labels(i,"test6\0");
+	i = update_menu_labels(i,"test7\0");
+	i = update_menu_labels(i,"test8\0");
+// end of menus
 	i = update_menu_labels(i,"enter\0");
 	i = update_menu_labels(i,"back\0");
 	i = update_menu_labels(i,"esc\0");
@@ -168,18 +172,26 @@ int burn_eeprom(void)
 	i = update_menu_structs(i, 1, 0,		MENU2A,		MENU2A,0);
 	i = update_menu_structs(i, 1, 0,		MENU2B,		MENU2B,0);
 	// menu 1a		6
+/*
 	i = update_menu_structs(i, 1, 0,		num_entry,	num_entry,0);
 	i = update_menu_structs(i, 1, 0,		chkboxes,	chkboxes,0);
 	i = update_menu_structs(i, 1, 0,		num_entry,	testnum1,1);
 	i = update_menu_structs(i, 1, 0,		num_entry,	testnum2,2);
 	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C,0);
 	i = update_menu_structs(i, 1, 0,		MENU1D,		MENU1D,0);
+*/
+	i = update_menu_structs(i, 1, 0,		num_entry,	testnum0,1);
+	i = update_menu_structs(i, 1, 0,		num_entry,	testnum1,2);
+	i = update_menu_structs(i, 1, 0,		num_entry,	testnum2,3);
+	i = update_menu_structs(i, 1, 0,		num_entry,	testnum3,4);
+	i = update_menu_structs(i, 1, 0,		num_entry,	testnum4,5);
+	i = update_menu_structs(i, 1, 0,		num_entry,	testnum5,6);
 
 	// menu 1b		12
-	i = update_menu_structs(i, 1, 0,		MENU1A,		MENU1A,0);
-	i = update_menu_structs(i, 1, 0,		MENU1B,		MENU1B,0);
-	i = update_menu_structs(i, 1, 0,		MENU1C,		MENU1C,0);
-	i = update_menu_structs(i, 1, 0,		MAIN,		MAIN,0);
+	i = update_menu_structs(i, 1, 0,		num_entry,	testnum6,7);
+	i = update_menu_structs(i, 1, 0,		num_entry,	testnum7,8);
+	i = update_menu_structs(i, 1, 0,		num_entry,	testnum8,9);
+	i = update_menu_structs(i, 0, 0,		MAIN,		MAIN,0);
 	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN,0);
 	i = update_menu_structs(i, 0, 0, 		MAIN,		MAIN,0);
 

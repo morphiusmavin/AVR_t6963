@@ -211,27 +211,6 @@ bytes at a time because of the fact that the serial port is set to non-blocking,
 a problem sending a variable number of bytes at a time so when it comes time to use it
 on the actual hardware, some things may have to be changed...
 
-In RT_AUX:
-When either the start_numentry or the init_checkboxes function is called, the AVR will
-send a command to the PIC24 telling it to go get the data. The PIC24 will then send a
-command back saying it has the data in aux_data. The user can then modify the data and
-then send a command back saying the data has been modified.
-
-RT_AUX1
-before PIC24 sends code for RT_AUX1 it puts auxcmd & auxparam into the rtdata array
-and the AVR will extract the auxcmd & auxparam from the data stream sent over.
-the auxcmd & auxparam are used in the state machine (in do_read for the simulation -
-the state machine will have to be implemented in main.c later...).
-At the end of the state machine switch statement, do_read will write an array of data
-AUX_DATA_SIZE bytes and the PIC24 will read it back. In the RT_AUX2 state the do_read
-will write another set of values AUX_DATA_SIZE long and the PIC24 will read that back
-too. But the values read in the RT_AUX1 state are the ones sent by the do_read int the
-RT_AUX2 state, so they are swapped.
-
-1) AVR sends DATA_REQ state in 1st byte of aux_data.
-2) When PIC24 has data, it sends back the command VALID_DATA to AVR with aux_data
-3) After data is modified, AVR sends a command back: DATA_READY.
-
 keypad layout:
 
 1 2 3 A

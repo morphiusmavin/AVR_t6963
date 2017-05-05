@@ -5,11 +5,11 @@
 #define STRING_LEN 100
 #define NUM_FPTS 14
 #define MAX_LABEL_LEN 9
-#define NUM_MENU_LABELS 31
+#define NUM_MENU_LABELS 34
 #define NUM_RT_PARAMS 12
 #define NUM_RT_LABELS NUM_RT_PARAMS
 #define NUM_MENU_CHOICES 6
-#define NUM_MENUS 17
+#define NUM_MENUS 20
 #define NUM_MENU_STRUCTS NUM_MENUS*NUM_MENU_CHOICES
 #define DISP_OFFSET 18
 #define NUM_CHECKBOXES 10
@@ -63,13 +63,16 @@ enum menu_types
 	chkboxes,
 	MENU2A,
 	MENU2B,
-	MENU2C,
-	MENU3A,
-	MENU3B,
-	MENU3C,
-	MENU4A,
+	testnum0,
 	testnum1,
-	testnum2,		// total of 17 menus
+	testnum2,
+	testnum3,
+	testnum4,
+	testnum5,
+	testnum6,
+	testnum7,
+	testnum8,
+// total of 20 menus
 /*
 functions start here - these are indexes into the array of function pointers (in menus.c)
 
@@ -244,7 +247,6 @@ RT_PARAM rt_params[NUM_RT_PARAMS];
 // because we want to handle this as if a separate array is running on the PIC24
 #ifdef NOAVR
 RT_PARAM P24_rt_params[NUM_RT_PARAMS];
-void disp_cmdtype(UCHAR state, char *str);
 #endif
 //#ifdef NOAVR
 // we could read the labels into ram when in AVR mode but its just as easy to read them from

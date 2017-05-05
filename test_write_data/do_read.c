@@ -16,11 +16,11 @@
 #include "../t6963.h"
 
 static void disp_astate(UCHAR state, char *str);
-static int break_out_loop(int loop,UCHAR curr_state);
-static void disp_parse_state(UCHAR state, char *str);
+//static int break_out_loop(int loop,UCHAR curr_state);
+//static void disp_parse_state(UCHAR state, char *str);
 static void disp_auxcmd(UCHAR state, char *str);
-static int loop;
-static int loop2;
+//static int loop;
+//static int loop2;
 
 //******************************************************************************************//
 //**************************************** do_read *****************************************//
@@ -31,22 +31,18 @@ void do_read(WINDOW *win, int fd, int display_offset)
 	int done;
 	UCHAR ch;
 	char param_string[10];
-	UCHAR temp;
-	UCHAR limit8 = 0;
+//	UCHAR temp;
 	UINT limit16 = 0;
 	UINT limit16a = 1;
 	UINT tempint;
 	UINT tempint2;
 	UINT tempint3 = 0;
 	int i,j;
-	char test_str[10];
-	int do_states = 1;
-	int res;
 	char tempx[20];
-	char tempnum[NUM_ENTRY_SIZE];
+//	char tempnum[NUM_ENTRY_SIZE];
 	int error_code = 0;
-	UCHAR aux_data[AUX_DATA_SIZE];
-	UCHAR aux_data2[AUX_DATA_SIZE];
+	UCHAR avr_data[AUX_DATA_SIZE];
+	UCHAR avr_data2[AUX_DATA_SIZE];
 	UCHAR auxcmd, auxparam;
 	UCHAR taux_index = 1;
 
@@ -54,16 +50,16 @@ void do_read(WINDOW *win, int fd, int display_offset)
 	init_list();
 	display_labels();
 	wrefresh(win);
-	memset(aux_data,0,AUX_DATA_SIZE);
-	memset(aux_data2,0,AUX_DATA_SIZE);
+	memset(avr_data,0,AUX_DATA_SIZE);
+	memset(avr_data2,0,AUX_DATA_SIZE);
 
 	for(i = 0;i < AUX_DATA_SIZE;i++)
 	{
-		aux_data[i]++;
-		aux_data2[i]++;
+		avr_data[i]++;
+		avr_data2[i]++;
 	}
 	for(i = 0;i < AUX_DATA_SIZE;i++)
-		aux_data[i]++;
+		avr_data[i]++;
 
 	while(TRUE)
 	{
@@ -107,7 +103,6 @@ void do_read(WINDOW *win, int fd, int display_offset)
 			{
 				if(current_param == RT_AUX1)
 				{
-					res = 0;
 					tempint = atol(param_string);
 					auxparam = (UCHAR)tempint;
 					tempint >>= 8;
@@ -125,8 +120,8 @@ void do_read(WINDOW *win, int fd, int display_offset)
 							mod_data_ready = 0;
 							if(aux_index != 0)
 							{
-								aux_data[0] = CMD_GET_DATA;
-								aux_data[1] = aux_index-1;
+								avr_data[0] = CMD_GET_DATA;
+								avr_data[1] = aux_index-1;
 								aaux_state = DATA_REQ;
 							}
 							else aaux_state = IDLE_AUX;
@@ -155,7 +150,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 								mvwprintw(win, DISP_OFFSET+26,2,"%sx   %d   ",cur_global_number,tempint2);
 */
 								new_data_ready = 1;
-								loop = 0;
+//								loop = 0;
 							}	
 							else
 							{
@@ -171,7 +166,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 							if(mod_data_ready == 1)
 							{
 								aaux_state = DATA_READY;
-								loop = 0;
+//								loop = 0;
 							}
 							else
 							{
@@ -183,15 +178,16 @@ void do_read(WINDOW *win, int fd, int display_offset)
 						// data has been modified by AVR and is ready to send back to PIC24	
 						case DATA_READY:
 							tempint2 = atol(new_global_number);
-							aux_data[0] = CMD_NEW_DATA;
+							avr_data[0] = CMD_NEW_DATA;
 							aaux_state = DATA_READY;
-							aux_data2[0] = (UCHAR)(tempint2 >> 8);
-							aux_data2[1] = (UCHAR)tempint2;
+							avr_data2[0] = (UCHAR)(tempint2 >> 8);
+							avr_data2[1] = (UCHAR)tempint2;
 							limit16++;
-//							aux_data2[2] = (UCHAR)(limit16a >> 8);
-//							aux_data2[3] = (UCHAR)limit16a;
-							aux_data2[2] = aux_data[0];
-							aux_data2[3] = aux_data[1];
+//							avr_data2[2] = (UCHAR)(limit16a >> 8);
+//							avr_data2[3] = (UCHAR)limit16a;
+// this is a work-around for strange bug - for some reason the high bit of the 2nd byte is getting unset
+							avr_data2[2] = avr_data2[0];
+							avr_data2[3] = avr_data2[1] >> 1;
 							limit16a += 2;
 							mvwprintw(win, DISP_OFFSET+29, 2,"%d   %d   ",limit16,limit16a);
 //							if(++taux_index > no_menu_labels)
@@ -206,16 +202,17 @@ void do_read(WINDOW *win, int fd, int display_offset)
 					mvwprintw(win, DISP_OFFSET+30, 2,"aux_index: %x  ",taux_index);
 					disp_astate(aaux_state,tempx);
 					mvwprintw(win, DISP_OFFSET+31, 2,"%s     ",tempx);
-					disp_auxcmd(aux_data[0],tempx);
+					disp_auxcmd(avr_data[0],tempx);
 					mvwprintw(win, DISP_OFFSET+31, 20,"%s     ",tempx);
 
 					for(i = 0;i < AUX_DATA_SIZE;i++)
-						mvwprintw(win, display_offset+32, 2+(i * 3),"%x  ",aux_data[i]);
-//					aux_data[2] = (UCHAR)(tempint3 >> 8);
-//					aux_data[3] = (UCHAR)tempint3;
-					aux_data[2] = aux_data[3] = 0;
+						mvwprintw(win, display_offset+32, 2+(i * 3),"%x  ",avr_data[i]);
+//					avr_data[2] = (UCHAR)(tempint3 >> 8);
+//					avr_data[3] = (UCHAR)tempint3;
+					avr_data[2] = avr_data[3] = 0;
 					tempint3++;
-					write(fd,aux_data,AUX_DATA_SIZE);
+// write avr_data					
+					write(fd,avr_data,AUX_DATA_SIZE);
 
 				}
 				else if (current_param == RT_AUX2)
@@ -228,10 +225,12 @@ void do_read(WINDOW *win, int fd, int display_offset)
 					}
 					else tempint2 = 0;
 //					for(i = 0;i < AUX_DATA_SIZE;i++)
-//						aux_data2[i]++;
+//						avr_data2[i]++;
+					mvwprintw(win, display_offset+33, 2,"avr_data2:");
 					for(i = 0;i < AUX_DATA_SIZE;i++)
-						mvwprintw(win, display_offset+33, 2+(i * 3),"%x  ",aux_data2[i]);
-					write(fd,aux_data2,AUX_DATA_SIZE);
+						mvwprintw(win, display_offset+33, 12+(i * 3),"%x  ",avr_data2[i]);
+// write avr_data2
+					write(fd,avr_data2,AUX_DATA_SIZE);
 
 				}
 				for(i = 0;i < NUM_ENTRY_SIZE;i++)
@@ -248,8 +247,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 	//			mvwprintw(win, display_offset+17,5,"%d ",no_rtparams);
 				for(i = 0;i < no_rtparams;i++)
 				{
-	//				mvwprintw(win, display_offset+18+i,5,"rt_params: %d  %d  %d  %d  ", \
-	//				rt_params[i].row,rt_params[i].col, rt_params[i].shown,rt_params[i].type);
+	//				mvwprintw(win, display_offset+18+i,5,"rt_params: %d  %d  %d  %d  ",	rt_params[i].row,rt_params[i].col, rt_params[i].shown,rt_params[i].type);
 					if(rt_params[i].shown == SHOWN_SENT)
 					{
 						if(rt_params[i].type == current_param)
@@ -273,6 +271,7 @@ void do_read(WINDOW *win, int fd, int display_offset)
 //******************************************************************************************//
 //************************************* break_out_loop *************************************//
 //******************************************************************************************//
+/*
 static int break_out_loop(int loop,UCHAR curr_state)
 {
 	if(++loop > 5)
@@ -286,6 +285,7 @@ static int break_out_loop(int loop,UCHAR curr_state)
 		return loop;
 	}
 }
+*/
 //******************************************************************************************//
 //************************************** disp_auxcmd ***************************************//
 //******************************************************************************************//
@@ -340,6 +340,7 @@ static void disp_astate(UCHAR state, char *str)
 //******************************************************************************************//
 //************************************** disp_astate ***************************************//
 //******************************************************************************************//
+/*
 static void disp_parse_state(UCHAR state, char *str)
 {
 	switch (state)
@@ -379,5 +380,5 @@ static void disp_parse_state(UCHAR state, char *str)
 		break;
 	}
 }
-
+*/
 

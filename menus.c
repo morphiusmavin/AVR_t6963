@@ -44,9 +44,6 @@ static void display_menus(int index);
 static void start_numentry(void);
 static void scale_disp(int amt);
 static void init_checkboxes(void);
-static void scroll_checkboxes(void);
-static void finish_checkboxes(void);
-static void stop_rtdisplay(void);
 static void blank_choices(void);
 static void display_edit_value(void);
 static UCHAR generic_menu_function(UCHAR ch, int  index);
@@ -66,7 +63,7 @@ static UCHAR escape_checkboxes(UCHAR ch);
 #endif
 #if 1
 static int first_menu = MAIN;
-static int last_menu = testnum2;
+static int last_menu = testnum8;
 static int current_fptr;		// pointer into the menu_list[]
 static int prev_fptr;
 static int list_size;
@@ -177,7 +174,7 @@ static void display_menus(int index)
 // displays the rt_labels if shown is set
 void display_labels(void)
 {
-	int i,j;
+	int i;
 	char temp[MAX_LABEL_LEN];
 	char blank[] = "               ";
 
@@ -336,10 +333,6 @@ static void set_list(int fptr)
 //******************************************************************************************//
 UCHAR get_key(UCHAR ch)
 {
-	UCHAR wkey;
-	int i,j;
-	UCHAR choice_array[6];
-	j = 0;
 	UCHAR ret_char = generic_menu_function(ch,get_curr_menu());
 	if(curr_fptr_changed())
 	{
@@ -376,9 +369,6 @@ int get_str_len(void)
 {
 	return cur_col-NUM_ENTRY_BEGIN_COL;
 }
-static void stop_rtdisplay(void)
-{
-}
 //******************************************************************************************//
 //********************************* generic_menu_function **********************************//
 //******************************************************************************************//
@@ -387,7 +377,6 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 	UCHAR ret_char = ch;
 	int menu_index = index * 6;
 	int i;
-
 	switch (ch)
 	{
 		case KP_0:
@@ -473,44 +462,35 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 			if(menu_structs[menu_index].menu == num_entry)
 			{
 				start_numentry();
-				stop_rtdisplay();
 			}
 			if(menu_structs[menu_index].menu == chkboxes)
 			{
 				init_checkboxes();
-				stop_rtdisplay();
 			}
 		}
 		else
 		{
 			ret_char = (*fptr[menu_structs[menu_index].fptr-last_menu-1])(ch);
-//			mvwprintw(win, 39, 3,"               ");
+//			mvwprintw(win, DISP_OFFSET+13, 2,"fptr: %d  ",menu_structs[menu_index].fptr-last_menu-1);
 		}
 	}
 	if(no_setlist == 1)
 	{
 #ifdef NOAVR
 /*
-		mvwprintw(win, 27, 2,"index: %d\n",index);
-		mvwprintw(win, 28, 2,"menu_index: %d\n",menu_index);
-		mvwprintw(win, 29, 2,"menu in ms: %d\n",menu_structs[menu_index].menu);
-		mvwprintw(win, 30, 2,"fptr in ms: %d\n",menu_structs[menu_index].fptr);
-		mvwprintw(win, 31, 2,"current_fptr: %d\n",current_fptr);
-		mvwprintw(win, 32, 2,"menu_list:  %d\n",menu_list[current_fptr]);
-
-		for(i = 0;i < 10;i++)
-			mvwprintw(win, 34+i, 2,"                ");
-		for(i = 0;i < current_fptr;i++)
-			mvwprintw(win, 34+i, 2," -> %s  ",menu_labels[menu_list[i]]);
-
-		mvwprintw(win, 34+i, 2," -> %s  ",menu_labels[get_curr_menu()]);
-
+		mvwprintw(win, DISP_OFFSET+14, 2,"index: %d\n",index);
+		mvwprintw(win, DISP_OFFSET+15, 2,"menu_index: %d\n",menu_index);
+		mvwprintw(win, DISP_OFFSET+16, 2,"menu in ms: %d\n",menu_structs[menu_index].menu);
+		mvwprintw(win, DISP_OFFSET+17, 2,"fptr in ms: %d\n",menu_structs[menu_index].fptr);
+		mvwprintw(win, DISP_OFFSET+18, 2,"current_fptr: %d\n",current_fptr);
+		mvwprintw(win, DISP_OFFSET+19, 2,"menu_list:  %d\n",menu_list[current_fptr]);
+*/
 		for(i = 0;i < current_fptr;i++)
 			mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",menu_labels[menu_list[i]]);
 
 		mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",menu_labels[get_curr_menu()]);
 		mvwprintw(win, DISP_OFFSET+20+i+1, 2,"                                  ");
-*/
+
 #endif
 	}
 	no_setlist = 1;
@@ -535,21 +515,9 @@ static UCHAR escape(UCHAR ch)
 //******************************************************************************************//
 static UCHAR enter(UCHAR ch)
 {
-	int i = 0;
-	int blank = 0;
 	int limit;
 	if(data_entry_mode)
 	{	
-/*
-		do
-		{
-			if(cur_global_number[i] == 0x20)
-				blank = i;
-			i++;	
-		}while(i < NUM_ENTRY_SIZE && blank == 0);
-		for(i = blank;i< NUM_ENTRY_SIZE;i++)
-			cur_global_number[i] = 0x20;
-*/
 		limit = atoi(cur_global_number);
 		if(limit > 32767)
 			strcpy(cur_global_number,"32766\0");
@@ -601,12 +569,6 @@ static void display_edit_value(void)
 //******************************************************************************************//
 static void scroll_alnum_list(int dir)
 {
-	int i;
-	UCHAR k;
-	UCHAR row, col;
-	int len = 1;
-	row = NUM_ENTRY_ROW;
-	col = NUM_ENTRY_BEGIN_COL;
 	switch (dir)
 	{
 		case 0:		// start at 'A'
