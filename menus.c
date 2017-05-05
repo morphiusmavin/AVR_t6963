@@ -504,31 +504,17 @@ static UCHAR generic_menu_function(UCHAR ch, int  index)
 			mvwprintw(win, 34+i, 2," -> %s  ",menu_labels[menu_list[i]]);
 
 		mvwprintw(win, 34+i, 2," -> %s  ",menu_labels[get_curr_menu()]);
-*/
+
 		for(i = 0;i < current_fptr;i++)
 			mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",menu_labels[menu_list[i]]);
 
 		mvwprintw(win, DISP_OFFSET+20+i, 2," -> %s  ",menu_labels[get_curr_menu()]);
 		mvwprintw(win, DISP_OFFSET+20+i+1, 2,"                                  ");
-//		mvwprintw(win, DISP_OFFSET+35, 2,"%d ",curr_checkbox);
+*/
 #endif
 	}
 	no_setlist = 1;
 	return ret_char;
-}
-//******************************************************************************************//
-//***************************************** backspace **************************************//
-//******************************************************************************************//
-static UCHAR backspace(UCHAR ch)
-{
-	if(data_entry_mode)
-	{	
-		cursor_backward();
-		dispCharAt(cur_row,cur_col,0x20);
-		cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = 0x20;
-	}
-//	memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
-	return ch;
 }
 //******************************************************************************************//
 //******************************************* escape ***************************************//
@@ -549,8 +535,24 @@ static UCHAR escape(UCHAR ch)
 //******************************************************************************************//
 static UCHAR enter(UCHAR ch)
 {
+	int i = 0;
+	int blank = 0;
+	int limit;
 	if(data_entry_mode)
 	{	
+/*
+		do
+		{
+			if(cur_global_number[i] == 0x20)
+				blank = i;
+			i++;	
+		}while(i < NUM_ENTRY_SIZE && blank == 0);
+		for(i = blank;i< NUM_ENTRY_SIZE;i++)
+			cur_global_number[i] = 0x20;
+*/
+		limit = atoi(cur_global_number);
+		if(limit > 32767)
+			strcpy(cur_global_number,"32766\0");
 		memcpy((void*)new_global_number,(void*)cur_global_number,NUM_ENTRY_SIZE);
 		cur_col = NUM_ENTRY_BEGIN_COL;
 		prev_list();
@@ -558,7 +560,7 @@ static UCHAR enter(UCHAR ch)
 		mod_data_ready = 1;
 	}
 #ifdef NOAVR
-	mvwprintw(win, 44, 3,"num entered: %s ",new_global_number);
+	mvwprintw(win, DISP_OFFSET+37, 2,"new: %s       %d    ",new_global_number,limit);
 #endif
 //	scale_disp(SCALE_DISP_ALL);
 	return ch;
@@ -569,7 +571,7 @@ static UCHAR enter(UCHAR ch)
 static void start_numentry(void)
 {
 #ifdef NOAVR
-	mvwprintw(win, 45, 3,"                                   ");
+//	mvwprintw(win, 41, 3,"                                   ");
 #endif
 //	scale_disp(SCALE_DISP_SOME);
 	cur_row = NUM_ENTRY_ROW;
@@ -577,7 +579,8 @@ static void start_numentry(void)
 	memset((void*)new_global_number,0,NUM_ENTRY_SIZE);
 	memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
 	clean_disp_num();
-	dispCharAt(cur_row,cur_col+NUM_ENTRY_SIZE,'/');
+	dispCharAt(NUM_ENTRY_ROW,cur_col,'/');
+	dispCharAt(NUM_ENTRY_ROW,cur_col+NUM_ENTRY_SIZE,'/');
 //	set_list(NUM_ENTRY);
 }
 //******************************************************************************************//
@@ -585,9 +588,13 @@ static void start_numentry(void)
 //******************************************************************************************//
 static void display_edit_value(void)
 {
-	GDispStringAt(cur_row,cur_col,cur_global_number);
-	cur_col = strlen(cur_global_number);
-    dispSetCursorX(TEXT_ON | CURSOR_BLINK_ON,cur_row,cur_col,LINE_8_CURSOR);
+	GDispStringAt(NUM_ENTRY_ROW,NUM_ENTRY_BEGIN_COL,cur_global_number);
+	cur_col = strlen(cur_global_number)+NUM_ENTRY_BEGIN_COL;
+//	dispCharAt(NUM_ENTRY_ROW,cur_col,'x');
+    dispSetCursorX(TEXT_ON | CURSOR_BLINK_ON,NUM_ENTRY_ROW,cur_col,LINE_8_CURSOR);
+#ifdef NOAVR
+		dispCharAt(NUM_ENTRY_ROW+1,cur_col,95);
+#endif
 }
 //******************************************************************************************//
 //********************************** scroll_alnum_list *************************************//
@@ -606,25 +613,25 @@ static void scroll_alnum_list(int dir)
 			scroll_ptr = 0;
 			while(alnum_array[++scroll_ptr] != 'A');
 			choose_alnum = alnum_array[scroll_ptr];
-			dispCharAt(cur_row,cur_col,choose_alnum);
+			dispCharAt(NUM_ENTRY_ROW,cur_col,choose_alnum);
 		break;
 		case 1:		// start at 'a'
 			scroll_ptr = 0;
 			while(alnum_array[++scroll_ptr] != 'a');
 			choose_alnum = alnum_array[scroll_ptr];
-			dispCharAt(cur_row,cur_col,choose_alnum);
+			dispCharAt(NUM_ENTRY_ROW,cur_col,choose_alnum);
 		break;
 		case 2:		// start at '!' (very first one)
 			scroll_ptr = 0;
 //			while(alnum_array[++scroll_ptr] != '!');	// this will crash it
 			choose_alnum = alnum_array[scroll_ptr];
-			dispCharAt(cur_row,cur_col,choose_alnum);
+			dispCharAt(NUM_ENTRY_ROW,cur_col,choose_alnum);
 		break;
 		case 3:		// advance the chosen character to next one
 			if(++scroll_ptr > NUM_ALNUM-1)
 				scroll_ptr = 0;
 			choose_alnum = alnum_array[scroll_ptr];
-			dispCharAt(cur_row,cur_col,choose_alnum);
+			dispCharAt(NUM_ENTRY_ROW,cur_col,choose_alnum);
 //			mvwprintw(win, 45, 3,"next char in list");
 		break;
 		default:
@@ -637,20 +644,47 @@ static void scroll_alnum_list(int dir)
 //******************************************************************************************//
 static UCHAR cursor_forward(UCHAR ch)
 {
+#ifdef NOAVR
+		dispCharAt(NUM_ENTRY_ROW+1,cur_col,95);
+#endif
 	if(++cur_col > NUM_ENTRY_END_COL)
 		cur_col = NUM_ENTRY_BEGIN_COL;
-    dispSetCursorX(TEXT_ON | CURSOR_BLINK_ON,cur_row,cur_col,LINE_8_CURSOR);
+    dispSetCursorX(TEXT_ON | CURSOR_BLINK_ON,NUM_ENTRY_ROW,cur_col,LINE_8_CURSOR);
+#ifdef NOAVR
+		dispCharAt(NUM_ENTRY_ROW+1,cur_col,95);
+#endif
 //	mvwprintw(win, 45, 3,"cursor forward   ");
     return ch;
+}
+//******************************************************************************************//
+//***************************************** backspace **************************************//
+//******************************************************************************************//
+static UCHAR backspace(UCHAR ch)
+{
+	if(data_entry_mode)
+	{	
+		cursor_backward();
+		dispCharAt(NUM_ENTRY_ROW,cur_col,0x20);
+		cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = 0x20;
+		mvwprintw(win, DISP_OFFSET+39,2,"bs:%s      %d  ",cur_global_number,cur_col);
+	}
+//	memset((void*)cur_global_number,0,NUM_ENTRY_SIZE);
+	return ch;
 }
 //******************************************************************************************//
 //************************************* cursor_backward ************************************//
 //******************************************************************************************//
 static void cursor_backward(void)
 {
+#ifdef NOAVR
+		dispCharAt(NUM_ENTRY_ROW+1,cur_col,0x20);
+#endif
 	if(--cur_col < NUM_ENTRY_BEGIN_COL)
-		cur_col = NUM_ENTRY_END_COL;
-	dispSetCursorX(TEXT_ON | CURSOR_BLINK_ON,cur_row,cur_col,LINE_8_CURSOR);
+		cur_col = NUM_ENTRY_BEGIN_COL;
+	dispSetCursorX(TEXT_ON | CURSOR_BLINK_ON,NUM_ENTRY_ROW,cur_col,LINE_8_CURSOR);
+#ifdef NOAVR
+		dispCharAt(NUM_ENTRY_ROW+1,cur_col,95);
+#endif
 }
 //******************************************************************************************//
 //********************************** cursor_forward_stuff **********************************//
@@ -662,7 +696,7 @@ static void cursor_forward_stuff(char x)
 		stuff_num(x);
 		cursor_forward(x);
 #ifdef NOAVR
-		mvwprintw(win, DISP_OFFSET+27, 2,"stuff: %x ",x);
+		mvwprintw(win, DISP_OFFSET+40, 2,"stuff: %d   %d  ",x,cur_col);
 #endif
 	}
 }
@@ -672,8 +706,11 @@ static void cursor_forward_stuff(char x)
 static void stuff_num(char num)
 {
 	num += 0x30;
-	dispCharAt(cur_row,cur_col,num);
+	dispCharAt(NUM_ENTRY_ROW,cur_col,num);
 	cur_global_number[cur_col-NUM_ENTRY_BEGIN_COL] = num;
+#ifdef NOAVR
+	mvwprintw(win, DISP_OFFSET+38, 2,"cur: %s           %d   ",cur_global_number,cur_col);
+#endif
 }
 #if 1	// scroll functions
 static UCHAR scr_alnum0(UCHAR ch)
@@ -713,6 +750,7 @@ static void clean_disp_num(void)
 	for(i = 0;i < NUM_ENTRY_SIZE+1;i++)
 	{
 		dispCharAt(NUM_ENTRY_ROW,i+NUM_ENTRY_BEGIN_COL,0x20);
+		dispCharAt(NUM_ENTRY_ROW,i+NUM_ENTRY_BEGIN_COL+1,0x20);
 	}
 }
 static void init_checkboxes(void)

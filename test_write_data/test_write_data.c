@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 	burn_eeprom();
 	sample_data = (UINT *)malloc(no_data_index*sizeof(UINT));
 	for(i = 0;i < no_data_index;i++)
-		sample_data[i] = (i+50)*20;
+		sample_data[i] = (i+500)*2+2;
 // comment out the following #if/#endif's to print out what's loaded by eeprom_burn() and the totals
 #if 0
 	printf("P24_rt_params:\n\n");
@@ -442,7 +442,7 @@ int main(int argc, char *argv[])
 											// write requested data to AVR to be modified	
 					case DATA_REQ:
 						rtdata[code2+1] = sample_data[aux_index];		// this ends up in tempint2 of do_read()
-						mvwprintw(menu_win, display_offset+29, 2,"sample_data b4: %d    ",rtdata[code2+1]);
+						mvwprintw(menu_win, display_offset+29, 2,"before: %d    ",rtdata[code2+1]);
 						auxcmd = CMD_DATA_READY;
 						auxparam = 0;
 						paux_state = VALID_DATA;
@@ -454,8 +454,8 @@ int main(int argc, char *argv[])
 						else
 						{
 							paux_state = VALID_DATA;
-							loop = break_out_loop(loop, paux_state);
-							mvwprintw(menu_win, display_offset+24, 2,"loop: %d  ",loop);
+//							loop = break_out_loop(loop, paux_state);
+//							mvwprintw(menu_win, display_offset+24, 2,"loop: %d  ",loop);
 						}	
 						break;
 					case DATA_READY:
@@ -506,7 +506,7 @@ int main(int argc, char *argv[])
 					sample_data[aux_index] = (UINT)laux_data2[0];
 					sample_data[aux_index] <<= 8;
 					sample_data[aux_index] |= (UINT)laux_data2[1];
-					mvwprintw(menu_win, display_offset+30, 2,"sample_data after: %d    ",sample_data[aux_index]);
+					mvwprintw(menu_win, display_offset+30, 2,"after:%d    %x %x %x %x    ",sample_data[aux_index],laux_data2[0],laux_data2[1],laux_data2[2],laux_data2[3]);
 				}
 
 //				temp2 = (UINT)laux_data2[2];
