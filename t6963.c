@@ -37,24 +37,14 @@
  *
  ***********************************************************************************************
  */
-#ifndef NOAVR
+
 #include <avr/io.h>
-#include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
-#else
-#include <ncurses.h>
-#endif
+//#include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
+#include "../../Atmel_other/avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
 #include "sfr_helper.h"
 #include "t6963.h"
 //#include "font5x7.h"        //custom-defined 5x7 font, for GDispPixFontAt(...)
 #include <string.h>
-
-#ifdef NOAVR
-WINDOW *win;
-void set_win(WINDOW *w)
-{
-	win = w;
-}
-#endif
 
 #define bit_test(x,n)(x & (0x01<<n))
 #define TIME_DELAY 1
@@ -113,6 +103,19 @@ static void GDispCmdAddrSend (UINT Addr, UCHAR cmd)
 	GDispDataWr (c); //Send MSB of 'Addr' afterwards
 	GDispCmdSend (cmd);
 }
+UCHAR GDispScreenPeek(UINT row, UINT col)
+{
+	UCHAR c;
+	UINT addr;
+	
+	addr = row * COLUMN + col + TEXT_HOME_ADDR;
+	GDispCmdAddrSend (addr, ADDR_PTR_SET); //Set address pointer
+	GDispCmdSend (SCREEN_PEEK);
+	GDispPeekChk ();
+	GDispCmdSend(DATA_RD);
+	c = Data_In();
+	return c;
+}
 /*
 *********************************************************************************************************
  *                                       DISPLAY DRIVER INITIALIZATION
@@ -125,7 +128,6 @@ static void GDispCmdAddrSend (UINT Addr, UCHAR cmd)
  */
 void GDispInit (void)
 {
-#ifndef NOAVR
 	//Reset the LCD module and perform a hardware port init
 	GDispInitPort ();
 	//Set Text Home address to TEXT_HOME_ADDR
@@ -139,7 +141,6 @@ void GDispInit (void)
 	//Set Offset register to 0x0002, CG Ram start address = $1400 (CG_HOME_ADDR)
 	//first character code $80 for CG Ram
 	GDispCmdAddrSend (0x0002, OFFSET_REG_SET);
-#endif
 }
 /*
 *********************************************************************************************************
@@ -153,9 +154,7 @@ void GDispInit (void)
  */
 void GDispSetMode (UCHAR mode)
 {
-#ifndef NOAVR
 	GDispCmdSend (mode);
-#endif
 }
 /*
 *********************************************************************************************************
@@ -169,7 +168,6 @@ void GDispSetMode (UCHAR mode)
  */
 void GDispClrTxt (void)
 {
-#ifndef NOAVR
 	UINT row;
 	UINT col;
 	//Set address pointer to address (TEXT_HOME_ADDR)
@@ -187,7 +185,6 @@ void GDispClrTxt (void)
 	}
 	//Set Auto Write OFF
 	GDispCmdSend (AUTO_WR_OFF);
-#endif
 }
 /*
 *********************************************************************************************************
@@ -274,13 +271,9 @@ void GDispChar (UCHAR c)
  */
 void GDispCharAt (UINT row, UINT col, UCHAR c)
 {
-#ifndef NOAVR
 	GDispGoto (row, col);
 	GDispDataWr (c - 0x20);
 	GDispCmdSend (DATA_WR);
-#else
-	mvwaddch(win,row+3,col+5,c);
-#endif
 }
 
 void GDispStringAt(UINT row, UINT col, char *c)
@@ -289,7 +282,7 @@ void GDispStringAt(UINT row, UINT col, char *c)
 	int i;
 	str = c;
 	i = 0;
-#ifndef NOAVR
+
 	while(*(str+i) != 0)
 	{
 		GDispCharAt(row,col+i,*(str+i));
@@ -297,11 +290,6 @@ void GDispStringAt(UINT row, UINT col, char *c)
 		if(i > 100)
 			return;
 	}
-#else
-	mvwprintw(win,row+2,7+(col+i),"%s",str);
-//	mvwprintw(win, 25,5,"test");
-#endif
-
 }
 /*
 *********************************************************************************************************
@@ -322,7 +310,6 @@ void GDispStringAt(UINT row, UINT col, char *c)
  */
 void GDispSetCursor (UCHAR mode, UINT row, UINT col, UCHAR type)
 {
-#ifndef NOAVR
 	UINT addr;
 	addr = row << 8;
 	addr = addr | (col & 0x00FF);
@@ -330,7 +317,6 @@ void GDispSetCursor (UCHAR mode, UINT row, UINT col, UCHAR type)
 	GDispCmdSend (CURSOR_PTR_SET); //Set cursor position
 	GDispCmdSend (mode);
 	GDispCmdSend (type); //cursor mode
-#endif
 }
 /*
 *********************************************************************************************************
@@ -378,9 +364,8 @@ void GDispSetPixel (UINT X, UINT Y, UCHAR color)
  */
 void GDispInitPort (void)
 {
-#ifndef NOAVR
 	DDRC |= 0x0F;	// set all used bits as outputs
-	DDRB |= 0x07;
+	DDRB |= 0x03;
 	DDRD |= 0xFC;
 	CLR_RST();
 	SET_CD();
@@ -398,7 +383,6 @@ void GDispInitPort (void)
 	_CB(PORTB,DATA7);
 
 	SET_RST();
-#endif
 }
 /*
 *********************************************************************************************************
@@ -412,7 +396,6 @@ void GDispInitPort (void)
  */
 void GDispBusyChk (void)
 {
-#ifndef NOAVR
   int i;
   GDispCmdRd ();
   GDispChipEn;
@@ -423,7 +406,6 @@ void GDispBusyChk (void)
 	while(!_BV(DATA1))
 	;
 	GDispChipDi; //Chip disable to finish
-#endif
 }
 
 /*
@@ -438,7 +420,6 @@ void GDispBusyChk (void)
  */
 void GDispAutoWrChk (void)
 {
-#ifndef NOAVR
 	int i;
 	GDispCmdRd ();
 	GDispChipEn;
@@ -446,9 +427,18 @@ void GDispAutoWrChk (void)
 	_delay_us(TIME_DELAY);
 	while(!_BV(DATA3));
 	GDispChipDi;
-#endif
 }
 
+void GDispPeekChk (void)
+{
+	int i;
+	GDispCmdRd ();
+	GDispChipEn;
+	for (i = 0; i < 2; i++)
+	_delay_us(TIME_DELAY);
+	while(!_BV(DATA6));
+	GDispChipDi;
+}
 /*
 *********************************************************************************************************
  *                                           WRITE DATA TO LCD MODULE
@@ -461,7 +451,6 @@ void GDispAutoWrChk (void)
  */
 void GDispDataWr (UCHAR data)
 {
-#ifndef NOAVR
 	  int i;
 	  GDispBusyChk (); // Wait for LCD to be ready
 	  Data_Out (data);
@@ -472,7 +461,6 @@ void GDispDataWr (UCHAR data)
 	  for (i = 0; i < 2; i++)
 		_delay_us(TIME_DELAY);
 	  GDispChipDi;
-#endif
 }
 
 /*
@@ -487,7 +475,6 @@ void GDispDataWr (UCHAR data)
  */
 void GDispAutoDataWr (UCHAR data)
 {
-#ifndef NOAVR
 	int i;
 	GDispAutoWrChk (); // Auto write mode check
 	Data_Out (data);
@@ -500,7 +487,6 @@ void GDispAutoDataWr (UCHAR data)
 		_delay_us (TIME_DELAY);
 
 	GDispChipDi;
-#endif
 }
 
 /*
@@ -515,7 +501,6 @@ void GDispAutoDataWr (UCHAR data)
  */
 void GDispCmdSend (UCHAR cmd)
 {
-#ifndef NOAVR
 	int i;
 	GDispBusyChk (); // Wait for LCD to be ready
 	Data_Out (cmd);
@@ -525,7 +510,6 @@ void GDispCmdSend (UCHAR cmd)
 		_delay_us(TIME_DELAY);
 
 	GDispChipDi;
-#endif
 }
 
 /*
@@ -549,9 +533,32 @@ void GDispCmdSend (UCHAR cmd)
  */
 void Data_Out (UCHAR data)
 {
-#ifndef NOAVR
 	PORTD = 0xFC & (data << 2);
 	PORTB = 0x03 & (data >> 6);
-#endif
+}
+
+UCHAR Data_In (void)
+{
+	UCHAR ret = 0;
+	UCHAR ret2 = 0;
+
+	DDRB &= 0xFC;
+	DDRD &= 0x03;
+	_delay_us(1);
+
+	ret = PORTD;
+	_delay_us(1);
+	ret &= 0xFC;
+	ret <<= 2;
+
+	ret2 = PORTB;
+	_delay_us(1);
+	ret2 &= 0xC0;
+	ret2 >>= 6;
+	ret |= ret2;
+
+	DDRB |= 0x03;
+	DDRD |= 0xFC;
+	return ret;
 }
 
