@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include "USART.h"
 #include "t6963.h"
+#include "spi.h"
 #include "macros.h"
 #include <string.h>
 //#include "main.h"
@@ -36,7 +37,7 @@ int main(void)
 //	GDispStringAt(1,1,"LCD is on!");
 
     initUSART();
-
+	initSPImaster();
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
@@ -69,6 +70,7 @@ int main(void)
 				}
 */
 				transmitByte(read_byte);
+				SPI_write(read_byte);
 //				transmitByte(xbyte);
 //				xbyte++;
 				if(++xbyte > 0x7e)
