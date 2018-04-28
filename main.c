@@ -71,26 +71,24 @@ int main(void)
     while (1)
     {
 //		xbyte = receiveByte();
-		_delay_ms(2);
+		_delay_ms(5);
 		GDispCharAt(row,col,xbyte);
 		transmitByte(xbyte);
 //		if(++xbyte > 0x7e)
 		if(++i > 40)
 		{
-			xbyte = 0x30;
+			xbyte = 0x21;
 			i = 0;
 		}else xbyte++;
+
 		if(++col > COLUMN-1)
 		{
 			col = 0;
 			if(++row > ROWS-1)
 			{
 				row = 0;
-				_delay_ms(1000);
+				_delay_ms(600);
 				GDispClrTxt();
-				j++;
-				col = COLUMN;
-				row = ROWS;
 			}
 		}
 //		transmitByte(key);
