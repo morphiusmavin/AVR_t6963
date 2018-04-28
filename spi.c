@@ -17,7 +17,18 @@ void initSPImaster(void)
 
 /* Don't have to set phase, polarity b/c
  * default works with 25LCxxx chips */
-	SPCR |= (1 << SPR0);						  /* div 16, safer for breadboards */
+	// 16K baud
+	SPCR |= (1 << SPR0);
+	SPCR |= (1 << SPR1);
+	
+	// 125K baud
+//	SPCR |= (1 << SPR0);
+
+	// 33K baud
+//	SPCR |= (1 << SPR1);
+
+//  otherwise if SPR0 & SPR1 not set: 500K baud
+	
 	SPCR |= (1 << MSTR);						  /* clockmaster */
 	SPCR |= (1 << SPE);							  /* enable */
 }

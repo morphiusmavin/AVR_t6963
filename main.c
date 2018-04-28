@@ -11,22 +11,40 @@
 #include <stdlib.h>
 #include "USART.h"
 #include "t6963.h"
-#include "spi.h"
+//#include "spi.h"
 #include "macros.h"
 #include <string.h>
 //#include "main.h"
 #include <stdio.h>
 #include <stdlib.h>
 
+#define LEN 200
+#define DEBUG_CHAR_AT 0
+#define DEBUG_STRING_AT 1
+#define DEBUG_SET_CURSOR 2
+#define DEBUG_CLRSCR1 3
+#define DEBUG_CLRSCR2 4
+#define DEBUG_CLRSCR3 5
+#define DEBUG_MSG1 6
+#define COLUMN              40      //Set column number to be e.g. 32 for 8x8 fonts, 2 pages
+#define ROWS                16
+// really cranking
+#define TIME_DELAY 2
+
 int main(void)
 {
 	int i,j,k;
 	UCHAR xbyte;
-	UCHAR read_byte;
-	UINT offset;
+	UCHAR ch;
+	UCHAR key;
+	UCHAR buff[LEN];
+	UCHAR row, col, mode, type;
+	char str[30];
+	UCHAR str_len;
 
 //#if 0
 	GDispInit();
+    initUSART();
 //	GDispCmdAddrSend (0x0002, OFFSET_REG_SET);
 	_delay_us(10);
 	GDispSetMode(XOR_MODE);
@@ -38,73 +56,98 @@ int main(void)
 	GDispStringAt(7,15,"LCD is on!");
 //#endif
 
-    initUSART();
 //	initSPImaster();
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
-	_delay_ms(3000);
+	_delay_ms(1000);
 	GDispStringAt(7,15,"          ");
-	_delay_us(10);
 
-//	xbyte = 0x30;
-	xbyte = 0x21;
+	xbyte = 0x30;
 	
 	i = 0;
 	k = 0;
-	offset = 0;
-		
+	col = row = 0;		
     while (1)
     {
-//		xbyte = pxbyte;
-		for(i = 0;i < ROWS;i++)
+//		xbyte = receiveByte();
+		_delay_ms(2);
+		GDispCharAt(row,col,xbyte);
+		transmitByte(xbyte);
+//		if(++xbyte > 0x7e)
+		if(++i > 40)
 		{
-			for(j = 0;j < COLUMN;j++)
+			xbyte = 0x30;
+			i = 0;
+		}else xbyte++;
+		if(++col > COLUMN-1)
+		{
+			col = 0;
+			if(++row > ROWS-1)
 			{
-				if(j % 4 == 0)
-				{
-					CLR_TEST1();
-					SET_TEST2();
-				}
-				GDispCharAt(i,j,xbyte);
-
-				if(++k > 30)
-				{
-//					transmitByte(0xFE);
-					k = 0;
-				}
-
-				_delay_us(2);
-				xbyte = receiveByte();
-				_delay_us(2);
-
-//				if(++xbyte > 0x7e)
-//					xbyte = 0x21;
-//				_delay_ms(20);
-
-				if(xbyte > 0x1f && xbyte < 0x7e)
-					transmitByte(xbyte);
-//				_delay_us(10);
-//				SPI_write(xbyte);
-//				_delay_us(10);
-
-
-				if(j % 4 == 0)
-				{
-					SET_TEST1();
-					CLR_TEST2();
-				}
+				row = 0;
+				_delay_ms(1000);
+				GDispClrTxt();
+				j++;
+				col = COLUMN;
+				row = ROWS;
 			}
 		}
-//		_delay_ms(1000);
+//		transmitByte(key);
+//    	_delay_ms(10);
 /*
-		GDispCharAt(ROWS-1,COLUMN-1,0x20);	// put spaces at all 4 corners
-		GDispCharAt(0,COLUMN-1,0x20);
-		GDispCharAt(0,0,0x20);
-		GDispCharAt(ROWS-1,0,0x20);
+		buff[i] = key;
+		i++;
+		if(key == 0xfe)
+		{
+			switch(buff[0])
+			{
+				case DEBUG_CHAR_AT:
+					row = buff[1];
+					col = buff[2];
+					ch = buff[3];
+					GDispCharAt((UINT)row,(UINT)col,ch);
+				break;
+				case DEBUG_STRING_AT:
+					row = buff[1];
+					col = buff[2];
+					str_len = buff[3];
+
+					memset(str,0x20,sizeof(str));	
+					memcpy(str,&buff[4],str_len);
+					str[str_len] = 0;
+					GDispStringAt((UINT)row,(UINT)col,str);
+				break;
+				case DEBUG_SET_CURSOR:
+					mode = buff[1];
+					row = buff[2];
+					col = buff[3];
+					type = buff[4];
+					GDispSetCursor(mode,(UINT)row,(UINT)col,type);
+				break;
+				case DEBUG_CLRSCR3:
+					GDispClrTxt();
+				break;
+				case DEBUG_MSG1:
+					row = buff[2];
+					row <<= 8;
+					row |= buff[1];
+					col = buff[4];
+					col <<= 8;
+					col |= buff[3];
+					str_len = buff[5];
+					memset(str,0x20,sizeof(str));	
+					memcpy(str,&buff[7],str_len);
+					str[str_len] = 0;
+				break;
+				default:
+				break;
+			}
+			i = 0;
+		}
 */
-		GDispClrTxt();
 	}
     return (0);		// this should never happen
 }
+
 

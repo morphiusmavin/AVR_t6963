@@ -49,7 +49,9 @@
 #define T6963_H
 #if 1
 //Control pin setting
-//#define NEW_PIN
+#define NEW_PIN		// swap B2 with C4 because B2 doubles as SS and I wanted
+					// to use the SPI port - C4 is 'snuck in there' behind PC2 & 3
+					// on the middle right with the reset button on the bottom
 #ifdef NEW_PIN
 #define TEST_PIN1	PORTB2
 #define LCD_RD		PORTC4       // LCD Read control line  pin number (D10)
@@ -74,8 +76,18 @@
 #define DATA6		PORTB0		// D8
 #define DATA7		PORTB1		// D9
 
+#ifdef NEW_PIN
+#define SET_RD()	_SB(PORTC,LCD_RD)
+#define CLR_RD()	_CB(PORTC,LCD_RD)
+#define SET_TEST1()	_SB(PORTB,TEST_PIN1)
+#define CLR_TEST1()	_CB(PORTB,TEST_PIN1)
+#else
+#define SET_RD()	_SB(PORTB,LCD_RD)
+#define CLR_RD()	_CB(PORTB,LCD_RD)
 #define SET_TEST1()	_SB(PORTC,TEST_PIN1)
 #define CLR_TEST1()	_CB(PORTC,TEST_PIN1)
+#endif
+
 #define SET_TEST2()	_SB(PORTC,TEST_PIN2)
 #define CLR_TEST2()	_CB(PORTC,TEST_PIN2)
 
@@ -83,12 +95,11 @@
 #define SET_CE()	_SB(PORTC,LCD_CE)
 #define SET_RST()	_SB(PORTC,LCD_RST)
 #define SET_CD()	_SB(PORTC,LCD_CD)
-#define SET_RD()	_SB(PORTB,LCD_RD)
+
 #define CLR_WR()	_CB(PORTC,LCD_WR)
 #define CLR_CE()	_CB(PORTC,LCD_CE)
 #define CLR_RST()	_CB(PORTC,LCD_RST)
 #define CLR_CD()	_CB(PORTC,LCD_CD)
-#define CLR_RD()	_CB(PORTB,LCD_RD)
 
 #define SET_DATA_DIR_OUT()	DDRB |= 0x03;	\
 							DDRD |= 0xFC;
