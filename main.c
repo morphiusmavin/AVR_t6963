@@ -25,6 +25,7 @@ int main(void)
 	UCHAR read_byte;
 	UINT offset;
 
+//#if 0
 	GDispInit();
 //	GDispCmdAddrSend (0x0002, OFFSET_REG_SET);
 	_delay_us(10);
@@ -34,14 +35,16 @@ int main(void)
 	GDispSetMode(TEXT_ON);
 	_delay_us(10);
 	GDispClrTxt();
-//	GDispStringAt(1,1,"LCD is on!");
+	GDispStringAt(7,15,"LCD is on!");
+//#endif
 
     initUSART();
-	initSPImaster();
+//	initSPImaster();
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
-//	GDispClrTxt();
+	_delay_ms(3000);
+	GDispStringAt(7,15,"          ");
 	_delay_us(10);
 
 //	xbyte = 0x30;
@@ -58,27 +61,42 @@ int main(void)
 		{
 			for(j = 0;j < COLUMN;j++)
 			{
+				if(j % 4 == 0)
+				{
+					CLR_TEST1();
+					SET_TEST2();
+				}
 				GDispCharAt(i,j,xbyte);
-//				read_byte = GDispScreenPeek(i,j);
-				if(++offset > 640)
-					offset = 0;
-/*
+
 				if(++k > 30)
 				{
-					transmitByte(0xFE);
+//					transmitByte(0xFE);
 					k = 0;
 				}
-*/
-				transmitByte(read_byte);
-				SPI_write(read_byte);
-//				transmitByte(xbyte);
-//				xbyte++;
-				if(++xbyte > 0x7e)
-					xbyte = 0x21;
-				_delay_ms(1);
+
+				_delay_us(2);
+				xbyte = receiveByte();
+				_delay_us(2);
+
+//				if(++xbyte > 0x7e)
+//					xbyte = 0x21;
+//				_delay_ms(20);
+
+				if(xbyte > 0x1f && xbyte < 0x7e)
+					transmitByte(xbyte);
+//				_delay_us(10);
+//				SPI_write(xbyte);
+//				_delay_us(10);
+
+
+				if(j % 4 == 0)
+				{
+					SET_TEST1();
+					CLR_TEST2();
+				}
 			}
 		}
-		_delay_ms(500);
+//		_delay_ms(1000);
 /*
 		GDispCharAt(ROWS-1,COLUMN-1,0x20);	// put spaces at all 4 corners
 		GDispCharAt(0,COLUMN-1,0x20);

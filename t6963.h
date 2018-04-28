@@ -49,12 +49,22 @@
 #define T6963_H
 #if 1
 //Control pin setting
+//#define NEW_PIN
+#ifdef NEW_PIN
+#define TEST_PIN1	PORTB2
+#define LCD_RD		PORTC4       // LCD Read control line  pin number (D10)
+#else
+#define TEST_PIN1	PORTC4
+#define LCD_RD		PORTB2       // LCD Read control line  pin number (D10)
+#endif
+
+#define TEST_PIN2	PORTC5
 #define LCD_WR		PORTC0        // LCD Write control line pin number (A0)
 #define LCD_CE		PORTC1       // LCD Enable control line pin number (A1)
 #define LCD_RST		PORTC2        // LCD RST_ line (A2)
 //#define LCD_FS		PORTC,3        // LCD font select (this one just tied low)
 #define LCD_CD		PORTC3       // LCD Control/data Select line (A3)
-#define LCD_RD		PORTB2       // LCD Read control line  pin number (D10)
+
 #define DATA0		PORTD2		// D2
 #define DATA1		PORTD3		// D3
 #define DATA2		PORTD4		// D4
@@ -63,6 +73,11 @@
 #define DATA5		PORTD7		// D7
 #define DATA6		PORTB0		// D8
 #define DATA7		PORTB1		// D9
+
+#define SET_TEST1()	_SB(PORTC,TEST_PIN1)
+#define CLR_TEST1()	_CB(PORTC,TEST_PIN1)
+#define SET_TEST2()	_SB(PORTC,TEST_PIN2)
+#define CLR_TEST2()	_CB(PORTC,TEST_PIN2)
 
 #define SET_WR()	_SB(PORTC,LCD_WR)
 #define SET_CE()	_SB(PORTC,LCD_CE)

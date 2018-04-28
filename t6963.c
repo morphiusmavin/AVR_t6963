@@ -365,6 +365,7 @@ void GDispSetPixel (UINT X, UINT Y, UCHAR color)
 void GDispInitPort (void)
 {
 	DDRC |= 0x0F;	// set all used bits as outputs
+	DDRC |= 0x30;	// set the TEST_PINs as output
 	DDRB |= 0x03;
 	DDRD |= 0xFC;
 	CLR_RST();
