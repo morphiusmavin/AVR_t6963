@@ -53,6 +53,7 @@
 					// to use the SPI port - C4 is 'snuck in there' behind PC2 & 3
 					// on the middle right with the reset button on the bottom
 #ifdef NEW_PIN
+#warning "NEW_PIN defined"
 #define TEST_PIN1	PORTB2
 #define LCD_RD		PORTC4       // LCD Read control line  pin number (D10)
 #else
@@ -60,7 +61,7 @@
 #define LCD_RD		PORTB2       // LCD Read control line  pin number (D10)
 #endif
 
-#define TEST_PIN2	PORTC5
+#define PWM_PIN		PORTC5			// used for dimming display
 #define LCD_WR		PORTC0        // LCD Write control line pin number (A0)
 #define LCD_CE		PORTC1       // LCD Enable control line pin number (A1)
 #define LCD_RST		PORTC2        // LCD RST_ line (A2)
@@ -88,8 +89,8 @@
 #define CLR_TEST1()	_CB(PORTC,TEST_PIN1)
 #endif
 
-#define SET_TEST2()	_SB(PORTC,TEST_PIN2)
-#define CLR_TEST2()	_CB(PORTC,TEST_PIN2)
+#define SET_PWM()	_SB(PORTC,PWM_PIN)
+#define CLR_PWM()	_CB(PORTC,PWM_PIN)
 
 #define SET_WR()	_SB(PORTC,LCD_WR)
 #define SET_CE()	_SB(PORTC,LCD_CE)

@@ -4,6 +4,7 @@
 // main program that drives the t6963 LCD (32 col x 15 row) display - text only
 // see t6963_notes.txt for more details
 #include <avr/io.h>
+#include<avr/interrupt.h>
 //#include "../avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
 #include "../../Atmel_other/avr8-gnu-toolchain-linux_x86/avr/include/util/delay.h"
 #include "sfr_helper.h"
@@ -11,7 +12,7 @@
 #include <stdlib.h>
 #include "USART.h"
 #include "t6963.h"
-//#include "spi.h"
+#include "spi.h"
 #include "macros.h"
 #include <string.h>
 //#include "main.h"
@@ -19,112 +20,216 @@
 #include <stdlib.h>
 
 #define LEN 200
-#define DEBUG_CHAR_AT 0
-#define DEBUG_STRING_AT 1
-#define DEBUG_SET_CURSOR 2
-#define DEBUG_CLRSCR1 3
-#define DEBUG_CLRSCR2 4
-#define DEBUG_CLRSCR3 5
-#define DEBUG_MSG1 6
+#define DEBUG_CHAR_AT		0
+#define DEBUG_STRING_AT		1
+#define DEBUG_CHAR			2
+#define DEBUG_GOTO			3
+#define DEBUG_SET_MODE		4
+#define DEBUG_CLRSCR1		5
+#define DEBUG_CLRSCR2		6
+#define DEBUG_CLRSCR3		7
+#define DEBUG_MSG1			8
+#define DEBUG_SETPWM		9
+
 #define COLUMN              40      //Set column number to be e.g. 32 for 8x8 fonts, 2 pages
 #define ROWS                16
 // really cranking
 #define TIME_DELAY 2
+volatile UCHAR pwm_on;
+volatile UCHAR pwm_off;
+volatile UCHAR opwm_on;
+volatile UCHAR opwm_off;
+volatile UCHAR xbyte;
+
+volatile int onoff;
+volatile int dc2;
+
+ISR(TIMER1_OVF_vect) 
+{ 
+/*
+	if(++dc2 % 1000 == 0)
+	{
+		if(++xbyte > 0x7e)
+		{
+			xbyte = 0x21;
+		}
+		transmitByte(xbyte);
+	}
+*/
+	if(onoff == 1)
+	{
+		if(--pwm_on < 2)
+		{
+			pwm_on = opwm_on;
+			CLR_PWM();
+			onoff = 0;
+		}
+	}else
+	{	
+		if(--pwm_off < 2)
+		{
+			pwm_off = opwm_off;
+			SET_PWM();
+			onoff = 1;
+		}
+	}
+
+	TCNT1 = 0xFFFF;
+}
 
 int main(void)
 {
 	int i,j,k;
-	UCHAR xbyte;
 	UCHAR ch;
 	UCHAR key;
 	UCHAR buff[LEN];
-	UCHAR row, col, mode, type;
+	UCHAR mode, type;
+	UINT row, col;
 	char str[30];
 	UCHAR str_len;
+	UCHAR spi_ret;
+	UCHAR temp;
+
+	GDispInit();
+//	GDispInitPort();
+	_delay_ms(10);
+    initUSART();
+	_delay_ms(20);
+//	initSPImaster();
+//	initSPIslave();
 
 //#if 0
-	GDispInit();
-    initUSART();
-//	GDispCmdAddrSend (0x0002, OFFSET_REG_SET);
-	_delay_us(10);
 	GDispSetMode(XOR_MODE);
-//	GDispSetMode(EXT_CG_MODE);
 	_delay_us(10);
 	GDispSetMode(TEXT_ON);
 	_delay_us(10);
 	GDispClrTxt();
+	SET_PWM();
 	GDispStringAt(7,15,"LCD is on!");
-//#endif
+	_delay_us(100);
 
 //	initSPImaster();
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
-	_delay_ms(1000);
+	_delay_ms(2000);
 	GDispStringAt(7,15,"          ");
+	_delay_ms(2000);
+//#endif
 
-	xbyte = 0x30;
-	
-	i = 0;
-	k = 0;
-	col = row = 0;		
-    while (1)
-    {
-//		xbyte = receiveByte();
-		_delay_ms(5);
-		GDispCharAt(row,col,xbyte);
-		transmitByte(xbyte);
-//		if(++xbyte > 0x7e)
-		if(++i > 40)
-		{
-			xbyte = 0x21;
-			i = 0;
-		}else xbyte++;
+	xbyte = 0x21;
+	opwm_on = pwm_on = 50;
+	opwm_off = pwm_off = 50;
+	onoff = 1;
+	TCNT1 = 0xFFFF;
+	TCCR1A = 0x00;
+//	TCCR1B = (1<<CS10) | (1<<CS12);;  // Timer mode with 1024 prescler
+	TCCR1B = (1<<CS11);
+	TIMSK1 = (1 << TOIE1) ;   // Enable timer1 overflow interrupt(TOIE1)
+//	sei(); // Enable global interrupts by setting global interrupt enable bit in SREG
 
-		if(++col > COLUMN-1)
+#if 0
+	while(1)
+	{
+		for(row = 0;row < ROWS;row++)
 		{
-			col = 0;
-			if(++row > ROWS-1)
+			for(col = 0;col < COLUMN-1;col++)
 			{
-				row = 0;
-				_delay_ms(600);
-				GDispClrTxt();
+/*
+				xbyte = receiveByte();
+				if(xbyte == 0xFE)
+				{
+					GDispClrTxt();
+					row = col = 0;
+					xbyte = 0x21;
+				}
+*/
+//				GDispCharAt(row,col,xbyte);
+				pwm_off++;
+				pwm_on--;
+				if(pwm_off < 1)
+				{
+					pwm_off = 2;
+					pwm_on = 100;
+					onoff = 1;
+				}
+/*
+				if(++xbyte > 0x7e)
+				{
+					xbyte = 0x21;
+				}
+				transmitByte(xbyte);
+*/
+				_delay_ms(20);
 			}
 		}
-//		transmitByte(key);
-//    	_delay_ms(10);
+	}
+	_delay_ms(200);
+#endif
+//	GDispClrTxt();
+
+	i = 0;
+	dc2 = 0;
+
+
+	for(row = 0;row < ROWS;row++)
+	{
+		for(col = 0;col < COLUMN-1;col++)
+		{
+			GDispCharAt(row,col,xbyte);
+			if(++xbyte > 0x7e)
+			{
+				xbyte = 0x21;
+			}
+		}
+	}
+
+	row = col = 0;
+	
+    while (1)
+    {
+		key = receiveByte();
+//		GDispCharAt(0,0,key);
 /*
+		if(++dc2 % 2 == 0)
+			_SB(PORTB,PORTB1);
+		else
+			_CB(PORTB,PORTB1);
+*/
 		buff[i] = key;
 		i++;
+//#if 0
 		if(key == 0xfe)
 		{
 			switch(buff[0])
 			{
 				case DEBUG_CHAR_AT:
-					row = buff[1];
-					col = buff[2];
+					row = (UINT)buff[1];
+					col = (UINT)buff[2];
 					ch = buff[3];
-					GDispCharAt((UINT)row,(UINT)col,ch);
+//					GDispCharAt(row,col,ch);
 				break;
 				case DEBUG_STRING_AT:
-					row = buff[1];
-					col = buff[2];
+					row = (UINT)buff[1];
+					col = (UINT)buff[2];
 					str_len = buff[3];
 
 					memset(str,0x20,sizeof(str));	
 					memcpy(str,&buff[4],str_len);
 					str[str_len] = 0;
-					GDispStringAt((UINT)row,(UINT)col,str);
+//					GDispStringAt(row,col,str);
 				break;
-				case DEBUG_SET_CURSOR:
-					mode = buff[1];
-					row = buff[2];
-					col = buff[3];
-					type = buff[4];
-					GDispSetCursor(mode,(UINT)row,(UINT)col,type);
+				case DEBUG_CHAR:
+					ch = buff[1];
+//					GDispChar(ch);
+				break;
+				case DEBUG_GOTO:
+					row = (UINT)buff[1];
+					col = (UINT)buff[2];
+//					GDispGoto(row,col);
 				break;
 				case DEBUG_CLRSCR3:
-					GDispClrTxt();
+//					GDispClrTxt();
 				break;
 				case DEBUG_MSG1:
 					row = buff[2];
@@ -138,14 +243,47 @@ int main(void)
 					memcpy(str,&buff[7],str_len);
 					str[str_len] = 0;
 				break;
+				case DEBUG_SETPWM:
+
+					if(++dc2 % 2 == 0)
+						_SB(PORTB,PORTB2);
+					else
+						_CB(PORTB,PORTB2);
+
+					opwm_on = buff[1];
+					opwm_off = buff[2];
+					pwm_on = opwm_on;
+					pwm_off = opwm_off;
+					onoff = 1;
+					GDispCharAt(row,col,xbyte);
+					_delay_ms(2);
+					if(++xbyte > 0x7e)
+					{
+						xbyte = 0x21;
+					}
+					if(++col > COLUMN)
+					{
+						col = 0;
+						if(++row > ROWS)
+							row = 0;
+					}
+				break;
 				default:
 				break;
 			}
 			i = 0;
 		}
-*/
+//#endif
 	}
     return (0);		// this should never happen
 }
 
+#if 0
+ISR(SPI_STC_vect)
+{
+//	loop_until_bit_is_set(SPSR, SPIF);			  /* wait until done */
+//	spi_ret = SPDR;
+//	transmitByte(spi_ret);
+//}
+#endif
 

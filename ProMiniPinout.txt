@@ -152,10 +152,10 @@ GND		VCC
 3		A2
 4		A1
 5		A0
-6		13
-7		12
-8		11
-9		10
+6		13 SCLK
+7		12 MISO
+8		11 MOSI
+9		10 SS
 
 PORTS:
 PD1		RAW
@@ -179,11 +179,28 @@ pin labels on bottom left with reset button on left
 10 - SS
 reset - CS (when programming otherwise when using as SPI this goes to SS?)
 
-1 2 3 4 5 6
-1) MOSI			- 11 MOSI yellow clip
-2) MISO			- 12 MISO black regular clip
-3) CLK			- 13 SCLK other green clip
-4) RST			- white clip
-5) GND
-6) not connected
+ICD cable from programmer looking at hole side with cable up:
+
+1	2	3	4	5
+6	7	8	9	10
+
+1)  gnd
+2)  +5V
+3)  VPU
+4)  CLK
+5)  CS
+6)  3.3V
+7)  ADC
+8)  AUX
+9)  MOSI
+10) MISO
+(all I'm using, currently are 1,4,5,9 & 10)
+
+bottom view w/ reset button on right
+
+TX		RX		RESET*		gnd		PD2		PD3		PD4		PD5		PD6		PD7		PB0		PB1
+
+RAW		gnd		RESET*		VCC		PC3		PC2		PC1		PC0		PB5		PB4		PB3		PB2
+															SCLK	MISO	MOSI
+*either one goes to CS signal on programmer
 
