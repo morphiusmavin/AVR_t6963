@@ -23,6 +23,9 @@
 #define DEBUG_CHAR_AT		0
 #define DEBUG_STRING_AT		1
 #define DEBUG_CHAR			2
+// these are the only 2 commands we need to write to the screen
+// CHAR_CMD sends a char and the firmware will advance the cursor
+// otherwise send GOTO_CMD to set a new cursor postion
 #define DEBUG_GOTO			3
 #define DEBUG_SET_MODE		4
 #define DEBUG_CLRSCR1		5
@@ -63,7 +66,7 @@ ISR(TIMER1_OVF_vect)
 			onoff = 1;
 		}
 	}else SET_PWM();
-	TCNT1 = (UINT)((high_delay << 8) & 0xFF00);
+	TCNT1 = (UINT)((high_delay << 8) & 0xFFF0);
 //	TCNT1 = 0xF800;
 }
 
@@ -173,7 +176,13 @@ int main(void)
 				break;
 				case DEBUG_CHAR:
 					ch = buff[1];
-					GDispChar(ch);
+					GDispCharAt(row,col,ch);
+					if(++col > COLUMN)
+					{
+						col = 0;
+						if(++row > ROWS)
+							row = 0;
+					}
 				break;
 				case DEBUG_GOTO:
 					row = (UINT)buff[1];

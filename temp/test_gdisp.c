@@ -34,11 +34,14 @@ typedef struct dimmer
 #define FALSE 0
 #define TRUE 1
 #define LEN 200
-#define TIME_DELAY 1000
+#define TIME_DELAY 200
 #define ROWS 16
 #define COLUMN 40
 #define CHAR_AT_CMD		0
 #define STRING_AT_CMD		1
+// these are the only 2 commands we need to write to the screen
+// CHAR_CMD sends a char and the firmware will advance the cursor
+// otherwise send GOTO_CMD to set a new cursor postion
 #define CHAR_CMD		2
 #define GOTO_CMD		3
 #define SET_MODE_CMD 		4
@@ -135,7 +138,7 @@ int main(void)
 	{
 		dim[i].on  = 10-i;
 		dim[i].off = 1;
-		dim[i].delay = 0xF2-i;
+		dim[i].delay = 0xF5-i;
 		printf("%2d: on: %2d off: %2d delay %2x\n",i,dim[i].on,dim[i].off,dim[i].delay);
 	}
 
@@ -143,8 +146,8 @@ int main(void)
 	{
 		dim[i].on  = 2;
 		dim[i].off = i-9;
-//		dim[i].delay = 0xF0+i-15;
-		dim[i].delay = 0xFC;
+		dim[i].delay = 0xF0+i-4;
+//		dim[i].delay = 0xFC;
 		printf("%2d: off: %2d on: %2d delay %2x\n",i,dim[i].off,dim[i].on,dim[i].delay);
 	}
 
@@ -175,6 +178,27 @@ int main(void)
 	ch = 0x21;
 	ch3 = 0xfe;
 
+	ch = SET_PWM_CMD;
+	res2 = write(fd,(void*)&ch,1);
+	usleep(TIME_DELAY);
+
+//	ch = dim[dim_ptr].on;
+	ch = 0;
+	res2 = write(fd,(void*)&ch,1);
+	usleep(TIME_DELAY);
+
+//	ch = dim[dim_ptr].off;
+	res2 = write(fd,(void*)&ch,1);
+	usleep(TIME_DELAY);
+
+//	ch = dim[dim_ptr].delay;
+	ch = 0x10;
+	res2 = write(fd,(void*)&ch,1);
+	usleep(TIME_DELAY);
+
+	res2 = write(fd,(void*)&ch3,1);
+	usleep(TIME_DELAY);
+
 	ch2 = DEBUG_CLRSCR3;
 	write(fd,&ch2,1);
 	usleep(TIME_DELAY);
@@ -186,80 +210,18 @@ int main(void)
 	write(fd,&ch2,1);
 	usleep(TIME_DELAY);
 
-	ch = 12;	// row
-	write(fd,&ch,1);
-	usleep(TIME_DELAY);
-
-	ch = 20;	// col
-	write(fd,&ch,1);
-	usleep(TIME_DELAY);
-
-	write(fd,&ch3,1);
-	usleep(TIME_DELAY*10);
-
-	ch2 = CHAR_CMD;
-	write(fd,&ch2,1);
-	usleep(TIME_DELAY);
-	ch = 0x41;
-	write(fd,&ch,1);
-	usleep(TIME_DELAY);
-	write(fd,&ch3,1);
-
-	usleep(TIME_DELAY);
-	ch2 = GOTO_CMD;
-	write(fd,&ch2,1);
-	usleep(TIME_DELAY);
-
-	ch = 12;	// row
-	write(fd,&ch,1);
-	usleep(TIME_DELAY);
-
-	ch = 21;	// col
-	write(fd,&ch,1);
-	usleep(TIME_DELAY);
-
-	write(fd,&ch3,1);
-	usleep(TIME_DELAY);
-
-	ch2 = CHAR_CMD;
-	write(fd,&ch2,1);
-	usleep(TIME_DELAY);
-	ch = 0x42;
-	write(fd,&ch,1);
-	usleep(TIME_DELAY);
-	write(fd,&ch3,1);
-
-	usleep(TIME_DELAY*10);
-
-	strcpy(test_str,"hello xyz 123\0");
-	ch2 = STRING_AT_CMD;
-	write(fd,&ch2,1);
-	usleep(TIME_DELAY);
-
-	ch = 15;
-	write(fd,&ch,1);
-	usleep(TIME_DELAY);
-
 	ch = 0;
 	write(fd,&ch,1);
 	usleep(TIME_DELAY);
 
-	ch = (unsigned char)strlen(test_str);
 	write(fd,&ch,1);
 	usleep(TIME_DELAY);
 
-	for(i = 0;i < ch;i++)
-	{
-		ch = test_str[i];
-		write(fd,&ch,1);
-		usleep(TIME_DELAY);
-	}
-
 	write(fd,&ch3,1);
+	usleep(TIME_DELAY*300);
 
-	usleep(TIME_DELAY*1000);
 
-	ch2 = CHAR_AT_CMD;
+	ch2 = CHAR_CMD;
 	ch = 0x21;	// start with char '!'
 	row = col = 0;
 	dim_ptr = 0;
@@ -268,10 +230,7 @@ int main(void)
 	{
 		write(fd,&ch2,1);
 		usleep(TIME_DELAY);
-		write(fd,&row,1);
-		usleep(TIME_DELAY);
-		write(fd,&col,1);
-		usleep(TIME_DELAY);
+
 		write(fd,&ch,1);
 		usleep(TIME_DELAY);
 		write(fd,&ch3,1);
@@ -279,17 +238,12 @@ int main(void)
 		if(++ch > 0x7e)
 			ch = 0x21;
 
-		if(++col > COLUMN-1)
-		{
-			col = 0;
-			if(++row > ROWS-1)
-				row = 0;
-		}
-		usleep(TIME_DELAY*3);
-		if(++j > 200)
+		usleep(TIME_DELAY);
+
+		if(++j > 1000)
 		{
 			j = 0;
-			ch = 9;
+			ch = SET_PWM_CMD;
 			res2 = write(fd,(void*)&ch,1);
 			usleep(TIME_DELAY);
 
@@ -305,7 +259,7 @@ int main(void)
 			res2 = write(fd,(void*)&ch,1);
 			usleep(TIME_DELAY);
 
-			res2 = write(fd,(void*)&ch2,1);
+			res2 = write(fd,(void*)&ch3,1);
 
 			usleep(TIME_DELAY);
 			printf("dim_ptr: %d\n",dim_ptr);
@@ -313,6 +267,7 @@ int main(void)
 			if(++dim_ptr > 19)
 				dim_ptr = 0;
 		}
+
 	}
 	ch = 0xff;
 	write(fd,(void *)&ch,1);
