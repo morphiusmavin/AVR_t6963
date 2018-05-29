@@ -18,3 +18,11 @@ lib/t6963.o
 main_LCD.cx
 test.cx
 test1.cx
+do1.sh
+pin_test.cx
+temp/gdisp_str.c
+temp/test_read.c
+temp/test_read2.c
+temp/test_spi.c
+temp/test_write.c
+

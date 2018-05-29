@@ -30,4 +30,6 @@ git add spi.c
 git add LCD_pinout.png
 git add ProMiniPinout.txt
 git add spi.h
+git add temp/test_gdisp.c
+git add temp/test_pwm.c
 git status

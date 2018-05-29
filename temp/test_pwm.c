@@ -140,7 +140,7 @@ int main(void)
 
 	pwm_off = 0;
 	pwm_on = 10;
-	high_delay = 0xEB;
+	high_delay = 0xFB;
 	while(1)
 	{
 		ch = 9;

@@ -1,3 +1,4 @@
+// test_gdisp.c
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +10,16 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/time.h>
+
+typedef unsigned char UCHAR;
+typedef unsigned int UINT;
+
+typedef struct dimmer
+{
+	UCHAR on;
+	UCHAR off;
+	UCHAR delay;
+}DIMMER;
 
 //#define BAUDRATE B9600
 #define BAUDRATE B19200
@@ -108,12 +119,34 @@ int main(void)
 	int fd,c, res, res2;
 	int i,j;
 	int ret;
-	unsigned char ch, ch2, ch3;
+	UCHAR ch, ch2, ch3;
 	struct termios oldtio,newtio;
-	unsigned char buf[LEN];
+	UCHAR buf[LEN];
 	char test_str[20];
 	memset(&newtio, 0, sizeof newtio);
-	unsigned char row, col;
+	UCHAR row, col;
+	UCHAR pwm_on;
+	UCHAR pwm_off;
+	UCHAR high_delay;
+	DIMMER dim[20];
+	int dim_ptr;
+
+	for(i = 0;i < 10;i++)
+	{
+		dim[i].on  = 10-i;
+		dim[i].off = 1;
+		dim[i].delay = 0xF2-i;
+		printf("%2d: on: %2d off: %2d delay %2x\n",i,dim[i].on,dim[i].off,dim[i].delay);
+	}
+
+	for(i = 10;i < 20;i++)
+	{
+		dim[i].on  = 2;
+		dim[i].off = i-9;
+//		dim[i].delay = 0xF0+i-15;
+		dim[i].delay = 0xFC;
+		printf("%2d: off: %2d on: %2d delay %2x\n",i,dim[i].off,dim[i].on,dim[i].delay);
+	}
 
 	fd = open (MODEMDEVICE, O_RDWR | O_NOCTTY | O_SYNC);
 	if (fd <0) {perror(MODEMDEVICE);
@@ -136,21 +169,8 @@ int main(void)
 	set_blocking (fd, 1);
 
 	res2 = 0;
-	ch = '*';
-	j = 1;
-	for(j = 0;j < 92;j++)
-		printf("*");
-	printf("\n");
 	j = 0;
-//	printf("\n\nwaiting for chars...\n");
-	for(i = 0;i < LEN;i++)
-	{
-		buf[i] = ch;
-		if(++ch > 0x7e)
-			ch = 0x21;
-	}
-//	for(i = 0;i < LEN;i++)
-//		write(fd,&buf[i],1);
+	j = 0;
 	i = 0;
 	ch = 0x21;
 	ch3 = 0xfe;
@@ -160,7 +180,7 @@ int main(void)
 	usleep(TIME_DELAY);
 
 	write(fd,&ch3,1);
-	usleep(TIME_DELAY*1000);
+	usleep(TIME_DELAY*300);
 
 	ch2 = GOTO_CMD;
 	write(fd,&ch2,1);
@@ -175,7 +195,7 @@ int main(void)
 	usleep(TIME_DELAY);
 
 	write(fd,&ch3,1);
-	usleep(TIME_DELAY);
+	usleep(TIME_DELAY*10);
 
 	ch2 = CHAR_CMD;
 	write(fd,&ch2,1);
@@ -185,7 +205,7 @@ int main(void)
 	usleep(TIME_DELAY);
 	write(fd,&ch3,1);
 
-	usleep(TIME_DELAY*1000);
+	usleep(TIME_DELAY);
 	ch2 = GOTO_CMD;
 	write(fd,&ch2,1);
 	usleep(TIME_DELAY);
@@ -209,11 +229,41 @@ int main(void)
 	usleep(TIME_DELAY);
 	write(fd,&ch3,1);
 
+	usleep(TIME_DELAY*10);
+
+	strcpy(test_str,"hello xyz 123\0");
+	ch2 = STRING_AT_CMD;
+	write(fd,&ch2,1);
+	usleep(TIME_DELAY);
+
+	ch = 15;
+	write(fd,&ch,1);
+	usleep(TIME_DELAY);
+
+	ch = 0;
+	write(fd,&ch,1);
+	usleep(TIME_DELAY);
+
+	ch = (unsigned char)strlen(test_str);
+	write(fd,&ch,1);
+	usleep(TIME_DELAY);
+
+	for(i = 0;i < ch;i++)
+	{
+		ch = test_str[i];
+		write(fd,&ch,1);
+		usleep(TIME_DELAY);
+	}
+
+	write(fd,&ch3,1);
+
 	usleep(TIME_DELAY*1000);
 
 	ch2 = CHAR_AT_CMD;
 	ch = 0x21;	// start with char '!'
 	row = col = 0;
+	dim_ptr = 0;
+
 	while(1)
 	{
 		write(fd,&ch2,1);
@@ -235,12 +285,33 @@ int main(void)
 			if(++row > ROWS-1)
 				row = 0;
 		}
-		usleep(TIME_DELAY*10);
-		printf("%c",ch);
-		if(++j > 94)
+		usleep(TIME_DELAY*3);
+		if(++j > 200)
 		{
 			j = 0;
-			printf("\n");
+			ch = 9;
+			res2 = write(fd,(void*)&ch,1);
+			usleep(TIME_DELAY);
+
+			ch = dim[dim_ptr].on;
+			res2 = write(fd,(void*)&ch,1);
+			usleep(TIME_DELAY);
+
+			ch = dim[dim_ptr].off;
+			res2 = write(fd,(void*)&ch,1);
+			usleep(TIME_DELAY);
+
+			ch = dim[dim_ptr].delay;
+			res2 = write(fd,(void*)&ch,1);
+			usleep(TIME_DELAY);
+
+			res2 = write(fd,(void*)&ch2,1);
+
+			usleep(TIME_DELAY);
+			printf("dim_ptr: %d\n",dim_ptr);
+
+			if(++dim_ptr > 19)
+				dim_ptr = 0;
 		}
 	}
 	ch = 0xff;

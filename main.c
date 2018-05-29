@@ -33,8 +33,7 @@
 
 #define COLUMN              40      //Set column number to be e.g. 32 for 8x8 fonts, 2 pages
 #define ROWS                16
-// really cranking
-#define TIME_DELAY 2
+
 volatile UCHAR pwm_on;
 volatile UCHAR pwm_off;
 volatile UCHAR opwm_on;
@@ -47,16 +46,6 @@ volatile int dc2;
 
 ISR(TIMER1_OVF_vect) 
 { 
-/*
-	if(++dc2 % 1000 == 0)
-	{
-		if(++xbyte > 0x7e)
-		{
-			xbyte = 0x21;
-		}
-		transmitByte(xbyte);
-	}
-*/
 	if(onoff == 1)
 	{
 		if(--pwm_on < 2)
@@ -127,44 +116,6 @@ int main(void)
 	TIMSK1 = (1 << TOIE1) ;   // Enable timer1 overflow interrupt(TOIE1)
 	sei(); // Enable global interrupts by setting global interrupt enable bit in SREG
 
-#if 0
-	while(1)
-	{
-		for(row = 0;row < ROWS;row++)
-		{
-			for(col = 0;col < COLUMN-1;col++)
-			{
-/*
-				xbyte = receiveByte();
-				if(xbyte == 0xFE)
-				{
-					GDispClrTxt();
-					row = col = 0;
-					xbyte = 0x21;
-				}
-*/
-//				GDispCharAt(row,col,xbyte);
-				pwm_off++;
-				pwm_on--;
-				if(pwm_off < 1)
-				{
-					pwm_off = 2;
-					pwm_on = 100;
-					onoff = 1;
-				}
-/*
-				if(++xbyte > 0x7e)
-				{
-					xbyte = 0x21;
-				}
-				transmitByte(xbyte);
-*/
-				_delay_ms(20);
-			}
-		}
-	}
-	_delay_ms(200);
-#endif
 	GDispClrTxt();
 
 	i = 0;
@@ -184,7 +135,6 @@ int main(void)
 	}
 
 	_delay_ms(1000);
-	GDispClrTxt();
 
 	row = col = 0;
 	
