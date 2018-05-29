@@ -40,6 +40,7 @@ volatile UCHAR pwm_off;
 volatile UCHAR opwm_on;
 volatile UCHAR opwm_off;
 volatile UCHAR xbyte;
+volatile UCHAR high_delay;
 
 volatile int onoff;
 volatile int dc2;
@@ -64,7 +65,7 @@ ISR(TIMER1_OVF_vect)
 			CLR_PWM();
 			onoff = 0;
 		}
-	}else
+	}else if(onoff == 0)
 	{	
 		if(--pwm_off < 2)
 		{
@@ -72,9 +73,9 @@ ISR(TIMER1_OVF_vect)
 			SET_PWM();
 			onoff = 1;
 		}
-	}
-
-	TCNT1 = 0xFFFF;
+	}else SET_PWM();
+	TCNT1 = (UINT)((high_delay << 8) & 0xFF00);
+//	TCNT1 = 0xF800;
 }
 
 int main(void)
@@ -106,27 +107,25 @@ int main(void)
 	GDispClrTxt();
 	SET_PWM();
 	GDispStringAt(7,15,"LCD is on!");
-	_delay_us(100);
 
 //	initSPImaster();
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
 	_delay_ms(2000);
-	GDispStringAt(7,15,"          ");
-	_delay_ms(2000);
 //#endif
 
 	xbyte = 0x21;
-	opwm_on = pwm_on = 50;
-	opwm_off = pwm_off = 50;
-	onoff = 1;
-	TCNT1 = 0xFFFF;
+	opwm_on = pwm_on = 1;
+	opwm_off = pwm_off = 6;
+	onoff = 2;
+	high_delay = 0xF8;
+	TCNT1 = 0xFF00;
 	TCCR1A = 0x00;
 //	TCCR1B = (1<<CS10) | (1<<CS12);;  // Timer mode with 1024 prescler
 	TCCR1B = (1<<CS11);
 	TIMSK1 = (1 << TOIE1) ;   // Enable timer1 overflow interrupt(TOIE1)
-//	sei(); // Enable global interrupts by setting global interrupt enable bit in SREG
+	sei(); // Enable global interrupts by setting global interrupt enable bit in SREG
 
 #if 0
 	while(1)
@@ -166,23 +165,26 @@ int main(void)
 	}
 	_delay_ms(200);
 #endif
-//	GDispClrTxt();
+	GDispClrTxt();
 
 	i = 0;
 	dc2 = 0;
-
 
 	for(row = 0;row < ROWS;row++)
 	{
 		for(col = 0;col < COLUMN-1;col++)
 		{
 			GDispCharAt(row,col,xbyte);
+			_delay_ms(2);
 			if(++xbyte > 0x7e)
 			{
 				xbyte = 0x21;
 			}
 		}
 	}
+
+	_delay_ms(1000);
+	GDispClrTxt();
 
 	row = col = 0;
 	
@@ -207,7 +209,7 @@ int main(void)
 					row = (UINT)buff[1];
 					col = (UINT)buff[2];
 					ch = buff[3];
-//					GDispCharAt(row,col,ch);
+					GDispCharAt(row,col,ch);
 				break;
 				case DEBUG_STRING_AT:
 					row = (UINT)buff[1];
@@ -217,19 +219,19 @@ int main(void)
 					memset(str,0x20,sizeof(str));	
 					memcpy(str,&buff[4],str_len);
 					str[str_len] = 0;
-//					GDispStringAt(row,col,str);
+					GDispStringAt(row,col,str);
 				break;
 				case DEBUG_CHAR:
 					ch = buff[1];
-//					GDispChar(ch);
+					GDispChar(ch);
 				break;
 				case DEBUG_GOTO:
 					row = (UINT)buff[1];
 					col = (UINT)buff[2];
-//					GDispGoto(row,col);
+					GDispGoto(row,col);
 				break;
 				case DEBUG_CLRSCR3:
-//					GDispClrTxt();
+					GDispClrTxt();
 				break;
 				case DEBUG_MSG1:
 					row = buff[2];
@@ -244,29 +246,13 @@ int main(void)
 					str[str_len] = 0;
 				break;
 				case DEBUG_SETPWM:
-
-					if(++dc2 % 2 == 0)
-						_SB(PORTB,PORTB2);
-					else
-						_CB(PORTB,PORTB2);
-
-					opwm_on = buff[1];
-					opwm_off = buff[2];
-					pwm_on = opwm_on;
-					pwm_off = opwm_off;
-					onoff = 1;
-					GDispCharAt(row,col,xbyte);
-					_delay_ms(2);
-					if(++xbyte > 0x7e)
-					{
-						xbyte = 0x21;
-					}
-					if(++col > COLUMN)
-					{
-						col = 0;
-						if(++row > ROWS)
-							row = 0;
-					}
+					opwm_on = pwm_on = buff[1];
+					opwm_off = pwm_off = buff[2];
+					high_delay = buff[3];
+					if(pwm_off == 0)
+						onoff = 2;
+					else	
+						onoff = 1;
 				break;
 				default:
 				break;
