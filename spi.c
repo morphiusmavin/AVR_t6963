@@ -11,8 +11,8 @@ void initSPImaster(void)
 	SPI_SS_PORT |= (1 << SPI_SS);				  /* start off not selected (high) */
 
 	SPI_MOSI_DDR |= (1 << SPI_MOSI);			  /* output on MOSI */
-//	SPI_MISO_DDR |= (0 << SPI_MISO);			  /* input on MISO */
-//	SPI_MISO_PORT |= (1 << SPI_MISO);			  /* pullup on MISO */
+	SPI_MISO_DDR |= (0 << SPI_MISO);			  /* input on MISO */
+	SPI_MISO_PORT |= (1 << SPI_MISO);			  /* pullup on MISO */
 	SPI_SCK_DDR |= (1 << SPI_SCK);				  /* output on SCK */
 
 /* Don't have to set phase, polarity b/c
@@ -33,6 +33,20 @@ void initSPImaster(void)
 	SPCR |= (1 << SPE);							  /* enable */
 }
 
+void initSPIslave(void)
+{
+	SPI_SS_DDR |= (0 << SPI_SS);				  /* set SS input */
+	SPI_SS_PORT |= (1 << SPI_SS);				  /* start off not selected (high) */
+
+	SPI_MISO_DDR |= (1 << SPI_MISO);			  /* output on MOSI */
+	SPI_MOSI_DDR |= (0 << SPI_MOSI);			  /* input on MOSI */
+//	SPI_MOSI_PORT |= (1 << SPI_MOSI);			  /* pullup on MISO */
+	SPI_SCK_DDR |= (0 << SPI_SCK);				  /* input on SCK */
+
+//	SPCR &= (0 << CPOL);
+//	SPCR &= (0 << CPHA);
+	SPCR |= (1 << SPE);							  /* enable */
+}
 
 void SPI_write(uint8_t byte)
 {
@@ -42,23 +56,13 @@ void SPI_write(uint8_t byte)
 /* SPDR now contains the received byte */
 }
 
+// from avr/include/avr/sfr_defs.h
+//#define loop_until_bit_is_set(sfr, bit) do { } while (bit_is_clear(sfr, bit))
+// instead of polling here or using interrupt, modify the above macro
 uint8_t SPI_read(void)
 {
 	loop_until_bit_is_set(SPSR, SPIF);			  /* wait until done */
 	return SPDR;
 /* SPDR now contains the received byte */
-}
-
-void initSPIslave(void)
-{
-	SPI_SS_DDR |= (0 << SPI_SS);				  /* set SS intput */
-//	SPI_SS_PORT |= (1 << SPI_SS);				  /* start off not selected (high) */
-
-	SPI_MISO_DDR |= (1 << SPI_MISO);			  /* output on MOSI */
-	SPI_MOSI_DDR |= (0 << SPI_MOSI);			  /* input on MOSI */
-//	SPI_MOSI_PORT |= (1 << SPI_MOSI);			  /* pullup on MISO */
-	SPI_SCK_DDR |= (0 << SPI_SCK);				  /* input on SCK */
-
-	SPCR |= (1 << SPE);							  /* enable */
 }
 

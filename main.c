@@ -20,52 +20,35 @@
 #include <stdlib.h>
 
 #define LEN 200
-#define DEBUG_CHAR_AT		0
-#define DEBUG_STRING_AT		1
 #define DEBUG_CHAR			2
-// these are the only 2 commands we need to write to the screen
-// CHAR_CMD sends a char and the firmware will advance the cursor
-// otherwise send GOTO_CMD to set a new cursor postion
 #define DEBUG_GOTO			3
 #define DEBUG_SET_MODE		4
 #define DEBUG_CLRSCR1		5
 #define DEBUG_CLRSCR2		6
 #define DEBUG_CLRSCR3		7
 #define DEBUG_MSG1			8
-#define DEBUG_SETPWM		9
 
 #define COLUMN              40      //Set column number to be e.g. 32 for 8x8 fonts, 2 pages
 #define ROWS                16
 
-volatile UCHAR pwm_on;
-volatile UCHAR pwm_off;
-volatile UCHAR opwm_on;
-volatile UCHAR opwm_off;
 volatile UCHAR xbyte;
 volatile UCHAR high_delay;
 
 volatile int onoff;
 volatile int dc2;
+volatile UCHAR spi_ret;
 
 ISR(TIMER1_OVF_vect) 
 { 
-	if(onoff == 1)
-	{
-		if(--pwm_on < 2)
-		{
-			pwm_on = opwm_on;
-			CLR_PWM();
-			onoff = 0;
-		}
-	}else if(onoff == 0)
-	{	
-		if(--pwm_off < 2)
-		{
-			pwm_off = opwm_off;
-			SET_PWM();
-			onoff = 1;
-		}
-	}else SET_PWM();
+
+	if(+dc2 % 1000 == 0)
+		_SB(PORTD,DATA0);
+	else
+		_CB(PORTD,DATA0);
+	
+//		loop_until_bit_is_set(SPSR, SPIF);			  /* wait until done */
+//		spi_ret = SPDR;
+
 	TCNT1 = (UINT)((high_delay << 8) & 0xFFF0);
 //	TCNT1 = 0xF800;
 }
@@ -80,56 +63,88 @@ int main(void)
 	UINT row, col;
 	char str[30];
 	UCHAR str_len;
-	UCHAR spi_ret;
 	UCHAR temp;
 
-	GDispInit();
+//	GDispInit();
 //	GDispInitPort();
 	_delay_ms(10);
     initUSART();
 	_delay_ms(20);
 //	initSPImaster();
-//	initSPIslave();
+	initSPIslave();
 
-//#if 0
+#if 0
 	GDispSetMode(XOR_MODE);
 	_delay_us(10);
 	GDispSetMode(TEXT_ON);
 	_delay_us(10);
 	GDispClrTxt();
-	SET_PWM();
 	GDispStringAt(7,15,"LCD is on!");
 
 //	initSPImaster();
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
-	_delay_ms(2000);
-//#endif
+	_delay_ms(1000);
+#endif
 
 	xbyte = 0x21;
-	opwm_on = pwm_on = 1;
-	opwm_off = pwm_off = 6;
-	onoff = 2;
-	high_delay = 0xF8;
-	TCNT1 = 0xFF00;
-	TCCR1A = 0x00;
+	DDRD |= 0x04;
+//	TCNT1 = 0xFF00;
+//	TCCR1A = 0x00;
 //	TCCR1B = (1<<CS10) | (1<<CS12);;  // Timer mode with 1024 prescler
-	TCCR1B = (1<<CS11);
-	TIMSK1 = (1 << TOIE1) ;   // Enable timer1 overflow interrupt(TOIE1)
-	sei(); // Enable global interrupts by setting global interrupt enable bit in SREG
-
-	GDispClrTxt();
+//	TCCR1B = (1<<CS11);
+//	TIMSK1 = (1 << TOIE1) ;   // Enable timer1 overflow interrupt(TOIE1)
+//	sei(); // Enable global interrupts by setting global interrupt enable bit in SREG
 
 	i = 0;
 	dc2 = 0;
 
+	while(1)
+	{	
+#if 0
+		loop_until_bit_is_set(SPSR, SPIF);			  /* wait until done */
+		spi_ret = SPDR;
+		_delay_ms(2);
+
+		transmitByte(spi_ret);
+//		SPI_write(j++);
+//		SPDR = (UCHAR)j++;
+#endif
+		if(+dc2 % 2 == 0)
+			_SB(PORTD,DATA0);
+		else
+			_CB(PORTD,DATA0);
+
+		if(++xbyte > 0x7e)
+		{
+			xbyte = 0xFE;
+			transmitByte(xbyte);
+			xbyte = 0x21;
+		}
+		transmitByte(xbyte);
+		_delay_ms(2);
+#if 0
+		transmitByte(xbyte);
+		_delay_ms(20);
+
+		if(++xbyte > 0x7e)
+		{
+			xbyte = 0xFE;
+			transmitByte(xbyte);
+			xbyte = (UCHAR)i++;
+		}
+#endif
+
+	}
+
+/*
 	for(row = 0;row < ROWS;row++)
 	{
 		for(col = 0;col < COLUMN-1;col++)
 		{
 			GDispCharAt(row,col,xbyte);
-			_delay_ms(2);
+			_delay_ms(1);
 			if(++xbyte > 0x7e)
 			{
 				xbyte = 0x21;
@@ -139,6 +154,8 @@ int main(void)
 
 	_delay_ms(1000);
 
+	GDispClrTxt();
+*/
 	row = col = 0;
 	
     while (1)
@@ -158,30 +175,18 @@ int main(void)
 		{
 			switch(buff[0])
 			{
-				case DEBUG_CHAR_AT:
-					row = (UINT)buff[1];
-					col = (UINT)buff[2];
-					ch = buff[3];
-					GDispCharAt(row,col,ch);
-				break;
-				case DEBUG_STRING_AT:
-					row = (UINT)buff[1];
-					col = (UINT)buff[2];
-					str_len = buff[3];
-
-					memset(str,0x20,sizeof(str));	
-					memcpy(str,&buff[4],str_len);
-					str[str_len] = 0;
-					GDispStringAt(row,col,str);
-				break;
+/*
 				case DEBUG_CHAR:
 					ch = buff[1];
-					GDispCharAt(row,col,ch);
-					if(++col > COLUMN)
+					if(ch > 0x1F && ch < 0x7f)
 					{
-						col = 0;
-						if(++row > ROWS)
-							row = 0;
+						GDispCharAt(row,col,ch);
+						if(++col > COLUMN-1)
+						{
+							col = 0;
+							if(++row > ROWS-1)
+								row = 0;
+						}
 					}
 				break;
 				case DEBUG_GOTO:
@@ -192,6 +197,7 @@ int main(void)
 				case DEBUG_CLRSCR3:
 					GDispClrTxt();
 				break;
+*/
 				case DEBUG_MSG1:
 					row = buff[2];
 					row <<= 8;
@@ -203,15 +209,6 @@ int main(void)
 					memset(str,0x20,sizeof(str));	
 					memcpy(str,&buff[7],str_len);
 					str[str_len] = 0;
-				break;
-				case DEBUG_SETPWM:
-					opwm_on = pwm_on = buff[1];
-					opwm_off = pwm_off = buff[2];
-					high_delay = buff[3];
-					if(pwm_off == 0)
-						onoff = 2;
-					else	
-						onoff = 1;
 				break;
 				default:
 				break;
@@ -226,9 +223,8 @@ int main(void)
 #if 0
 ISR(SPI_STC_vect)
 {
-//	loop_until_bit_is_set(SPSR, SPIF);			  /* wait until done */
-//	spi_ret = SPDR;
-//	transmitByte(spi_ret);
-//}
+	loop_until_bit_is_set(SPSR, SPIF);			  /* wait until done */
+	spi_ret = SPDR;
+	transmitByte(spi_ret);
+}
 #endif
-

@@ -201,6 +201,6 @@ bottom view w/ reset button on right
 TX		RX		RESET*		gnd		PD2		PD3		PD4		PD5		PD6		PD7		PB0		PB1
 
 RAW		gnd		RESET*		VCC		PC3		PC2		PC1		PC0		PB5		PB4		PB3		PB2
-															SCLK	MISO	MOSI
+																	SCLK	MISO	MOSI	SS
 *either one goes to CS signal on programmer
 

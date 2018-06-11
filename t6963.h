@@ -49,17 +49,8 @@
 #define T6963_H
 #if 1
 //Control pin setting
-#define NEW_PIN		// swap B2 with C4 because B2 doubles as SS and I wanted
-					// to use the SPI port - C4 is 'snuck in there' behind PC2 & 3
-					// on the middle right with the reset button on the bottom
-#ifdef NEW_PIN
-#warning "NEW_PIN defined"
-#define TEST_PIN1	PORTB2
+#define SPI_SS		PORTB2
 #define LCD_RD		PORTC4       // LCD Read control line  pin number (D10)
-#else
-#define TEST_PIN1	PORTC4
-#define LCD_RD		PORTB2       // LCD Read control line  pin number (D10)
-#endif
 
 #define PWM_PIN		PORTC5			// used for dimming display
 #define LCD_WR		PORTC0        // LCD Write control line pin number (A0)
@@ -77,17 +68,10 @@
 #define DATA6		PORTB0		// D8
 #define DATA7		PORTB1		// D9
 
-#ifdef NEW_PIN
 #define SET_RD()	_SB(PORTC,LCD_RD)
 #define CLR_RD()	_CB(PORTC,LCD_RD)
-#define SET_TEST1()	_SB(PORTB,TEST_PIN1)
-#define CLR_TEST1()	_CB(PORTB,TEST_PIN1)
-#else
-#define SET_RD()	_SB(PORTB,LCD_RD)
-#define CLR_RD()	_CB(PORTB,LCD_RD)
-#define SET_TEST1()	_SB(PORTC,TEST_PIN1)
-#define CLR_TEST1()	_CB(PORTC,TEST_PIN1)
-#endif
+//#define SET_TEST1()	_SB(PORTB,TEST_PIN1)
+//#define CLR_TEST1()	_CB(PORTB,TEST_PIN1)
 
 #define SET_PWM()	_SB(PORTC,PWM_PIN)
 #define CLR_PWM()	_CB(PORTC,PWM_PIN)

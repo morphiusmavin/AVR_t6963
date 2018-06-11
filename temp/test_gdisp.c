@@ -1,4 +1,5 @@
 // test_gdisp.c
+// run this on the linux box connected to AVR via serial port to test pwm and write to screen commands
 
 #include <stdio.h>
 #include <stdlib.h>
