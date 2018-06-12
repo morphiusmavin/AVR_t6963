@@ -40,17 +40,23 @@ volatile UCHAR spi_ret;
 
 ISR(TIMER1_OVF_vect) 
 { 
+	if(++xbyte > 0x7e)
+	{
+		xbyte = 0xFE;
+		transmitByte(xbyte);
+		xbyte = 0x21 + (UCHAR)dc2;
+		if(++dc2 > 20)
+			dc2 = 0;
+	}
+	transmitByte(xbyte);
 
-	if(+dc2 % 1000 == 0)
-		_SB(PORTD,DATA0);
-	else
-		_CB(PORTD,DATA0);
-	
+	PORTD = high_delay++;
+
 //		loop_until_bit_is_set(SPSR, SPIF);			  /* wait until done */
 //		spi_ret = SPDR;
 
-	TCNT1 = (UINT)((high_delay << 8) & 0xFFF0);
-//	TCNT1 = 0xF800;
+//	TCNT1 = (UINT)((high_delay << 8) & 0xFFF0);
+	TCNT1 = 0xF000;	// this counts up so the lower, the slower (0xFFFF is the fastest)
 }
 
 int main(void)
@@ -71,7 +77,7 @@ int main(void)
     initUSART();
 	_delay_ms(20);
 //	initSPImaster();
-	initSPIslave();
+//	initSPIslave();
 
 #if 0
 	GDispSetMode(XOR_MODE);
@@ -89,13 +95,16 @@ int main(void)
 #endif
 
 	xbyte = 0x21;
-	DDRD |= 0x04;
-//	TCNT1 = 0xFF00;
-//	TCCR1A = 0x00;
-//	TCCR1B = (1<<CS10) | (1<<CS12);;  // Timer mode with 1024 prescler
-//	TCCR1B = (1<<CS11);
-//	TIMSK1 = (1 << TOIE1) ;   // Enable timer1 overflow interrupt(TOIE1)
-//	sei(); // Enable global interrupts by setting global interrupt enable bit in SREG
+	DDRD |= 0xFF;
+	TCNT1 = 0xFFF0;
+	TCCR1A = 0x00;
+	TCCR1B = (1<<CS10) | (1<<CS12);  // Timer mode with 1024 prescler
+	TCCR1B = (1<<CS10) | (1<<CS11);	// clk/64
+//	TCCR1B = (1<<CS11);	// clk/8	(see page 144 in datasheet)
+//	TCCR1B = (1<<CS10);	// no prescaling
+	
+	TIMSK1 = (1 << TOIE1) ;   // Enable timer1 overflow interrupt(TOIE1)
+	sei(); // Enable global interrupts by setting global interrupt enable bit in SREG
 
 	i = 0;
 	dc2 = 0;
@@ -111,31 +120,8 @@ int main(void)
 //		SPI_write(j++);
 //		SPDR = (UCHAR)j++;
 #endif
-		if(+dc2 % 2 == 0)
-			_SB(PORTD,DATA0);
-		else
-			_CB(PORTD,DATA0);
 
-		if(++xbyte > 0x7e)
-		{
-			xbyte = 0xFE;
-			transmitByte(xbyte);
-			xbyte = 0x21;
-		}
-		transmitByte(xbyte);
 		_delay_ms(2);
-#if 0
-		transmitByte(xbyte);
-		_delay_ms(20);
-
-		if(++xbyte > 0x7e)
-		{
-			xbyte = 0xFE;
-			transmitByte(xbyte);
-			xbyte = (UCHAR)i++;
-		}
-#endif
-
 	}
 
 /*
