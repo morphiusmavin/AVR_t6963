@@ -20,7 +20,10 @@ void initSPImaster(void)
 	// 16K baud
 	SPCR |= (1 << SPR0);
 	SPCR |= (1 << SPR1);
-	
+
+//	SPCR &= (0 << CPOL);
+//	SPCR &= (0 << CPHA);
+
 	// 125K baud
 //	SPCR |= (1 << SPR0);
 
@@ -50,9 +53,12 @@ void initSPIslave(void)
 
 void SPI_write(uint8_t byte)
 {
+	SPI_SS_PORT &= 0xFB;	// B2 is SS
 	SPDR = byte;								  /* SPI starts sending immediately */
+
 //	loop_until_bit_is_set(SPSR, SPIF);			  /* wait until done */
 	while(!(SPSR & (1<<SPIF)));
+	SPI_SS_PORT |= 0x04;
 /* SPDR now contains the received byte */
 }
 

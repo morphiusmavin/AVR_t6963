@@ -49,7 +49,7 @@
 #define T6963_H
 #if 1
 //Control pin setting
-#define SPI_SS		PORTB2
+//#define SPI_SS		PORTB2
 #define LCD_RD		PORTC4       // LCD Read control line  pin number (D10)
 
 #define PWM_PIN		PORTC5			// used for dimming display

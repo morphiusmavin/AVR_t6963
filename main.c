@@ -14,6 +14,7 @@
 #include "t6963.h"
 #include "spi.h"
 #include "macros.h"
+#include "pinDefines.h"
 #include <string.h>
 //#include "main.h"
 #include <stdio.h>
@@ -40,23 +41,14 @@ volatile UCHAR spi_ret;
 
 ISR(TIMER1_OVF_vect) 
 { 
-	if(++xbyte > 0x7e)
-	{
-		xbyte = 0xFE;
-		transmitByte(xbyte);
-		xbyte = 0x21 + (UCHAR)dc2;
-		if(++dc2 > 20)
-			dc2 = 0;
-	}
-	transmitByte(xbyte);
-
 	PORTD = high_delay++;
+	TCNT1 = 0xFF00;	// this counts up so the lower, the slower (0xFFFF is the fastest)
+//	SPI_write(xbyte);
 
-//		loop_until_bit_is_set(SPSR, SPIF);			  /* wait until done */
-//		spi_ret = SPDR;
-
-//	TCNT1 = (UINT)((high_delay << 8) & 0xFFF0);
-	TCNT1 = 0xF000;	// this counts up so the lower, the slower (0xFFFF is the fastest)
+	if(++dc2 % 2 == 0)
+		_SB(PORTB,PORTB1);
+	else
+		_CB(PORTB,PORTB1);
 }
 
 int main(void)
@@ -64,6 +56,7 @@ int main(void)
 	int i,j,k;
 	UCHAR ch;
 	UCHAR key;
+	UCHAR key1;
 	UCHAR buff[LEN];
 	UCHAR mode, type;
 	UINT row, col;
@@ -76,7 +69,6 @@ int main(void)
 	_delay_ms(10);
     initUSART();
 	_delay_ms(20);
-//	initSPImaster();
 //	initSPIslave();
 
 #if 0
@@ -86,45 +78,50 @@ int main(void)
 	_delay_us(10);
 	GDispClrTxt();
 	GDispStringAt(7,15,"LCD is on!");
-
-//	initSPImaster();
+#endif
+	initSPImaster();
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
-	_delay_ms(1000);
-#endif
+	_delay_ms(10);
 
 	xbyte = 0x21;
-	DDRD |= 0xFF;
+//#if 0
+//	DDRB |= 0x02;
+	_delay_us(10);
+//	_SB(PORTB,PORTB1);
 	TCNT1 = 0xFFF0;
 	TCCR1A = 0x00;
 	TCCR1B = (1<<CS10) | (1<<CS12);  // Timer mode with 1024 prescler
-	TCCR1B = (1<<CS10) | (1<<CS11);	// clk/64
+//	TCCR1B = (1<<CS10) | (1<<CS11);	// clk/64
 //	TCCR1B = (1<<CS11);	// clk/8	(see page 144 in datasheet)
 //	TCCR1B = (1<<CS10);	// no prescaling
 	
 	TIMSK1 = (1 << TOIE1) ;   // Enable timer1 overflow interrupt(TOIE1)
-	sei(); // Enable global interrupts by setting global interrupt enable bit in SREG
-
+//	sei(); // Enable global interrupts by setting global interrupt enable bit in SREG
+//#endif
 	i = 0;
 	dc2 = 0;
+	key = 0x20;
 
 	while(1)
-	{	
-#if 0
-		loop_until_bit_is_set(SPSR, SPIF);			  /* wait until done */
-		spi_ret = SPDR;
-		_delay_ms(2);
+	{
+		if(++xbyte > 0x7e)
+			xbyte = 0x21;
 
-		transmitByte(spi_ret);
-//		SPI_write(j++);
-//		SPDR = (UCHAR)j++;
-#endif
+		SPI_write(xbyte);
+		key = SPDR;
+		transmitByte(key);
 
 		_delay_ms(2);
+
+		if(++i > 40)
+		{
+			i = 0;
+			transmitByte(0xFE);
+		}
 	}
 
-/*
 	for(row = 0;row < ROWS;row++)
 	{
 		for(col = 0;col < COLUMN-1;col++)
@@ -141,13 +138,13 @@ int main(void)
 	_delay_ms(1000);
 
 	GDispClrTxt();
-*/
+
 	row = col = 0;
 	
     while (1)
     {
 		key = receiveByte();
-//		GDispCharAt(0,0,key);
+		GDispCharAt(0,0,key);
 /*
 		if(++dc2 % 2 == 0)
 			_SB(PORTB,PORTB1);
@@ -161,7 +158,6 @@ int main(void)
 		{
 			switch(buff[0])
 			{
-/*
 				case DEBUG_CHAR:
 					ch = buff[1];
 					if(ch > 0x1F && ch < 0x7f)
@@ -183,7 +179,6 @@ int main(void)
 				case DEBUG_CLRSCR3:
 					GDispClrTxt();
 				break;
-*/
 				case DEBUG_MSG1:
 					row = buff[2];
 					row <<= 8;
