@@ -51,6 +51,7 @@
 //Control pin setting
 //#define SPI_SS		PORTB2
 #define LCD_RD		PORTC4       // LCD Read control line  pin number (D10)
+#define TEST_PIN1	PORTC5
 
 #define PWM_PIN		PORTC5			// used for dimming display
 #define LCD_WR		PORTC0        // LCD Write control line pin number (A0)
@@ -74,8 +75,9 @@
 
 #define SET_RD()	_SB(PORTC,LCD_RD)
 #define CLR_RD()	_CB(PORTC,LCD_RD)
-//#define SET_TEST1()	_SB(PORTB,TEST_PIN1)
-//#define CLR_TEST1()	_CB(PORTB,TEST_PIN1)
+
+#define SET_TEST1()	_SB(PORTC,TEST_PIN1)
+#define CLR_TEST1()	_CB(PORTC,TEST_PIN1)
 
 #define SET_PWM()	_SB(PORTC,PWM_PIN)
 #define CLR_PWM()	_CB(PORTC,PWM_PIN)

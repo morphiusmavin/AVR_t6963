@@ -366,10 +366,10 @@ void GDispSetPixel (UINT X, UINT Y, UCHAR color)
 void GDispInitPort (void)
 {
 	DDRC |= 0x0F;	// set all used bits as outputs
-	DDRC |= 0x30;	// set the TEST_PIN1 & PWM_PIN as output
+	DDRC |= 0x30;	// set the TEST_PIN1 & LCD_RD as output
 	DDRB |= 0x03;
 	DDRB |= 0x20;	// bit 5 is LED
-	DDRB &= 0xFB;	// pin 2 is input SS for SPI
+//	DDRB &= 0xFB;	// pin 2 is input SS for SPI
 
 	DDRD |= 0xFC;
 	CLR_RST();

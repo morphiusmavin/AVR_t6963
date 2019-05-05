@@ -45,7 +45,7 @@ ISR(TIMER1_OVF_vect)
 //	TCNT1 = 0xFF00;	// this counts up so the lower, the slower (0xFFFF is the fastest)
 //	SPI_write(xbyte);
 
-	if(++dc2 > 2000 == 0)
+	if(++dc2 > 2000)
 	{
 		if(onoff == 0)
 		{
@@ -76,6 +76,7 @@ int main(void)
 
 //	GDispInit();
 	GDispInitPort();
+
 	_delay_ms(10);
     initUSART();
 	_delay_ms(20);
@@ -128,15 +129,41 @@ int main(void)
 		if(dc2 == 0)
 		{
 			SET_LED();
+			SET_RD();
+			SET_WR();
+			SET_CD();
+			SET_CE();
+			SET_RST();
+			_CB(PORTD,PORTD2);
+			_CB(PORTD,PORTD3);
+			_CB(PORTD,PORTD4);
+			_CB(PORTD,PORTD5);
+			_CB(PORTD,PORTD6);
+			_CB(PORTD,PORTD7);
+			_CB(PORTB,PORTB0);
+			_CB(PORTB,PORTB1);
 			dc2 = 1;
 		}else
 		{
 			CLR_LED();
+			CLR_RD();
+			CLR_WR();
+			CLR_CD();
+			CLR_CE();
+			CLR_RST();
+			_SB(PORTD,PORTD2);
+			_SB(PORTD,PORTD3);
+			_SB(PORTD,PORTD4);
+			_SB(PORTD,PORTD5);
+			_SB(PORTD,PORTD6);
+			_SB(PORTD,PORTD7);
+			_SB(PORTB,PORTB0);
+			_SB(PORTB,PORTB1);
 			dc2 = 0;
 		}
 
-		_delay_ms(200);
-		Data_Out(ch++);
+		_delay_ms(20);
+//		Data_Out(ch++);
 	}
 
 	for(row = 0;row < ROWS;row++)
