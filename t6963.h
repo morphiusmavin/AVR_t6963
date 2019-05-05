@@ -68,6 +68,10 @@
 #define DATA6		PORTB0		// D8
 #define DATA7		PORTB1		// D9
 
+#define LED			PORTB5
+#define SET_LED()	_SB(PORTB,PORTB5)
+#define CLR_LED()	_CB(PORTB,PORTB5)
+
 #define SET_RD()	_SB(PORTC,LCD_RD)
 #define CLR_RD()	_CB(PORTC,LCD_RD)
 //#define SET_TEST1()	_SB(PORTB,TEST_PIN1)

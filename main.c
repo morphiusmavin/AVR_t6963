@@ -41,14 +41,24 @@ volatile UCHAR spi_ret;
 
 ISR(TIMER1_OVF_vect) 
 { 
-	PORTD = high_delay++;
-	TCNT1 = 0xFF00;	// this counts up so the lower, the slower (0xFFFF is the fastest)
+//	PORTD = high_delay++;
+//	TCNT1 = 0xFF00;	// this counts up so the lower, the slower (0xFFFF is the fastest)
 //	SPI_write(xbyte);
 
-	if(++dc2 % 2 == 0)
-		_SB(PORTB,PORTB1);
-	else
-		_CB(PORTB,PORTB1);
+	if(++dc2 > 2000 == 0)
+	{
+		if(onoff == 0)
+		{
+			SET_LED();
+			onoff = 1;
+		}else
+		{
+			CLR_LED();
+			onoff = 0;
+		}
+		dc2 = 0;
+	}
+
 }
 
 int main(void)
@@ -65,7 +75,7 @@ int main(void)
 	UCHAR temp;
 
 //	GDispInit();
-//	GDispInitPort();
+	GDispInitPort();
 	_delay_ms(10);
     initUSART();
 	_delay_ms(20);
@@ -79,7 +89,7 @@ int main(void)
 	GDispClrTxt();
 	GDispStringAt(7,15,"LCD is on!");
 #endif
-	initSPImaster();
+//	initSPImaster();
 //******************************************************************************************//
 //*********************************** start of main loop ***********************************//
 //******************************************************************************************//
@@ -103,23 +113,30 @@ int main(void)
 	i = 0;
 	dc2 = 0;
 	key = 0x20;
+	ch = 0;
+	onoff = 0;
+	SET_LED();
+	_delay_ms(1000);
 
 	while(1)
 	{
 		if(++xbyte > 0x7e)
 			xbyte = 0x21;
 
-		SPI_write(xbyte);
-		key = SPDR;
-		transmitByte(key);
 
-		_delay_ms(2);
-
-		if(++i > 40)
+		transmitByte(xbyte);
+		if(dc2 == 0)
 		{
-			i = 0;
-			transmitByte(0xFE);
+			SET_LED();
+			dc2 = 1;
+		}else
+		{
+			CLR_LED();
+			dc2 = 0;
 		}
+
+		_delay_ms(200);
+		Data_Out(ch++);
 	}
 
 	for(row = 0;row < ROWS;row++)
@@ -200,6 +217,7 @@ int main(void)
 	}
     return (0);		// this should never happen
 }
+
 
 #if 0
 ISR(SPI_STC_vect)
